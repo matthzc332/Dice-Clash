@@ -1,0 +1,27 @@
+{
+  "startingGold": 100,
+  "dailyBonus": {
+    "baseAmount": 25,
+    "consecutiveDays": [25, 30, 35, 40, 50, 60, 75],
+    "maxStreak": 7
+  },
+  "powerupCosts": [
+    { "key": "Shake", "value": 15 },
+    { "key": "Explosion", "value": 20 },
+    { "key": "Fireball", "value": 25 },
+    { "key": "Lightning", "value": 30 },
+    { "key": "MAGIC", "value": 40 }
+  ],
+  "levelEntryCosts": [
+    { "key": "cup1", "value": 0 },
+    { "key": "cup2", "value": 10 },
+    { "key": "cup3", "value": 20 },
+    { "key": "cup4", "value": 30 }
+  ],
+  "chestConfig": {
+    "maxSlots": 2,
+    "openTimeHours": 8,
+    "insigniasPerChest": 3
+  },
+  "rerollCost": 5
+}

@@ -1,0 +1,272 @@
+{
+  "levels": [
+    {
+      "id": 1,
+      "cup": 0,
+      "name": "Training Grounds",
+      "enemyRace": "Human",
+      "powerups": [],
+      "obstacles": [],
+      "enemyCount": 4,
+      "goldReward": 10,
+      "insigniaId": "camp_01"
+    },
+    {
+      "id": 2,
+      "cup": 0,
+      "name": "First Blood",
+      "enemyRace": "Human",
+      "powerups": ["Shake"],
+      "obstacles": [],
+      "enemyCount": 4,
+      "goldReward": 15,
+      "insigniaId": "camp_02"
+    },
+    {
+      "id": 3,
+      "cup": 1,
+      "name": "The Garrison",
+      "enemyRace": "Human",
+      "powerups": ["Fireball"],
+      "obstacles": [],
+      "enemyCount": 4,
+      "goldReward": 20,
+      "insigniaId": "camp_03"
+    },
+    {
+      "id": 4,
+      "cup": 1,
+      "name": "Iron Gate",
+      "enemyRace": "Human",
+      "powerups": ["Fireball", "Shake"],
+      "obstacles": [],
+      "enemyCount": 5,
+      "goldReward": 25,
+      "insigniaId": "camp_04"
+    },
+    {
+      "id": 5,
+      "cup": 1,
+      "name": "The Armory",
+      "enemyRace": "Wolf",
+      "powerups": ["Fireball", "Shake"],
+      "obstacles": ["Roca"],
+      "enemyCount": 5,
+      "goldReward": 30,
+      "insigniaId": "camp_05"
+    },
+    {
+      "id": 6,
+      "cup": 1,
+      "name": "Siege Breaker",
+      "enemyRace": "Human",
+      "powerups": ["Shake", "Explosion"],
+      "obstacles": [],
+      "enemyCount": 5,
+      "goldReward": 35,
+      "insigniaId": "camp_06"
+    },
+    {
+      "id": 7,
+      "cup": 1,
+      "name": "The King's Champion",
+      "enemyRace": "Wolf",
+      "powerups": ["Explosion", "Fireball"],
+      "obstacles": ["Roca"],
+      "enemyCount": 6,
+      "goldReward": 50,
+      "insigniaId": "camp_07"
+    },
+    {
+      "id": 8,
+      "cup": 2,
+      "name": "Border Skirmish",
+      "enemyRace": "Orc",
+      "powerups": ["Explosion", "Lightning"],
+      "obstacles": [],
+      "enemyCount": 5,
+      "goldReward": 30,
+      "insigniaId": "camp_08"
+    },
+    {
+      "id": 9,
+      "cup": 2,
+      "name": "Warchief's Trail",
+      "enemyRace": "Human",
+      "powerups": ["Shake", "Lightning"],
+      "obstacles": [],
+      "enemyCount": 5,
+      "goldReward": 35,
+      "insigniaId": "camp_09"
+    },
+    {
+      "id": 10,
+      "cup": 2,
+      "name": "War Camp",
+      "enemyRace": "Wolf",
+      "powerups": ["Fireball", "Lightning"],
+      "obstacles": ["DestroyedCell"],
+      "enemyCount": 6,
+      "goldReward": 40,
+      "insigniaId": "camp_10"
+    },
+    {
+      "id": 11,
+      "cup": 2,
+      "name": "Blood Ravine",
+      "enemyRace": "Orc",
+      "powerups": ["Shake"],
+      "obstacles": ["Roca"],
+      "enemyCount": 6,
+      "goldReward": 45,
+      "insigniaId": "camp_11"
+    },
+    {
+      "id": 12,
+      "cup": 2,
+      "name": "The Overlord",
+      "enemyRace": "Human",
+      "powerups": ["Lightning"],
+      "obstacles": ["Roca", "DestroyedCell"],
+      "enemyCount": 7,
+      "goldReward": 60,
+      "insigniaId": "camp_12"
+    },
+    {
+      "id": 13,
+      "cup": 3,
+      "name": "Wildlands",
+      "enemyRace": "Wolf",
+      "powerups": ["Shake", "Explosion"],
+      "obstacles": ["DestroyedCell"],
+      "enemyCount": 6,
+      "goldReward": 45,
+      "insigniaId": "camp_13"
+    },
+    {
+      "id": 14,
+      "cup": 3,
+      "name": "The Thorn Maze",
+      "enemyRace": "Human",
+      "powerups": ["Lightning", "MAGIC"],
+      "obstacles": [],
+      "enemyCount": 6,
+      "goldReward": 50,
+      "insigniaId": "camp_14"
+    },
+    {
+      "id": 15,
+      "cup": 3,
+      "name": "Spirit Grove",
+      "enemyRace": "Orc",
+      "powerups": ["Shake", "MAGIC"],
+      "obstacles": ["Roca"],
+      "enemyCount": 7,
+      "goldReward": 55,
+      "insigniaId": "camp_15"
+    },
+    {
+      "id": 16,
+      "cup": 3,
+      "name": "Elder Beast",
+      "enemyRace": "Human",
+      "powerups": ["Fireball", "MAGIC"],
+      "obstacles": ["DestroyedCell"],
+      "enemyCount": 7,
+      "goldReward": 60,
+      "insigniaId": "camp_16"
+    },
+    {
+      "id": 17,
+      "cup": 3,
+      "name": "Alpha's Den",
+      "enemyRace": "Wolf",
+      "powerups": ["Explosion", "MAGIC"],
+      "obstacles": ["Glue"],
+      "enemyCount": 8,
+      "goldReward": 75,
+      "insigniaId": "camp_17"
+    },
+    {
+      "id": 18,
+      "cup": 4,
+      "name": "Shadow Gate",
+      "enemyRace": "Wolf",
+      "powerups": ["Shake", "Explosion"],
+      "obstacles": ["Glue"],
+      "enemyCount": 7,
+      "goldReward": 60,
+      "insigniaId": "camp_18"
+    },
+    {
+      "id": 19,
+      "cup": 4,
+      "name": "Crypt of Echoes",
+      "enemyRace": "Human",
+      "powerups": ["Lightning", "MAGIC"],
+      "obstacles": [],
+      "enemyCount": 7,
+      "goldReward": 65,
+      "insigniaId": "camp_19"
+    },
+    {
+      "id": 20,
+      "cup": 4,
+      "name": "The Unliving Hall",
+      "enemyRace": "NewRace",
+      "powerups": ["Shake", "MAGIC"],
+      "obstacles": ["DestroyedCell"],
+      "enemyCount": 8,
+      "goldReward": 70,
+      "insigniaId": "camp_20"
+    },
+    {
+      "id": 21,
+      "cup": 4,
+      "name": "Death's Threshold",
+      "enemyRace": "Orc",
+      "powerups": ["Fireball", "MAGIC"],
+      "obstacles": ["Roca"],
+      "enemyCount": 8,
+      "goldReward": 80,
+      "insigniaId": "camp_21"
+    },
+    {
+      "id": 22,
+      "cup": 4,
+      "name": "The Necromancer",
+      "enemyRace": "NewRace",
+      "powerups": ["Explosion", "MAGIC"],
+      "obstacles": ["Mine"],
+      "enemyCount": 9,
+      "goldReward": 100,
+      "insigniaId": "camp_22"
+    }
+  ],
+  "cups": [
+    {
+      "id": 1,
+      "name": "Iron Crown",
+      "race": "Human",
+      "levels": [3, 4, 5, 6, 7]
+    },
+    {
+      "id": 2,
+      "name": "Blood Fang",
+      "race": "Orc",
+      "levels": [8, 9, 10, 11, 12]
+    },
+    {
+      "id": 3,
+      "name": "Wild Heart",
+      "race": "Beastfolk",
+      "levels": [13, 14, 15, 16, 17]
+    },
+    {
+      "id": 4,
+      "name": "Void Seal",
+      "race": "Nigromantes",
+      "levels": [18, 19, 20, 21, 22]
+    }
+  ]
+}

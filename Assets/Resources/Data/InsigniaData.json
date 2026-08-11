@@ -1,0 +1,271 @@
+{
+  "insignias": [
+    {
+      "id": "camp_01",
+      "name": "First Step",
+      "description": "Complete Training Grounds",
+      "rarity": "common",
+      "source": "campaign",
+      "levelId": 1
+    },
+    {
+      "id": "camp_02",
+      "name": "First Blood",
+      "description": "Complete First Blood",
+      "rarity": "common",
+      "source": "campaign",
+      "levelId": 2
+    },
+    {
+      "id": "camp_03",
+      "name": "Iron Will",
+      "description": "Complete The Garrison",
+      "rarity": "common",
+      "source": "campaign",
+      "levelId": 3
+    },
+    {
+      "id": "camp_04",
+      "name": "Gate Breaker",
+      "description": "Complete Iron Gate",
+      "rarity": "common",
+      "source": "campaign",
+      "levelId": 4
+    },
+    {
+      "id": "camp_05",
+      "name": "Arms Master",
+      "description": "Complete The Armory",
+      "rarity": "rare",
+      "source": "campaign",
+      "levelId": 5
+    },
+    {
+      "id": "camp_06",
+      "name": "Siege Breaker",
+      "description": "Complete Siege Breaker",
+      "rarity": "rare",
+      "source": "campaign",
+      "levelId": 6
+    },
+    {
+      "id": "camp_07",
+      "name": "Crown Slayer",
+      "description": "Defeat the King's Champion",
+      "rarity": "rare",
+      "source": "campaign",
+      "levelId": 7
+    },
+    {
+      "id": "camp_08",
+      "name": "Border Walker",
+      "description": "Complete Border Skirmish",
+      "rarity": "rare",
+      "source": "campaign",
+      "levelId": 8
+    },
+    {
+      "id": "camp_09",
+      "name": "Trail Blazer",
+      "description": "Complete Warchief's Trail",
+      "rarity": "rare",
+      "source": "campaign",
+      "levelId": 9
+    },
+    {
+      "id": "camp_10",
+      "name": "War Veteran",
+      "description": "Complete War Camp",
+      "rarity": "epic",
+      "source": "campaign",
+      "levelId": 10
+    },
+    {
+      "id": "camp_11",
+      "name": "Ravine Crosser",
+      "description": "Complete Blood Ravine",
+      "rarity": "epic",
+      "source": "campaign",
+      "levelId": 11
+    },
+    {
+      "id": "camp_12",
+      "name": "Overlord Slayer",
+      "description": "Defeat the Overlord",
+      "rarity": "epic",
+      "source": "campaign",
+      "levelId": 12
+    },
+    {
+      "id": "camp_13",
+      "name": "Wildlander",
+      "description": "Complete Wildlands",
+      "rarity": "epic",
+      "source": "campaign",
+      "levelId": 13
+    },
+    {
+      "id": "camp_14",
+      "name": "Thorn Walker",
+      "description": "Complete The Thorn Maze",
+      "rarity": "epic",
+      "source": "campaign",
+      "levelId": 14
+    },
+    {
+      "id": "camp_15",
+      "name": "Grove Keeper",
+      "description": "Complete Spirit Grove",
+      "rarity": "epic",
+      "source": "campaign",
+      "levelId": 15
+    },
+    {
+      "id": "camp_16",
+      "name": "Beast Tamer",
+      "description": "Defeat the Elder Beast",
+      "rarity": "legendary",
+      "source": "campaign",
+      "levelId": 16
+    },
+    {
+      "id": "camp_17",
+      "name": "Alpha Killer",
+      "description": "Conquer the Alpha's Den",
+      "rarity": "legendary",
+      "source": "campaign",
+      "levelId": 17
+    },
+    {
+      "id": "camp_18",
+      "name": "Shadow Walker",
+      "description": "Complete Shadow Gate",
+      "rarity": "legendary",
+      "source": "campaign",
+      "levelId": 18
+    },
+    {
+      "id": "camp_19",
+      "name": "Echo Hunter",
+      "description": "Complete Crypt of Echoes",
+      "rarity": "legendary",
+      "source": "campaign",
+      "levelId": 19
+    },
+    {
+      "id": "camp_20",
+      "name": "Death Defier",
+      "description": "Complete The Unliving Hall",
+      "rarity": "legendary",
+      "source": "campaign",
+      "levelId": 20
+    },
+    {
+      "id": "camp_21",
+      "name": "Threshold Guardian",
+      "description": "Complete Death's Threshold",
+      "rarity": "legendary",
+      "source": "campaign",
+      "levelId": 21
+    },
+    {
+      "id": "camp_22",
+      "name": "Necromancer Bane",
+      "description": "Defeat the Necromancer",
+      "rarity": "legendary",
+      "source": "campaign",
+      "levelId": 22
+    },
+    {
+      "id": "chest_01",
+      "name": "Lucky Find",
+      "description": "A common trinket from a chest",
+      "rarity": "common",
+      "source": "chest"
+    },
+    {
+      "id": "chest_02",
+      "name": "Old Coin",
+      "description": "An ancient coin of unknown origin",
+      "rarity": "common",
+      "source": "chest"
+    },
+    {
+      "id": "chest_03",
+      "name": "Worn Token",
+      "description": "A token worn by time",
+      "rarity": "common",
+      "source": "chest"
+    },
+    {
+      "id": "chest_04",
+      "name": "Rusty Badge",
+      "description": "A badge from a forgotten order",
+      "rarity": "common",
+      "source": "chest"
+    },
+    {
+      "id": "chest_05",
+      "name": "Sharp Fang",
+      "description": "A beast's fang, still sharp",
+      "rarity": "rare",
+      "source": "chest"
+    },
+    {
+      "id": "chest_06",
+      "name": "Enchanted Gem",
+      "description": "A gem pulsing with faint magic",
+      "rarity": "rare",
+      "source": "chest"
+    },
+    {
+      "id": "chest_07",
+      "name": "War Medal",
+      "description": "A medal awarded for bravery",
+      "rarity": "rare",
+      "source": "chest"
+    },
+    {
+      "id": "chest_08",
+      "name": "Dragon Scale",
+      "description": "A scale from an ancient dragon",
+      "rarity": "epic",
+      "source": "chest"
+    },
+    {
+      "id": "chest_09",
+      "name": "Void Crystal",
+      "description": "A crystal humming with dark energy",
+      "rarity": "epic",
+      "source": "chest"
+    },
+    {
+      "id": "chest_10",
+      "name": "Phoenix Feather",
+      "description": "A feather that never stops glowing",
+      "rarity": "epic",
+      "source": "chest"
+    },
+    {
+      "id": "chest_11",
+      "name": "Soul Anchor",
+      "description": "Keeps restless spirits at bay",
+      "rarity": "legendary",
+      "source": "chest"
+    },
+    {
+      "id": "chest_12",
+      "name": "Crown Shard",
+      "description": "A fragment of a broken crown",
+      "rarity": "legendary",
+      "source": "chest"
+    },
+    {
+      "id": "chest_13",
+      "name": "Eternal Ember",
+      "description": "A flame that never dies",
+      "rarity": "legendary",
+      "source": "chest"
+    }
+  ]
+}
