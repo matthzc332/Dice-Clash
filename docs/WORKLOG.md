@@ -568,3 +568,34 @@ Registro de trabajo y backlog del proyecto.
 - **BoardManager** — helpers `IsTutorialDummy(team)`, `GetTutorialDummySprite()`, `GetTutorialDummyScale()`; guards en `ResetPieceSprite` y `AnimatedMove` para que los maniquíes conserven sprite `muneco1` y escala 0.19 durante el combate.
 - **Daily bonus al menú** — nuevo `TutorialProgress` (PlayerPrefs `TutorialPlayed`, marcado al completar o saltear el tutorial); eliminado `DailyBonusUI` + `ShowDailyBonusDelayed` de `GameManager`; hook en `MainMenuManager.Start()` con gate `TutorialProgress.HasPlayed()`.
 - **ScoreboardUI ganador forzado** — `Show(Team? forcedWinner = null)`; `TestButtons` WIN → `ScoreboardUI.Instance.Show(Team.Blue)`, LOSE → `ScoreboardUI.Instance.Show(Team.Red)`. WIN ahora completa campaña (oro + listón + insignia) y registra victoria de copa.
+
+## Fix: EnemyBanner NRE + Flujo post-tutorial (055)
+
+> 2026-08-11 — NRE en EnemyBanner, volumen 2do tema gameplay, cofre→goblin→modos tras ganar tutorial.
+
+| #   | ID                 | Tarea                                                     | Spec | Estado |
+| --- | ------------------ | --------------------------------------------------------- | ---- | ------ |
+| 55  | 055-enemybanner-posttutorial | Fix EnemyBanner + flujo cofre/goblin/modos + volumen | —  | done   |
+
+### Detalle 055
+
+- **EnemyBanner NRE** — `EnemyBanner.cs:40` — segundo `AddComponent<Image>()` sobre el mismo GameObject devuelve `null` en Unity nuevo → corrutina rota en `border.color` → banner oscuro pegado en medio de la pantalla sin texto ni fade. Fix: reemplazado el segundo Image por `Outline` (borde con color de la raza, `effectDistance (4, -4)`).
+- **Volumen 2do tema** — `SoundManager.PlayGameplayMusic()` — `deuslower-fantasy-medieval-ambient-237371` ahora suena a volumen 0.5 (el 1er track queda en 0.3).
+- **Flujo post-tutorial** — `GameOverUI` — al ganar el tutorial con sombras: cofre (TutorialRewardUI +150 oro) → goblin → **ModeSelectionUI** (Campaign/Ranked With/Without) en vez de entrar directo al juego con `GameConfig.Play()`. Nuevo `ShowModeSelection()` que crea ModeSelectionUI sobre el canvas de GameOverUI; el +150 del cofre alcanza para pagar la entrada (20/30/10/15g). SKIP del tutorial sin cambios.
+
+## ExhibidorUI: vistas Ribbons + back unificado (056)
+
+> 2026-08-12 — Rediseño del ExhibidorUI (badges con paginación, vista dedicada de listones, botones BACK con sprite `panel total back`).
+
+| #   | ID                 | Tarea                                                     | Spec | Estado |
+| --- | ------------------ | --------------------------------------------------------- | ---- | ------ |
+| 56  | 056-exhibidor-ribbons-back | ExhibidorUI badges paginados + vista Ribbons + back unificado | —  | done   |
+
+### Detalle 056
+
+- **Fix compilación** — `ExhibidorUI.cs:163` llamaba a `CreatePaginationControls()` sin implementar (código cortado por límite de uso). Implementado: botones PREV/NEXT + indicador `{page}/{total}` en y=45, deshabilitados en extremos, redibujan con `BuildBadgesView()`. Además `BuildBadgesView()` ahora llama `ClearContent()` para evitar apilar UI al cambiar filtro/página.
+- **Botón RIBBONS** — nuevo nav button `panel total ribbons_0` en `(-700, 20)`; los 6 nav buttons re-espaciados a 140px (chests 260, trofeos 140, ribbons 20, badges -100, settings -220, back -340).
+- **Vista Ribbons** — `BuildRibbonsView()` dedicada: grid scrolleable idéntico a badges (`offsetMin (20,90)`, `offsetMax (-20,-160)`, 5 columnas, cards 110×130, listón 50×75 + etiqueta `L{id}`/`???`, color por raza / gris 30% si no ganado). Sin contador ni paginación (22 listones caben en el scroll). Listones removidos de `BuildTrophiesView` (queda copas + tutorial en y=-40).
+- **Back unificado** — `ChestUI`, `InsigniaUI`, `CampaignUI` y `ModeSelectionUI` usan ahora `Sprites/Menu/botin ui/panel total back` (`panel total back_0`, fallback color) en vez de `Retry_0`/color plano. Tamaño 150×70, sin texto superpuesto (el sprite trae la etiqueta, como los nav buttons). `ExhibidorUI` ya lo usaba.
+
+

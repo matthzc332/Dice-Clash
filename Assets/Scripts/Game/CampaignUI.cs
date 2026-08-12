@@ -285,8 +285,10 @@ public class CampaignUI : MonoBehaviour
 
     void CreateBackButton()
     {
-        Sprite[] backSprites = Resources.LoadAll<Sprite>("Sprites/Menu/Retry");
-        Sprite backSprite = backSprites != null ? System.Array.Find(backSprites, s => s.name == "Retry_0") : null;
+        Sprite[] backSprites = Resources.LoadAll<Sprite>("Sprites/Menu/botin ui/panel total back");
+        Sprite backSprite = backSprites != null && backSprites.Length > 0
+            ? (System.Array.Find(backSprites, s => s.name == "panel total back_0") ?? backSprites[0])
+            : null;
 
         GameObject btnObj = new GameObject("BackButton");
         btnObj.transform.SetParent(panelObj.transform, false);
@@ -294,7 +296,7 @@ public class CampaignUI : MonoBehaviour
         btnRt.anchorMin = new Vector2(0f, 1f);
         btnRt.anchorMax = new Vector2(0f, 1f);
         btnRt.pivot = new Vector2(0f, 1f);
-        btnRt.sizeDelta = new Vector2(80, 45);
+        btnRt.sizeDelta = new Vector2(150, 70);
         btnRt.anchoredPosition = new Vector2(15, -10);
 
         Image btnImg = btnObj.AddComponent<Image>();
@@ -303,19 +305,6 @@ public class CampaignUI : MonoBehaviour
         else
             btnImg.color = new Color(0.4f, 0.2f, 0.1f, 0.85f);
         btnImg.preserveAspect = true;
-
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text text = textObj.AddComponent<Text>();
-        text.font = font;
-        text.fontSize = 12;
-        text.alignment = TextAnchor.MiddleCenter;
-        text.text = "BACK";
-        text.color = Color.white;
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImg;

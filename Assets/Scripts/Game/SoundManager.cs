@@ -250,7 +250,7 @@ public class SoundManager : MonoBehaviour
         if (clip != null)
         {
             musicSource.clip = clip;
-            musicSource.volume = 0.3f;
+            musicSource.volume = chosen == "deuslower-fantasy-medieval-ambient-237371" ? 0.5f : 0.3f;
             musicSource.loop = true;
             musicSource.Play();
         }

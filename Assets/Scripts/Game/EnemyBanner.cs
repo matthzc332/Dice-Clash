@@ -37,13 +37,9 @@ public class EnemyBanner : MonoBehaviour
         bg.color = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.9f);
         bg.raycastTarget = false;
 
-        Image border = bannerObj.AddComponent<Image>();
-        border.color = new Color(color.r, color.g, color.b, 0.8f);
-        border.raycastTarget = false;
-        RectTransform borderRt = border.GetComponent<RectTransform>();
-        borderRt.anchorMin = Vector2.zero;
-        borderRt.anchorMax = Vector2.one;
-        borderRt.sizeDelta = new Vector2(6, 6);
+        Outline border = bannerObj.AddComponent<Outline>();
+        border.effectColor = new Color(color.r, color.g, color.b, 0.8f);
+        border.effectDistance = new Vector2(4, -4);
 
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(bannerObj.transform, false);

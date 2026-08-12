@@ -569,7 +569,17 @@ public class GameOverUI : MonoBehaviour
             yield return null;
         }
         Destroy(goblinObj);
-        GameConfig.Play(GameConfig.selectedScenario);
+        ShowModeSelection();
+    }
+
+    void ShowModeSelection()
+    {
+        Canvas gameOverCanvas = canvasObj != null ? canvasObj.GetComponent<Canvas>() : null;
+        ModeSelectionUI modeUI = gameObject.AddComponent<ModeSelectionUI>();
+        if (gameOverCanvas != null)
+            modeUI.Show(gameOverCanvas);
+        else
+            modeUI.Show(GameObject.Find("TurnCanvas")?.GetComponent<Canvas>());
     }
 
     IEnumerator ShowRewardThenProceed()
@@ -593,7 +603,7 @@ public class GameOverUI : MonoBehaviour
         }
         else
         {
-            GameConfig.Play(GameConfig.selectedScenario);
+            ShowModeSelection();
         }
     }
 
