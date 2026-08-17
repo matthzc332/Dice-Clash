@@ -109,6 +109,19 @@ Implement single-player mode with AI-controlled red team, combat system overhaul
 
 #### Done
 - **Tutorial (033)**: Tutorial for new users with wooden dummies, simplified flow (no turns — player just attacks all dummies). 4 dummies at scale 0.19. 4 power-up placeholders at board edges. `TutorialManager` with `OnTurnChanged` auto-revert to keep always BlueTurn. Tutorial hides cup, End Turn, Scenario/Species buttons, timers. BoardManager loads `Tutorial/fondoTuto`, `Tutorial/piso5/piso6`, `Tutorial/muneco1`, `Tutorial/barril2`. GameManager skips AI+Timer in tutorial. Menu has "TUTORIAL" button calling `GameConfig.PlayTutorial()`. Shadow phase victory shows ScoreboardUI → GameOverUI. Input blocked during power-up effects. Skip/Next buttons start normal game via `GameConfig.Play()`.
+- **Game feel (057)**: Hit-stop (0.05s dice clash, 0.06s kills) via `Time.timeScale` freeze. Pitch random ±10% on procedural SFX, ±5% per chord voice. Dramatic silence 0.15s after dice spin. Knight jump animation (parabolic arc, Salto1/2, squash, hammer+shake, dust particles). Back sprite overrides: Human 0.10, Orc 0.33/0.24, Beastfolk 0.38/0.38. `SpritePrefix("Beastfolk")="beast"`, `LoadLargestSprite()` for spriteMode 2. Paladin light beam (procedural rect, fadeIn/flicker/fadeOut, 6 holy sparks, `PlayHolyBeam()`). Slide 1.3s for Paladins.
+- **CampaignRewardUI**: Full-screen popup (sortingOrder 210) with sequential reveal: gold/insignia/ribbon/chest with white flash, scale pop, panel shake, sounds, coin bounce + particles, sparkles. OK button with `botonOK_0`.
+- **Cup completion animation**: `CampaignManager.CompleteLevel()` returns cup race on first-time completion. `CampaignRewardUI` shows cup sprite with bounce (0.3→1.6→1.0) + `PlayVictory()` at end of reward sequence.
+- **Scoreboard skip + faster counting**: "SKIP >>" button instantly completes. Normal delays 0.4→0.25s, inter-team 0.3→0.2s, post-count 0.5→0.4s.
+- **Post-tutorial flow**: ScoreboardUI → GameOverUI → TutorialRewardUI → GoblinDialogue → ModeSelectionUI (campaign tickets) → FlashAndStartCampaign → level 3 (scans `cups[1]`).
+- **ExhibidorUI badges cleanup**: Removed PREV/NEXT pagination, all badges in one scrollable list. BlueFlag covers broken 1/2+arrow at (X=-1, Y=-204, 326×269).
+- **EnemyBanner**: Loads `enemyBanner` sprite from `Sprites/Decor` (spriteMode 2, `StartsWith`), white text with black outline, `preserveAspect`.
+- **Power-up glow**: Uses `cambio` sprite from `Sprites/PowerUps/Icon/cambio` via `GetGlowSprite()`.
+- **CampaignUI lighter panels**: Completed `(0.25,0.55,0.25)`, unlocked `(0.3,0.38,0.55)`, locked `(0.35,0.35,0.38)`. Insignias shifted left `(0.74-0.90)`.
+- **ModeSelectionUI campaign mode**: `ShowCampaign(Canvas)`, FREE/PREMIUM 20g tickets, HeartbeatPulse, HoverGrow, flash+sound.
+- **Common reward panels**: Darker `(0.45,0.45,0.45,0.9)` so they don't blend with panelCartaBlue.
+- **Test buttons moved**: TEST CHEST + TEST DAILY now in ExhibidorUI settings.
+- **TutorialRewardUI**: panelCartaBlue background, `botonOK_0` claim button. **GoblinDialogue**: lower text, `botonOK_0` continue button.
 
 ### Key Decisions
 
@@ -144,6 +157,9 @@ Implement single-player mode with AI-controlled red team, combat system overhaul
 - Enemy name banner shows at start of each campaign level with the army name
 - Character unlock by completing a full cup (dialogue announcement)
 - ModeSelectionUI costs: Campaign=levelEntryCosts, Ranked WITH=30g, Ranked WITHOUT=15g
+- Cup completion: `CompleteLevel()` returns race name (or null) on first-time cup completion. CampaignRewardUI shows cup sprite with bounce animation (0.3→1.6→1.0) at end of reward sequence.
+- Knight jump: triggered when Knight moves >1 cell. Back sprite overrides: Human 0.10, Orc salto1 0.33/0.30 salto2 0.24/0.28, Beastfolk 0.38. `SpritePrefix` maps "Beastfolk"→"beast".
+- Paladin light beam: procedural rect follows visual during movement, 0.15s fadeIn, 0.6s hold with flicker, 0.3s fadeOut, 6 holy sparks. Slide 1.3s for Paladins.
 
 ### Bugs (no arreglados)
 - **Ninja idle scale**: Después de un ataque, la ninja se queda con escala 0.6 (sombra) en vez de restaurar su escala original (~0.37/0.45). Causa: `originalScales` keyeado con `GameObject.GetInstanceID()` en `AnimatedMove` pero buscado con `SpriteRenderer.GetInstanceID()` en `ResetPieceSprite`.
@@ -227,6 +243,7 @@ Implement single-player mode with AI-controlled red team, combat system overhaul
 - `Assets/Scripts/Game/RankedManager.cs` — ranked mode: random enemies, power-ups by race, obstacle
 - `Assets/Scripts/Game/ModeSelectionUI.cs` — 4-mode selection menu with gold costs
 - `Assets/Scripts/Game/GoblinDialogue.cs` — onboarding dialogue post-tutorial
+- `Assets/Scripts/Game/CampaignRewardUI.cs` — campaign reward popup with game juice, sequential reveals, cup completion animation
 - `Assets/Resources/Data/CampaignData.json` — 22 levels, 4 cups, specific power-ups/obstacles per level
 - `Assets/Resources/Data/InsigniaData.json` — 35 badges (22 campaign + 13 chest)
 - `Assets/Resources/Data/EconomyData.json` — costs, daily bonus, chest config

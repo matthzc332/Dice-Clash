@@ -1,16 +1,29 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class ModeSelectionUI : MonoBehaviour
 {
     private GameObject panel;
     private Canvas canvas;
     private Font pressStart;
+    private Text goldText;
+    private bool isCampaignMode;
 
     public void Show(Canvas parentCanvas)
     {
         canvas = parentCanvas;
+        isCampaignMode = false;
+        pressStart = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
+        if (pressStart == null) pressStart = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        CreatePanel();
+    }
+
+    public void ShowCampaign(Canvas parentCanvas)
+    {
+        canvas = parentCanvas;
+        isCampaignMode = true;
         pressStart = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
         if (pressStart == null) pressStart = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         CreatePanel();
@@ -30,10 +43,45 @@ public class ModeSelectionUI : MonoBehaviour
         Image bg = panel.AddComponent<Image>();
         bg.color = new Color(0.06f, 0.04f, 0.1f, 0.95f);
 
-        CreateTitle();
-        CreateModeButtons();
+        if (isCampaignMode)
+        {
+            CreateCampaignTitle();
+            CreateCampaignTickets();
+        }
+        else
+        {
+            CreateTitle();
+            CreateTickets();
+        }
         CreateGoldDisplay();
-        CreateBackButton();
+        if (!isCampaignMode) CreateBackButton();
+    }
+
+    void CreateCampaignTitle()
+    {
+        GameObject titleObj = new GameObject("Title");
+        titleObj.transform.SetParent(panel.transform, false);
+        Text titleText = titleObj.AddComponent<Text>();
+        titleText.font = pressStart;
+        titleText.fontSize = 22;
+        titleText.alignment = TextAnchor.MiddleCenter;
+        titleText.text = "SELECT CAMPAIGN MODE";
+        titleText.color = new Color(0.9f, 0.75f, 0.2f);
+        RectTransform tRt = titleObj.GetComponent<RectTransform>();
+        tRt.anchorMin = new Vector2(0f, 0.85f);
+        tRt.anchorMax = new Vector2(1f, 1f);
+        tRt.sizeDelta = Vector2.zero;
+    }
+
+    void CreateCampaignTickets()
+    {
+        CreateTicketCard("FREE TICKET", "NO POWER-UPS", 0, new Vector2(-190, 30),
+            new Color(0.2f, 0.45f, 0.2f), new Color(0.4f, 0.8f, 0.4f),
+            PowerupMode.WithoutPowerups, true);
+
+        CreateTicketCard("PREMIUM TICKET", "WITH POWER-UPS", 20, new Vector2(190, 30),
+            new Color(0.45f, 0.2f, 0.5f), new Color(0.8f, 0.4f, 1f),
+            PowerupMode.WithPowerups, true);
     }
 
     void CreateTitle()
@@ -42,9 +90,9 @@ public class ModeSelectionUI : MonoBehaviour
         titleObj.transform.SetParent(panel.transform, false);
         Text titleText = titleObj.AddComponent<Text>();
         titleText.font = pressStart;
-        titleText.fontSize = 20;
+        titleText.fontSize = 22;
         titleText.alignment = TextAnchor.MiddleCenter;
-        titleText.text = "SELECT MODE";
+        titleText.text = "SELECT RANKED MODE";
         titleText.color = new Color(0.9f, 0.75f, 0.2f);
         RectTransform tRt = titleObj.GetComponent<RectTransform>();
         tRt.anchorMin = new Vector2(0f, 0.85f);
@@ -52,84 +100,141 @@ public class ModeSelectionUI : MonoBehaviour
         tRt.sizeDelta = Vector2.zero;
     }
 
-    void CreateModeButtons()
+    void CreateTickets()
     {
-        float[] xPos = { -180f, 180f };
-        float[] yPos = { 80f, -80f };
-        string[] labels = {
-            "CAMPAIGN\nWITH ITEMS",
-            "RANKED\nWITH ITEMS",
-            "CAMPAIGN\nNO ITEMS",
-            "RANKED\nNO ITEMS"
-        };
-        int[] costs = { 20, 30, 10, 15 };
-        bool[] isRanked = { false, true, false, true };
-        bool[] hasPowerups = { true, true, false, false };
+        CreateTicketCard("FREE TICKET", "NO POWER-UPS", 0, new Vector2(-190, 30),
+            new Color(0.2f, 0.45f, 0.2f), new Color(0.4f, 0.8f, 0.4f),
+            PowerupMode.WithoutPowerups, false);
 
-        for (int i = 0; i < 4; i++)
-        {
-            int idx = i;
-            CreateModeButton(
-                labels[i],
-                new Vector2(xPos[i % 2], yPos[i / 2]),
-                costs[i],
-                isRanked[i],
-                hasPowerups[i],
-                () => OnModeSelected(isRanked[idx], hasPowerups[idx], costs[idx])
-            );
-        }
+        CreateTicketCard("PREMIUM TICKET", "WITH POWER-UPS", 30, new Vector2(190, 30),
+            new Color(0.45f, 0.2f, 0.5f), new Color(0.8f, 0.4f, 1f),
+            PowerupMode.WithPowerups, false);
     }
 
-    void CreateModeButton(string label, Vector2 position, int cost, bool isRankedMode, bool hasPowerups, UnityEngine.Events.UnityAction onClick)
+    void CreateTicketCard(string title, string subtitle, int cost, Vector2 pos,
+        Color bgColor, Color accentColor, PowerupMode powerupMode, bool campaign = false)
     {
-        GameObject btnObj = new GameObject("ModeBtn");
-        btnObj.transform.SetParent(panel.transform, false);
+        GameObject cardObj = new GameObject("TicketCard");
+        cardObj.transform.SetParent(panel.transform, false);
 
-        RectTransform btnRt = btnObj.AddComponent<RectTransform>();
-        btnRt.anchorMin = new Vector2(0.5f, 0.5f);
-        btnRt.anchorMax = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(300, 120);
-        btnRt.anchoredPosition = position;
+        RectTransform cardRt = cardObj.AddComponent<RectTransform>();
+        cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+        cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+        cardRt.pivot = new Vector2(0.5f, 0.5f);
+        cardRt.sizeDelta = new Vector2(320, 320);
+        cardRt.anchoredPosition = pos;
 
+        Image cardBg = cardObj.AddComponent<Image>();
+        cardBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+        if (cardBg.sprite != null)
+            cardBg.color = bgColor;
+        else
+            cardBg.color = bgColor;
+
+        Outline cardOutline = cardObj.AddComponent<Outline>();
+        cardOutline.effectColor = accentColor;
+        cardOutline.effectDistance = new Vector2(3, -3);
+
+        GameObject titleObj = new GameObject("Title");
+        titleObj.transform.SetParent(cardObj.transform, false);
+        Text titleText = titleObj.AddComponent<Text>();
+        titleText.font = pressStart;
+        titleText.text = title;
+        titleText.fontSize = 14;
+        titleText.alignment = TextAnchor.MiddleCenter;
+        titleText.color = accentColor;
+        RectTransform titleRt = titleObj.GetComponent<RectTransform>();
+        titleRt.anchorMin = new Vector2(0.05f, 0.78f);
+        titleRt.anchorMax = new Vector2(0.95f, 0.95f);
+        titleRt.sizeDelta = Vector2.zero;
+
+        GameObject subtitleObj = new GameObject("Subtitle");
+        subtitleObj.transform.SetParent(cardObj.transform, false);
+        Text subtitleText = subtitleObj.AddComponent<Text>();
+        subtitleText.font = pressStart;
+        subtitleText.text = subtitle;
+        subtitleText.fontSize = 8;
+        subtitleText.alignment = TextAnchor.MiddleCenter;
+        subtitleText.color = new Color(0.7f, 0.7f, 0.7f);
+        RectTransform subtitleRt = subtitleObj.GetComponent<RectTransform>();
+        subtitleRt.anchorMin = new Vector2(0.05f, 0.65f);
+        subtitleRt.anchorMax = new Vector2(0.95f, 0.78f);
+        subtitleRt.sizeDelta = Vector2.zero;
+
+        string priceLabel = cost == 0 ? "FREE!" : $"COST: {cost}G";
+        Color priceColor = cost == 0
+            ? new Color(0.4f, 1f, 0.4f)
+            : new Color(1f, 0.84f, 0f);
+
+        GameObject priceObj = new GameObject("Price");
+        priceObj.transform.SetParent(cardObj.transform, false);
+        Text priceText = priceObj.AddComponent<Text>();
+        priceText.font = pressStart;
+        priceText.text = priceLabel;
+        priceText.fontSize = 16;
+        priceText.alignment = TextAnchor.MiddleCenter;
+        priceText.color = priceColor;
+        RectTransform priceRt = priceObj.GetComponent<RectTransform>();
+        priceRt.anchorMin = new Vector2(0.05f, 0.45f);
+        priceRt.anchorMax = new Vector2(0.95f, 0.6f);
+        priceRt.sizeDelta = Vector2.zero;
+
+        string descText = cost == 0
+            ? "No gold cost.\nEnemies may use items."
+            : "Pay gold to enter.\nFull experience.";
+        GameObject descObj = new GameObject("Desc");
+        descObj.transform.SetParent(cardObj.transform, false);
+        Text desc = descObj.AddComponent<Text>();
+        desc.font = pressStart;
+        desc.text = descText;
+        desc.fontSize = 7;
+        desc.alignment = TextAnchor.MiddleCenter;
+        desc.color = new Color(0.6f, 0.6f, 0.6f);
+        RectTransform descRt = descObj.GetComponent<RectTransform>();
+        descRt.anchorMin = new Vector2(0.08f, 0.18f);
+        descRt.anchorMax = new Vector2(0.92f, 0.42f);
+        descRt.sizeDelta = Vector2.zero;
+
+        GameObject btnObj = new GameObject("PlayBtn");
+        btnObj.transform.SetParent(cardObj.transform, false);
         Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = isRankedMode ? new Color(0.3f, 0.15f, 0.4f, 0.9f) : new Color(0.15f, 0.25f, 0.4f, 0.9f);
+        btnImg.sprite = LoadFirstSprite("Sprites/Menu/botin ui/botonOpen", "botonOpen_0");
+        if (btnImg.sprite != null)
+        {
+            btnImg.preserveAspect = true;
+            btnImg.color = Color.white;
+        }
+        else
+        {
+            btnImg.color = accentColor;
+        }
+        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+        btnRt.anchorMin = new Vector2(0.5f, 0.02f);
+        btnRt.anchorMax = new Vector2(0.5f, 0.02f);
+        btnRt.pivot = new Vector2(0.5f, 0.5f);
+        btnRt.sizeDelta = new Vector2(170, 55);
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImg;
+        int capturedCost = cost;
+        PowerupMode capturedMode = powerupMode;
         btn.onClick.AddListener(() =>
         {
             SoundManager.Instance.PlaySelect();
-            onClick();
+            if (isCampaignMode)
+                OnCampaignTicketSelected(capturedCost, capturedMode, cardObj);
+            else
+                OnTicketSelected(capturedCost, capturedMode);
         });
 
-        GameObject textObj = new GameObject("Label");
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text text = textObj.AddComponent<Text>();
-        text.font = pressStart;
-        text.text = label;
-        text.fontSize = 10;
-        text.alignment = TextAnchor.MiddleCenter;
-        text.color = Color.white;
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
-
-        GameObject costObj = new GameObject("Cost");
-        costObj.transform.SetParent(btnObj.transform, false);
-        Text costText = costObj.AddComponent<Text>();
-        costText.font = pressStart;
-        costText.text = $"{cost}G";
-        costText.fontSize = 12;
-        costText.alignment = TextAnchor.MiddleCenter;
-        costText.color = new Color(1f, 0.84f, 0f);
-        RectTransform costRt = costObj.GetComponent<RectTransform>();
-        costRt.anchorMin = new Vector2(0f, 0f);
-        costRt.anchorMax = new Vector2(1f, 0.3f);
-        costRt.sizeDelta = Vector2.zero;
+        if (cost > 0 && campaign)
+        {
+            StartCoroutine(HeartbeatPulse(btnObj));
+            HoverGrow hover = btnObj.AddComponent<HoverGrow>();
+        }
     }
 
-    void OnModeSelected(bool isRanked, bool hasPowerups, int cost)
+    void OnCampaignTicketSelected(int cost, PowerupMode powerupMode, GameObject cardObj)
     {
         EconomyManager econ = EconomyManager.Instance;
         int gold = econ != null ? econ.TotalGold : 0;
@@ -140,25 +245,140 @@ public class ModeSelectionUI : MonoBehaviour
             return;
         }
 
-        if (isRanked && !RankedManager.IsUnlocked())
+        if (econ != null && cost > 0)
+            econ.SpendGold(cost);
+
+        if (goldText != null)
+        {
+            int newGold = econ != null ? econ.TotalGold : 0;
+            goldText.text = $"GOLD: {newGold}";
+        }
+
+        StartCoroutine(FlashAndStartCampaign(cardObj, powerupMode));
+    }
+
+    IEnumerator FlashAndStartCampaign(GameObject cardObj, PowerupMode powerupMode)
+    {
+        if (cardObj != null)
+        {
+            Image cardBg = cardObj.GetComponent<Image>();
+            if (cardBg != null)
+            {
+                Color orig = cardBg.color;
+                cardBg.color = Color.white;
+                yield return new WaitForSecondsRealtime(0.12f);
+                cardBg.color = orig;
+                yield return new WaitForSecondsRealtime(0.08f);
+                cardBg.color = new Color(orig.r + 0.3f, orig.g + 0.3f, orig.b + 0.3f, orig.a);
+                yield return new WaitForSecondsRealtime(0.1f);
+                cardBg.color = orig;
+            }
+        }
+
+        SoundManager.Instance.PlayVictory();
+        yield return new WaitForSecondsRealtime(0.15f);
+
+        int firstLevel = 3;
+        if (CampaignManager.Instance != null)
+        {
+            var data = CampaignData.Load();
+            if (data != null && data.cups != null && data.cups.Length > 1)
+            {
+                foreach (int lid in data.cups[1].levels)
+                {
+                    if (!CampaignManager.Instance.IsLevelCompleted(lid) && CampaignManager.Instance.IsLevelUnlocked(lid))
+                    {
+                        firstLevel = lid;
+                        break;
+                    }
+                }
+            }
+        }
+        GameConfig.PlayCampaign(firstLevel, powerupMode);
+    }
+
+    IEnumerator HeartbeatPulse(GameObject btnObj)
+    {
+        while (btnObj != null)
+        {
+            yield return new WaitForSeconds(0.5f);
+            if (btnObj == null) yield break;
+            RectTransform rt = btnObj.GetComponent<RectTransform>();
+            if (rt == null) yield break;
+            Vector3 orig = rt.localScale;
+            float t = 0f;
+            while (t < 0.15f)
+            {
+                if (btnObj == null) yield break;
+                t += Time.unscaledDeltaTime;
+                float scale = 1f + Mathf.Sin(t / 0.15f * Mathf.PI) * 0.12f;
+                rt.localScale = orig * scale;
+                yield return null;
+            }
+            rt.localScale = orig;
+            yield return new WaitForSeconds(0.35f);
+            if (btnObj == null) yield break;
+            rt = btnObj.GetComponent<RectTransform>();
+            if (rt == null) yield break;
+            orig = rt.localScale;
+            t = 0f;
+            while (t < 0.12f)
+            {
+                if (btnObj == null) yield break;
+                t += Time.unscaledDeltaTime;
+                float scale = 1f + Mathf.Sin(t / 0.12f * Mathf.PI) * 0.08f;
+                rt.localScale = orig * scale;
+                yield return null;
+            }
+            rt.localScale = orig;
+        }
+    }
+
+    class HoverGrow : MonoBehaviour, UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler
+    {
+        private bool hovering;
+        private Coroutine heartbeat;
+
+        public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            hovering = true;
+            transform.localScale = Vector3.one * 1.08f;
+        }
+
+        public void OnPointerExit(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            hovering = false;
+            transform.localScale = Vector3.one;
+        }
+    }
+
+    void OnTicketSelected(int cost, PowerupMode powerupMode)
+    {
+        EconomyManager econ = EconomyManager.Instance;
+        int gold = econ != null ? econ.TotalGold : 0;
+
+        if (gold < cost)
+        {
+            ShowMessage("NOT ENOUGH GOLD!");
+            return;
+        }
+
+        if (!RankedManager.IsUnlocked())
         {
             ShowMessage("COMPLETE CAMPAIGN FIRST!");
             return;
         }
 
-        if (econ != null)
+        if (econ != null && cost > 0)
             econ.SpendGold(cost);
 
-        PowerupMode powerupMode = hasPowerups ? PowerupMode.WithPowerups : PowerupMode.WithoutPowerups;
-
-        if (isRanked)
-            GameConfig.PlayRanked(powerupMode);
-        else
+        if (goldText != null)
         {
-            int nextLevel = CampaignManager.Instance != null ? CampaignManager.Instance.GetNextUncompletedLevel() : 1;
-            if (nextLevel <= 0) nextLevel = 1;
-            GameConfig.PlayCampaign(nextLevel, powerupMode);
+            int newGold = econ != null ? econ.TotalGold : 0;
+            goldText.text = $"GOLD: {newGold}";
         }
+
+        GameConfig.PlayRanked(powerupMode);
     }
 
     void ShowMessage(string msg)
@@ -204,7 +424,7 @@ public class ModeSelectionUI : MonoBehaviour
 
         GameObject goldObj = new GameObject("GoldDisplay");
         goldObj.transform.SetParent(panel.transform, false);
-        Text goldText = goldObj.AddComponent<Text>();
+        goldText = goldObj.AddComponent<Text>();
         goldText.font = pressStart;
         goldText.text = $"GOLD: {gold}";
         goldText.fontSize = 12;
@@ -212,7 +432,7 @@ public class ModeSelectionUI : MonoBehaviour
         goldText.color = new Color(1f, 0.84f, 0f);
         RectTransform gRt = goldObj.GetComponent<RectTransform>();
         gRt.anchorMin = new Vector2(0f, 0f);
-        gRt.anchorMax = new Vector2(1f, 0.1f);
+        gRt.anchorMax = new Vector2(1f, 0.08f);
         gRt.sizeDelta = Vector2.zero;
     }
 
@@ -247,5 +467,16 @@ public class ModeSelectionUI : MonoBehaviour
             SoundManager.Instance.PlayButton();
             Destroy(panel);
         });
+    }
+
+    Sprite LoadFirstSprite(string path, string name)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        if (sprites == null || sprites.Length == 0) return null;
+        foreach (var s in sprites)
+        {
+            if (s.name == name) return s;
+        }
+        return sprites[0];
     }
 }

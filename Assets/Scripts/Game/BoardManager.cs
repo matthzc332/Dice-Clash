@@ -1220,18 +1220,32 @@ public class BoardManager : MonoBehaviour
         Sprite moveSprite = GetSprite(movingData.type, movingForward, "Move", movingData.team);
         if (moveSprite != null && sr != null) sr.sprite = moveSprite;
 
-        StartCoroutine(MoveTrail(movingVisual, fromPos, toPos, movingData.team));
-
         if (movingData.type == PieceType.Ninja)
             StartCoroutine(NinjaMoveCloud(fromPos));
         else if (movingData.type == PieceType.Paladin)
+        {
             StartCoroutine(PaladinAura(movingVisual, fromPos, toPos, false));
+            StartCoroutine(PaladinLightBeam(movingVisual));
+        }
 
         if (to.IsOccupied && to.pieceData.HasValue && to.pieceData.Value.team != movingData.team)
             StartCoroutine(SwordClashDelayed(0.45f));
 
-        float slideDur = GameConfig.isAutoPlay ? 0.08f : 0.9f;
-        yield return AnimateSlide(movingVisual, fromPos, toPos, slideDur);
+        float knightDist = Mathf.Abs(toRow - fromRow) + Mathf.Abs(toCol - fromCol);
+        bool useKnightJump = movingData.type == PieceType.Knight && knightDist > 1 && !GameConfig.isAutoPlay;
+
+        if (useKnightJump)
+        {
+            StartCoroutine(MoveTrail(movingVisual, fromPos, toPos, movingData.team));
+            yield return KnightJump(movingVisual, fromPos, toPos, knightDist, movingData.team, movingForward);
+        }
+        else
+        {
+            float slideDur = GameConfig.isAutoPlay ? 0.08f : 0.9f;
+            if (movingData.type == PieceType.Paladin && !GameConfig.isAutoPlay) slideDur = 1.3f;
+            StartCoroutine(MoveTrail(movingVisual, fromPos, toPos, movingData.team));
+            yield return AnimateSlide(movingVisual, fromPos, toPos, slideDur);
+        }
         if (movingVisual == null) yield break;
 
         if (to.IsOccupied && to.pieceData.HasValue)
@@ -1305,6 +1319,7 @@ public class BoardManager : MonoBehaviour
 
             if (outcome.result == CombatResult.AttackerWins)
             {
+                SoundManager.HitStop(0.06f);
                 StartCoroutine(AnimateHitImpact(defenderVisual));
                 Vector3 deathPos = defenderVisual != null ? defenderVisual.transform.position : toPos;
                 OnKillEffect(deathPos, defenderData.team, defenderData.type, false);
@@ -1323,6 +1338,7 @@ public class BoardManager : MonoBehaviour
             }
             else
             {
+                SoundManager.HitStop(0.06f);
                 SoundManager.Instance.PlayBlock();
                 StartCoroutine(AnimateHitImpact(movingVisual));
                 Vector3 deathPos2 = movingVisual != null ? movingVisual.transform.position : fromPos;
@@ -1404,6 +1420,168 @@ public class BoardManager : MonoBehaviour
             yield return null;
         }
         if (visual != null) visual.transform.position = toPos;
+    }
+
+    string SpritePrefix(string theme)
+    {
+        if (theme == "Beastfolk") return "beast";
+        return theme.ToLower();
+    }
+
+    Sprite LoadJumpSprite(string species, int index, bool front)
+    {
+        string sub = front ? "" : "Back/";
+        string prefix = SpritePrefix(species);
+        string name = $"{prefix}{(front ? "" : "Back")}Salto{index}";
+        string[] themes = new[] { species, speciesTheme, scenarioTheme, "Human" };
+        foreach (string t in themes)
+        {
+            Sprite sp = LoadLargestSprite($"Sprites/{t}/Pieces/{sub}{name}");
+            if (sp != null) return sp;
+        }
+        if (!front)
+        {
+            string frontName = $"{prefix}Salto{index}";
+            foreach (string t in themes)
+            {
+                Sprite sp = LoadLargestSprite($"Sprites/{t}/Pieces/{frontName}");
+                if (sp != null) return sp;
+            }
+        }
+        return null;
+    }
+
+    Sprite LoadLargestSprite(string path)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        if (sprites == null || sprites.Length == 0) return null;
+        if (sprites.Length == 1) return sprites[0];
+        Sprite best = sprites[0];
+        float bestArea = best.rect.width * best.rect.height;
+        for (int i = 1; i < sprites.Length; i++)
+        {
+            float area = sprites[i].rect.width * sprites[i].rect.height;
+            if (area > bestArea) { best = sprites[i]; bestArea = area; }
+        }
+        return best;
+    }
+
+    IEnumerator KnightJump(GameObject visual, Vector3 fromPos, Vector3 toPos, float distance, Team team, bool movingForward)
+    {
+        if (visual == null) yield break;
+        SpriteRenderer sr = visual.GetComponent<SpriteRenderer>();
+
+        string pieceSpecies = ThemeForTeam(team);
+        Sprite salto1 = LoadJumpSprite(pieceSpecies, 1, movingForward);
+        Sprite salto2 = LoadJumpSprite(pieceSpecies, 2, movingForward);
+
+        Vector3 idleScale = GetIdleScale(PieceType.Knight, pieceSpecies);
+        Vector3 baseScale;
+        Vector3 salto1Scale = idleScale * 0.55f;
+        Vector3 salto2Scale = idleScale * 0.55f;
+
+        if (!movingForward)
+        {
+            if (pieceSpecies == "Human")
+            {
+                salto1Scale = new Vector3(0.10f, 0.10f, 1f);
+                salto2Scale = new Vector3(0.10f, 0.10f, 1f);
+            }
+            else if (pieceSpecies == "Orc")
+            {
+                salto1Scale = new Vector3(0.33f, 0.30f, 1f);
+                salto2Scale = new Vector3(0.24f, 0.28f, 1f);
+            }
+            else if (pieceSpecies == "Beastfolk")
+            {
+                salto1Scale = new Vector3(0.38f, 0.38f, 1f);
+                salto2Scale = new Vector3(0.38f, 0.38f, 1f);
+            }
+        }
+
+        baseScale = movingForward ? idleScale * 0.55f : salto1Scale;
+        visual.transform.localScale = baseScale;
+        if (salto1 != null && sr != null) sr.sprite = salto1;
+
+        float arcHeight = 0.45f + distance * 0.22f;
+        float jumpDuration = 0.35f + distance * 0.1f;
+
+        float t = 0;
+        while (t < jumpDuration)
+        {
+            if (visual == null) yield break;
+            float progress = t / jumpDuration;
+            float arc = 4f * progress * (1f - progress);
+            float height = arc * arcHeight;
+            Vector2 pos = Vector2.Lerp(fromPos, toPos, progress);
+            pos.y += height;
+            visual.transform.position = pos;
+            float midScale = 1f + arc * 0.12f;
+            visual.transform.localScale = baseScale * midScale;
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        if (visual == null) yield break;
+        visual.transform.position = toPos;
+        baseScale = movingForward ? idleScale * 0.55f : salto2Scale;
+        visual.transform.localScale = baseScale;
+
+        if (salto2 != null && sr != null) sr.sprite = salto2;
+
+        yield return new WaitForSecondsRealtime(0.08f);
+
+        float squashTime = 0.1f;
+        float st = 0;
+        while (st < squashTime)
+        {
+            if (visual == null) yield break;
+            float p = st / squashTime;
+            visual.transform.localScale = new Vector3(baseScale.x * (1f + 0.08f * (1f - p)), baseScale.y * (1f - 0.1f * (1f - p)), baseScale.z);
+            st += Time.deltaTime;
+            yield return null;
+        }
+        if (visual != null) visual.transform.localScale = baseScale;
+
+        SoundManager.Instance.PlayHammer();
+        StartCoroutine(CombatShake(0.12f + distance * 0.04f));
+
+        if (visual != null)
+            visual.transform.localScale = idleScale;
+
+        int dustCount = 4 + Mathf.FloorToInt(distance);
+        for (int i = 0; i < dustCount; i++)
+        {
+            GameObject dust = new GameObject("KnightDust");
+            dust.transform.position = toPos;
+            SpriteRenderer dustSr = dust.AddComponent<SpriteRenderer>();
+            dustSr.sprite = particleSprite;
+            dustSr.color = new Color(0.7f, 0.6f, 0.4f, 0.7f);
+            dustSr.sortingOrder = -1;
+            float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float speed = Random.Range(1.5f, 3.5f);
+            Vector2 vel = new Vector2(Mathf.Cos(angle) * speed, Mathf.Sin(angle) * speed * 0.4f + 1f);
+            StartCoroutine(AnimateDustParticle(dust, dustSr, vel, 0.4f));
+        }
+    }
+
+    IEnumerator AnimateDustParticle(GameObject obj, SpriteRenderer sr, Vector2 vel, float life)
+    {
+        float t = 0;
+        while (t < life)
+        {
+            if (obj == null) yield break;
+            float dt = Time.deltaTime;
+            obj.transform.position += (Vector3)(vel * dt);
+            vel.y -= 4f * dt;
+            t += dt;
+            Color c = sr.color;
+            c.a = Mathf.Lerp(0.7f, 0f, t / life);
+            sr.color = c;
+            sr.transform.localScale = Vector3.one * (1f + t / life * 0.5f);
+            yield return null;
+        }
+        if (obj != null) Destroy(obj);
     }
 
     IEnumerator AnimateDestroy(GameObject visual, Team team)
@@ -1679,6 +1857,97 @@ public class BoardManager : MonoBehaviour
             }
             Destroy(aura);
         }
+    }
+
+    IEnumerator PaladinLightBeam(GameObject visual)
+    {
+        if (visual == null) yield break;
+        SoundManager.Instance.PlayHolyBeam();
+
+        GameObject beam = new GameObject("LightBeam");
+        SpriteRenderer beamSr = beam.AddComponent<SpriteRenderer>();
+        beamSr.sprite = CreateRectSprite(0.45f, 6f, new Color(1f, 0.95f, 0.7f, 0.45f));
+        beamSr.sortingOrder = 2;
+
+        float fadeIn = 0.15f;
+        float hold = 0.6f;
+        float fadeOut = 0.3f;
+        float t = 0;
+
+        while (t < fadeIn)
+        {
+            if (beam == null || visual == null) yield break;
+            beam.transform.position = visual.transform.position + Vector3.up * 3f;
+            float p = t / fadeIn;
+            beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * p);
+            beam.transform.localScale = Vector3.one * (0.5f + p * 0.5f);
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        t = 0;
+        while (t < hold)
+        {
+            if (beam == null || visual == null) yield break;
+            beam.transform.position = visual.transform.position + Vector3.up * 3f;
+            float flicker = 1f + Mathf.Sin(t * 30f) * 0.08f;
+            beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * flicker);
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        t = 0;
+        Vector3 lastPos = visual != null ? visual.transform.position : beam.transform.position - Vector3.up * 3f;
+        while (t < fadeOut)
+        {
+            if (beam == null) yield break;
+            if (visual != null) lastPos = visual.transform.position;
+            beam.transform.position = lastPos + Vector3.up * 3f;
+            float p = 1f - t / fadeOut;
+            beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * p);
+            beam.transform.localScale = Vector3.one * (0.5f + p * 0.5f);
+            t += Time.deltaTime;
+            yield return null;
+        }
+        Vector3 finalPos = visual != null ? visual.transform.position : lastPos;
+        if (beam != null) Destroy(beam);
+
+        for (int i = 0; i < 6; i++)
+        {
+            GameObject spark = new GameObject("HolySpark");
+            spark.transform.position = finalPos + new Vector3(Random.Range(-0.3f, 0.3f), Random.Range(-0.2f, 0.5f), 0);
+            SpriteRenderer sparkSr = spark.AddComponent<SpriteRenderer>();
+            sparkSr.sprite = particleSprite;
+            sparkSr.color = new Color(1f, 0.9f, 0.4f, 1f);
+            sparkSr.sortingOrder = 3;
+            Vector2 vel = new Vector2(Random.Range(-1f, 1f), Random.Range(1.5f, 3f));
+            float life = Random.Range(0.3f, 0.6f);
+            StartCoroutine(AnimateDustParticle(spark, sparkSr, vel, life));
+        }
+    }
+
+    Sprite CreateRectSprite(float width, float height, Color color)
+    {
+        int w = Mathf.Max(1, Mathf.RoundToInt(width * 100f));
+        int h = Mathf.Max(1, Mathf.RoundToInt(height * 100f));
+        Texture2D tex = new Texture2D(w, h);
+        Color[] pixels = new Color[w * h];
+        for (int y = 0; y < h; y++)
+        {
+            float edgeFade = 1f;
+            if (y < 8) edgeFade = (float)y / 8f;
+            else if (y > h - 8) edgeFade = (float)(h - y) / 8f;
+            for (int x = 0; x < w; x++)
+            {
+                float xf = 1f;
+                float dx = ((float)x / w - 0.5f) * 2f;
+                xf = 1f - dx * dx * 0.6f;
+                pixels[y * w + x] = new Color(color.r, color.g, color.b, color.a * edgeFade * xf);
+            }
+        }
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100);
     }
 
     IEnumerator SwordClashDelayed(float delay)

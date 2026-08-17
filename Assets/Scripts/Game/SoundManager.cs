@@ -228,6 +228,20 @@ public class SoundManager : MonoBehaviour
             uiSource.PlayOneShot(clip);
     }
 
+    public void PlayHolyBeam()
+    {
+        source.PlayOneShot(GenerateTone(880, 0.15f, 0.4f));
+        StartCoroutine(PlayHolyBeamDelayed(0.05f));
+    }
+
+    IEnumerator PlayHolyBeamDelayed(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        source.PlayOneShot(GenerateTone(1320, 0.25f, 0.35f));
+        yield return new WaitForSeconds(0.08f);
+        source.PlayOneShot(GenerateTone(1760, 0.2f, 0.25f));
+    }
+
     IEnumerator PlayTrumpetSequence()
     {
         AudioClip clip = Resources.Load<AudioClip>("Sounds/Efectos/Trumpet");
@@ -320,8 +334,12 @@ public class SoundManager : MonoBehaviour
         musicSource.Stop();
     }
 
+    private const float pitchRange = 0.1f;
+
     static AudioClip GenerateTone(float freq, float duration, float volume)
     {
+        float pitch = 1f + Random.Range(-pitchRange, pitchRange);
+        freq *= pitch;
         int sampleRate = 44100;
         int samples = Mathf.FloorToInt(sampleRate * duration);
         float[] data = new float[samples];
@@ -338,6 +356,9 @@ public class SoundManager : MonoBehaviour
 
     static AudioClip GenerateDescendingTone(float startFreq, float endFreq, float duration, float volume)
     {
+        float pitch = 1f + Random.Range(-pitchRange, pitchRange);
+        startFreq *= pitch;
+        endFreq *= pitch;
         int sampleRate = 44100;
         int samples = Mathf.FloorToInt(sampleRate * duration);
         float[] data = new float[samples];
@@ -358,10 +379,11 @@ public class SoundManager : MonoBehaviour
         int sampleRate = 44100;
         int samples = Mathf.FloorToInt(sampleRate * duration);
         float[] data = new float[samples];
+        float vol = volume * (1f + Random.Range(-0.15f, 0.15f));
         for (int i = 0; i < samples; i++)
         {
             float envelope = 1f - (float)i / samples;
-            data[i] = volume * Random.Range(-1f, 1f) * envelope;
+            data[i] = vol * Random.Range(-1f, 1f) * envelope;
         }
         AudioClip clip = AudioClip.Create("Noise", samples, 1, sampleRate, false);
         clip.SetData(data, 0);
@@ -379,11 +401,30 @@ public class SoundManager : MonoBehaviour
             float envelope = 1f - (float)i / samples;
             float sum = 0f;
             foreach (float f in freqs)
-                sum += Mathf.Sin(2f * Mathf.PI * f * t);
+            {
+                float pitch = 1f + Random.Range(-0.05f, 0.05f);
+                sum += Mathf.Sin(2f * Mathf.PI * f * pitch * t);
+            }
             data[i] = volume * (sum / freqs.Length) * envelope;
         }
         AudioClip clip = AudioClip.Create("Chord", samples, 1, sampleRate, false);
         clip.SetData(data, 0);
         return clip;
+    }
+
+    private static Coroutine hitStopCoroutine;
+    public static void HitStop(float duration = 0.05f)
+    {
+        if (hitStopCoroutine != null) return;
+        if (Instance != null)
+            hitStopCoroutine = Instance.StartCoroutine(Instance.HitStopRoutine(duration));
+    }
+
+    IEnumerator HitStopRoutine(float duration)
+    {
+        Time.timeScale = 0f;
+        yield return new WaitForSecondsRealtime(duration);
+        Time.timeScale = 1f;
+        hitStopCoroutine = null;
     }
 }

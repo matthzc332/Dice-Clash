@@ -603,6 +603,7 @@ public class BattleResultUI : MonoBehaviour
 
         // Collision
         SoundManager.Instance.PlayHit();
+        SoundManager.HitStop(0.05f);
         StartCoroutine(ShakePanel(0.3f, 15f));
         yield return StartCoroutine(FlashOverlay(0.15f));
 
@@ -626,6 +627,8 @@ public class BattleResultUI : MonoBehaviour
             st += Time.deltaTime;
             yield return null;
         }
+
+        yield return new WaitForSecondsRealtime(0.15f);
 
         // Final dice sprites (left = blue, right = red)
         bool blueAttacks = attacker.team == Team.Blue;

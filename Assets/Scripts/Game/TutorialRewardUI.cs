@@ -57,7 +57,11 @@ public class TutorialRewardUI : MonoBehaviour
         GameObject contentObj = new GameObject("Content");
         contentObj.transform.SetParent(canvasObj.transform, false);
         Image contentBg = contentObj.AddComponent<Image>();
-        contentBg.color = new Color(0.12f, 0.08f, 0.04f, 0.95f);
+        contentBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+        if (contentBg.sprite != null)
+            contentBg.color = Color.white;
+        else
+            contentBg.color = new Color(0.12f, 0.08f, 0.04f, 0.95f);
         RectTransform contentRt = contentObj.GetComponent<RectTransform>();
         contentRt.anchorMin = new Vector2(0.5f, 0.5f);
         contentRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -136,12 +140,22 @@ public class TutorialRewardUI : MonoBehaviour
         GameObject btnObj = new GameObject("ClaimBtn");
         btnObj.transform.SetParent(contentObj.transform, false);
         Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.55f, 0.4f, 0.15f, 0.95f);
+        Sprite okSprite = LoadFirstSprite("Sprites/Menu/botin ui/botonOK", "botonOK_0");
+        if (okSprite != null)
+        {
+            btnImg.sprite = okSprite;
+            btnImg.preserveAspect = true;
+            btnImg.color = Color.white;
+        }
+        else
+        {
+            btnImg.color = new Color(0.55f, 0.4f, 0.15f, 0.95f);
+        }
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0.5f);
         btnRt.anchorMax = new Vector2(0.5f, 0.5f);
         btnRt.pivot = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(260, 56);
+        btnRt.sizeDelta = new Vector2(200, 70);
         btnRt.anchoredPosition = new Vector2(0, -290);
 
         GameObject btnTextObj = new GameObject("Text");
@@ -237,6 +251,17 @@ public class TutorialRewardUI : MonoBehaviour
     {
         int idx = Mathf.Clamp(frame, 0, 4);
         return chestSprites != null && chestSprites[idx] != null ? chestSprites[idx] : null;
+    }
+
+    Sprite LoadFirstSprite(string path, string name)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        if (sprites == null || sprites.Length == 0) return null;
+        foreach (var s in sprites)
+        {
+            if (s.name == name) return s;
+        }
+        return sprites[0];
     }
 
     Sprite CreateCircleSprite()

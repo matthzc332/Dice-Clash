@@ -45,9 +45,9 @@ public class CampaignManager : MonoBehaviour
         return IsLevelCompleted(prevId);
     }
 
-    public void CompleteLevel(int levelId)
+    public string CompleteLevel(int levelId)
     {
-        if (IsLevelCompleted(levelId)) return;
+        if (IsLevelCompleted(levelId)) return null;
 
         PlayerPrefs.SetInt(KEY_PREFIX + levelId, 1);
         PlayerPrefs.Save();
@@ -62,9 +62,10 @@ public class CampaignManager : MonoBehaviour
         RibbonManager.GrantRibbon(levelId);
         ChestManager.TryGrantChestAfterLevel(levelId);
 
-        CheckCupCompletion(levelId);
+        string cupRace = CheckCupCompletion(levelId);
 
         Debug.Log($"CampaignManager: Level {levelId} completed");
+        return cupRace;
     }
 
     public int GetNextUncompletedLevel()
@@ -105,13 +106,13 @@ public class CampaignManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    void CheckCupCompletion(int levelId)
+    string CheckCupCompletion(int levelId)
     {
         CampaignLevel level = CampaignData.GetLevel(levelId);
-        if (level == null) return;
+        if (level == null) return null;
 
         CampaignCup cup = CampaignData.GetCup(level.cup);
-        if (cup == null) return;
+        if (cup == null) return null;
 
         bool allCompleted = true;
         foreach (int lid in cup.levels)
@@ -131,8 +132,10 @@ public class CampaignManager : MonoBehaviour
                 PlayerPrefs.SetInt(raceKey, 1);
                 PlayerPrefs.Save();
                 Debug.Log($"CampaignManager: Unlocked {cup.race} from cup {cup.name}");
+                return cup.race;
             }
         }
+        return null;
     }
 
     public bool IsCupCompleted(int cupId)

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class ExhibidorUI : MonoBehaviour
 {
@@ -18,8 +19,6 @@ public class ExhibidorUI : MonoBehaviour
     private Sprite[] chestSprites;
 
     private string currentBadgeFilter = "all";
-    private int badgesPerPage = 20;
-    private int currentPage = 0;
 
     public void Show(Canvas parentCanvas)
     {
@@ -164,7 +163,7 @@ public class ExhibidorUI : MonoBehaviour
 
         CreateBadgeFilters();
         CreateBadgeScroll();
-        CreatePaginationControls();
+        CreateBlueFlagCover();
     }
 
     void CreateBadgeFilters()
@@ -236,57 +235,29 @@ public class ExhibidorUI : MonoBehaviour
         PopulateBadgeGrid(crt);
     }
 
-    void CreatePaginationControls()
+    void CreateBlueFlagCover()
     {
-        int totalCount = 0;
-        if (currentBadgeFilter == "all")
-        {
-            var data = InsigniaData.Load();
-            totalCount = data?.insignias?.Length ?? 0;
-        }
-        else
-        {
-            totalCount = InsigniaData.GetBySource(currentBadgeFilter).Length;
-        }
-        int totalPages = Mathf.Max(1, Mathf.CeilToInt((float)totalCount / badgesPerPage));
-        currentPage = Mathf.Clamp(currentPage, 0, totalPages - 1);
+        Sprite flagSprite = Resources.Load<Sprite>("Sprites/Decor/BlueFlag");
+        if (flagSprite == null) return;
 
-        GameObject prevBtn = CreateButton("PREV", new Vector2(-70, 45), new Vector2(110, 40), contentRoot.transform);
-        prevBtn.GetComponent<Image>().color = currentPage > 0
-            ? new Color(0.35f, 0.25f, 0.15f, 0.9f)
-            : new Color(0.2f, 0.2f, 0.2f, 0.6f);
-        Text prevLabel = prevBtn.GetComponentInChildren<Text>();
-        if (prevLabel != null) prevLabel.fontSize = 9;
-        Button prevBtnComp = prevBtn.GetComponent<Button>();
-        prevBtnComp.interactable = currentPage > 0;
-        prevBtnComp.onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-            currentPage = Mathf.Max(0, currentPage - 1);
-            BuildBadgesView();
-        });
-
-        CreateText($"{currentPage + 1}/{totalPages}", new Vector2(0, 45), 10, new Color(0.8f, 0.7f, 0.4f));
-
-        GameObject nextBtn = CreateButton("NEXT", new Vector2(70, 45), new Vector2(110, 40), contentRoot.transform);
-        nextBtn.GetComponent<Image>().color = currentPage < totalPages - 1
-            ? new Color(0.35f, 0.25f, 0.15f, 0.9f)
-            : new Color(0.2f, 0.2f, 0.2f, 0.6f);
-        Text nextLabel = nextBtn.GetComponentInChildren<Text>();
-        if (nextLabel != null) nextLabel.fontSize = 9;
-        Button nextBtnComp = nextBtn.GetComponent<Button>();
-        nextBtnComp.interactable = currentPage < totalPages - 1;
-        nextBtnComp.onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-            currentPage = Mathf.Min(totalPages - 1, currentPage + 1);
-            BuildBadgesView();
-        });
+        GameObject flagObj = new GameObject("BlueFlagCover");
+        flagObj.transform.SetParent(contentRoot.transform, false);
+        Image flagImg = flagObj.AddComponent<Image>();
+        flagImg.sprite = flagSprite;
+        flagImg.color = Color.white;
+        flagImg.raycastTarget = false;
+        RectTransform flagRt = flagObj.GetComponent<RectTransform>();
+        flagRt.anchorMin = new Vector2(0.5f, 0f);
+        flagRt.anchorMax = new Vector2(0.5f, 0f);
+        flagRt.pivot = new Vector2(0.5f, 0f);
+        flagRt.sizeDelta = new Vector2(326, 269);
+        flagRt.anchoredPosition = new Vector2(-1, -204);
     }
 
     void PopulateBadgeGrid(RectTransform content)
     {
         Insignia[] allInsignias;
+        bool showTutorial = currentBadgeFilter == "all";
         if (currentBadgeFilter == "all")
         {
             var data = InsigniaData.Load();
@@ -297,14 +268,12 @@ public class ExhibidorUI : MonoBehaviour
             allInsignias = InsigniaData.GetBySource(currentBadgeFilter);
         }
 
-        if (allInsignias == null || allInsignias.Length == 0)
+        int totalItems = allInsignias.Length + (showTutorial ? 1 : 0);
+        if (totalItems == 0)
         {
             CreateText("No badges found.", new Vector2(0, 0), 12, Color.gray, content);
             return;
         }
-
-        int totalPages = Mathf.CeilToInt((float)allInsignias.Length / badgesPerPage);
-        currentPage = Mathf.Clamp(currentPage, 0, totalPages - 1);
 
         float cardW = 150f;
         float cardH = 90f;
@@ -315,28 +284,147 @@ public class ExhibidorUI : MonoBehaviour
         float totalWidth = cols * cardW + (cols - 1) * gapX;
         float startX = -totalWidth / 2f + cardW / 2f;
 
-        int startIndex = currentPage * badgesPerPage;
-        int endIndex = Mathf.Min(startIndex + badgesPerPage, allInsignias.Length);
-
-        for (int i = startIndex; i < endIndex; i++)
+        for (int idx = 0; idx < totalItems; idx++)
         {
-            Insignia ins = allInsignias[i];
-            bool collected = InsigniaManager.HasInsignia(ins.id);
-            int localIndex = i - startIndex;
+            int localIndex = idx;
             int row = localIndex / cols;
             int col = localIndex % cols;
 
             float x = startX + col * (cardW + gapX);
             float y = -row * (cardH + gapY) - 10f;
 
-            CreateBadgeCard(content, ins, collected, x, y, cardW, cardH);
+            if (showTutorial && idx == 0)
+            {
+                CreateTutorialBadgeCard(content, x, y, cardW, cardH);
+            }
+            else
+            {
+                int insIndex = showTutorial ? idx - 1 : idx;
+                Insignia ins = allInsignias[insIndex];
+                bool collected = InsigniaManager.HasInsignia(ins.id);
+                CreateBadgeCard(content, ins, collected, x, y, cardW, cardH);
+            }
         }
 
-        int cardsOnPage = endIndex - startIndex;
+        int cardsOnPage = totalItems;
         int totalRows = Mathf.CeilToInt((float)cardsOnPage / cols);
         float contentHeight = totalRows * (cardH + gapY) + 20f;
         if (contentHeight < 10) contentHeight = 10; // Avoid tiny content heights
         content.sizeDelta = new Vector2(0, contentHeight);
+    }
+
+    void CreateTutorialBadgeCard(Transform parent, float x, float y, float w, float h)
+    {
+        bool earned = TutorialCollectibles.HasEarned();
+
+        GameObject cardObj = new GameObject("Card_tutorial");
+        cardObj.transform.SetParent(parent, false);
+        Image cardBg = cardObj.AddComponent<Image>();
+        cardBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+        cardBg.color = earned ? Color.white : new Color(0.35f, 0.35f, 0.35f, 0.8f);
+        RectTransform cardRt = cardObj.GetComponent<RectTransform>();
+        cardRt.anchorMin = new Vector2(0.5f, 1f);
+        cardRt.anchorMax = new Vector2(0.5f, 1f);
+        cardRt.pivot = new Vector2(0.5f, 1f);
+        cardRt.sizeDelta = new Vector2(w, h);
+        cardRt.anchoredPosition = new Vector2(x, y);
+
+        Button cardBtn = cardObj.AddComponent<Button>();
+        cardBtn.targetGraphic = cardBg;
+        if (earned)
+        {
+            Insignia tutorialBadge = new Insignia
+            {
+                id = "tutorial",
+                name = "Training",
+                description = "Complete the Tutorial",
+                rarity = "common",
+                source = "tutorial"
+            };
+            cardBtn.onClick.AddListener(() => InsigniaDetailPopup.Show(canvas, pressStart, tutorialBadge, true));
+        }
+
+        if (earned)
+        {
+            GameObject iconObj = new GameObject("Icon");
+            iconObj.transform.SetParent(cardObj.transform, false);
+            Image iconImg = iconObj.AddComponent<Image>();
+            iconImg.sprite = TutorialCollectibles.GetInsigniaSprite();
+            iconImg.preserveAspect = true;
+            iconImg.raycastTarget = false;
+            RectTransform iconRt = iconObj.GetComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0.06f, 0.2f);
+            iconRt.anchorMax = new Vector2(0.3f, 0.85f);
+            iconRt.sizeDelta = Vector2.zero;
+        }
+
+        GameObject nameObj = new GameObject("Name");
+        nameObj.transform.SetParent(cardObj.transform, false);
+        Text nameText = nameObj.AddComponent<Text>();
+        nameText.font = pressStart;
+        nameText.fontSize = 7;
+        nameText.alignment = earned ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter;
+        nameText.text = earned ? "TUTORIAL" : "???";
+        nameText.color = earned ? new Color(0.9f, 0.8f, 0.4f) : new Color(0.3f, 0.3f, 0.3f);
+        RectTransform nRt = nameObj.GetComponent<RectTransform>();
+        if (earned)
+        {
+            nRt.anchorMin = new Vector2(0.34f, 0.5f);
+            nRt.anchorMax = new Vector2(0.95f, 0.9f);
+        }
+        else
+        {
+            nRt.anchorMin = new Vector2(0f, 0.3f);
+            nRt.anchorMax = new Vector2(1f, 0.7f);
+        }
+        nRt.sizeDelta = Vector2.zero;
+
+        if (earned)
+        {
+            GameObject descObj = new GameObject("Desc");
+            descObj.transform.SetParent(cardObj.transform, false);
+            Text descText = descObj.AddComponent<Text>();
+            descText.font = pressStart;
+            descText.fontSize = 5;
+            descText.alignment = TextAnchor.MiddleLeft;
+            descText.text = "Complete the Tutorial";
+            descText.color = new Color(0.6f, 0.55f, 0.45f);
+            RectTransform dRt = descObj.GetComponent<RectTransform>();
+            dRt.anchorMin = new Vector2(0.34f, 0.05f);
+            dRt.anchorMax = new Vector2(0.95f, 0.5f);
+            dRt.sizeDelta = Vector2.zero;
+        }
+
+        GameObject rarityObj = new GameObject("Rarity");
+        rarityObj.transform.SetParent(cardObj.transform, false);
+        Text rarityText = rarityObj.AddComponent<Text>();
+        rarityText.font = pressStart;
+        rarityText.fontSize = 5;
+        rarityText.alignment = TextAnchor.MiddleCenter;
+        rarityText.text = "TUTORIAL";
+        rarityText.color = earned
+            ? new Color(0.75f, 0.68f, 0.45f)
+            : new Color(0.25f, 0.25f, 0.25f);
+        RectTransform rRt = rarityObj.GetComponent<RectTransform>();
+        rRt.anchorMin = new Vector2(0f, 0f);
+        rRt.anchorMax = new Vector2(1f, 0.18f);
+        rRt.sizeDelta = Vector2.zero;
+
+        if (earned)
+        {
+            GameObject checkObj = new GameObject("Check");
+            checkObj.transform.SetParent(cardObj.transform, false);
+            Text checkText = checkObj.AddComponent<Text>();
+            checkText.font = pressStart;
+            checkText.fontSize = 9;
+            checkText.alignment = TextAnchor.MiddleCenter;
+            checkText.text = "\u2713";
+            checkText.color = new Color(0.3f, 0.9f, 0.3f);
+            RectTransform checkRt = checkObj.GetComponent<RectTransform>();
+            checkRt.anchorMin = new Vector2(0.82f, 0.72f);
+            checkRt.anchorMax = new Vector2(1f, 1f);
+            checkRt.sizeDelta = Vector2.zero;
+        }
     }
 
     void CreateBadgeCard(Transform parent, Insignia ins, bool collected, float x, float y, float w, float h)
@@ -346,10 +434,21 @@ public class ExhibidorUI : MonoBehaviour
         GameObject cardObj = new GameObject($"Card_{ins.id}");
         cardObj.transform.SetParent(parent, false);
         Image cardBg = cardObj.AddComponent<Image>();
+        cardBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
         if (collected)
-            cardBg.color = new Color(rarityColor.r * 0.25f, rarityColor.g * 0.25f, rarityColor.b * 0.25f, 0.85f);
+        {
+            if (ins.rarity.ToLower() == "common")
+                cardBg.color = new Color(0.65f, 0.65f, 0.65f, 0.9f);
+            else
+                cardBg.color = new Color(rarityColor.r, rarityColor.g, rarityColor.b, 0.85f);
+        }
         else
-            cardBg.color = new Color(0.1f, 0.08f, 0.06f, 0.7f);
+        {
+            cardBg.color = new Color(0.35f, 0.35f, 0.35f, 0.8f);
+        }
+        Outline cardOutline = cardObj.AddComponent<Outline>();
+        cardOutline.effectColor = collected ? rarityColor : new Color(0.3f, 0.3f, 0.3f);
+        cardOutline.effectDistance = new Vector2(2, -2);
         RectTransform cardRt = cardObj.GetComponent<RectTransform>();
         cardRt.anchorMin = new Vector2(0.5f, 1f);
         cardRt.anchorMax = new Vector2(0.5f, 1f);
@@ -383,6 +482,12 @@ public class ExhibidorUI : MonoBehaviour
         nameText.alignment = collected ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter;
         nameText.text = collected ? ins.name.ToUpper() : "???";
         nameText.color = collected ? rarityColor : new Color(0.3f, 0.3f, 0.3f);
+        if (collected)
+        {
+            Outline nameOutline = nameObj.AddComponent<Outline>();
+            nameOutline.effectColor = new Color(0, 0, 0, 0.8f);
+            nameOutline.effectDistance = new Vector2(1, -1);
+        }
         RectTransform nRt = nameObj.GetComponent<RectTransform>();
         if (collected)
         {
@@ -405,7 +510,10 @@ public class ExhibidorUI : MonoBehaviour
             descText.fontSize = 5;
             descText.alignment = TextAnchor.MiddleLeft;
             descText.text = ins.description;
-            descText.color = new Color(0.6f, 0.55f, 0.45f);
+            descText.color = new Color(0.75f, 0.7f, 0.6f);
+            Outline descOutline = descObj.AddComponent<Outline>();
+            descOutline.effectColor = new Color(0, 0, 0, 0.6f);
+            descOutline.effectDistance = new Vector2(1, -1);
             RectTransform dRt = descObj.GetComponent<RectTransform>();
             dRt.anchorMin = new Vector2(0.34f, 0.05f);
             dRt.anchorMax = new Vector2(0.95f, 0.5f);
@@ -420,8 +528,14 @@ public class ExhibidorUI : MonoBehaviour
         rarityText.alignment = TextAnchor.MiddleCenter;
         rarityText.text = ins.rarity.ToUpper();
         rarityText.color = collected
-            ? new Color(rarityColor.r * 0.7f, rarityColor.g * 0.7f, rarityColor.b * 0.7f)
+            ? new Color(Mathf.Min(rarityColor.r * 1.3f, 1f), Mathf.Min(rarityColor.g * 1.3f, 1f), Mathf.Min(rarityColor.b * 1.3f, 1f))
             : new Color(0.25f, 0.25f, 0.25f);
+        if (collected)
+        {
+            Outline rarityOutline = rarityObj.AddComponent<Outline>();
+            rarityOutline.effectColor = new Color(0, 0, 0, 0.8f);
+            rarityOutline.effectDistance = new Vector2(1, -1);
+        }
         RectTransform rRt = rarityObj.GetComponent<RectTransform>();
         rRt.anchorMin = new Vector2(0f, 0f);
         rRt.anchorMax = new Vector2(1f, 0.18f);
@@ -469,27 +583,14 @@ public class ExhibidorUI : MonoBehaviour
             slotRt.anchoredPosition = new Vector2(slotX[i], -10);
 
             Image slotBg = slotObj.AddComponent<Image>();
-            slotBg.color = new Color(0.15f, 0.1f, 0.06f, 0.9f);
-
-            CreateSlotBorder(slotObj.transform);
+            slotBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaRed", "panelCartaRed");
+            slotBg.preserveAspect = true;
+            slotBg.color = Color.white;
 
             if (!slot.occupied) CreateEmptySlot(slotObj.transform);
             else if (slot.ready) CreateReadySlot(slotObj.transform, i);
             else CreateLockedSlot(slotObj.transform, i);
         }
-    }
-
-    void CreateSlotBorder(Transform parent)
-    {
-        GameObject borderObj = new GameObject("Border");
-        borderObj.transform.SetParent(parent, false);
-        Image borderImg = borderObj.AddComponent<Image>();
-        borderImg.color = new Color(0.6f, 0.45f, 0.2f, 0.6f);
-        borderImg.raycastTarget = false;
-        RectTransform bRt = borderObj.GetComponent<RectTransform>();
-        bRt.anchorMin = Vector2.zero;
-        bRt.anchorMax = Vector2.one;
-        bRt.sizeDelta = new Vector2(6, 6);
     }
 
     void CreateEmptySlot(Transform parent)
@@ -533,18 +634,23 @@ public class ExhibidorUI : MonoBehaviour
         cRt.sizeDelta = new Vector2(170, 170);
         cRt.anchoredPosition = new Vector2(0, 60);
 
-        GameObject labelObj = new GameObject("ReadyLabel");
-        labelObj.transform.SetParent(parent, false);
-        Text labelText = labelObj.AddComponent<Text>();
-        labelText.font = pressStart;
-        labelText.fontSize = 16;
-        labelText.alignment = TextAnchor.MiddleCenter;
-        labelText.text = "READY!";
-        labelText.color = new Color(0.3f, 1f, 0.3f);
-        RectTransform lRt = labelObj.GetComponent<RectTransform>();
-        lRt.anchorMin = new Vector2(0f, 0.42f);
-        lRt.anchorMax = new Vector2(1f, 0.55f);
-        lRt.sizeDelta = Vector2.zero;
+        bool hovering = false;
+        EventTrigger trigger = parent.gameObject.AddComponent<EventTrigger>();
+        EventTrigger.Entry enter = new EventTrigger.Entry();
+        enter.eventID = EventTriggerType.PointerEnter;
+        enter.callback.AddListener((BaseEventData data) => { hovering = true; StartCoroutine(HoverGrow(chestObj.transform, 1.25f)); });
+        trigger.triggers.Add(enter);
+        EventTrigger.Entry exit = new EventTrigger.Entry();
+        exit.eventID = EventTriggerType.PointerExit;
+        exit.callback.AddListener((BaseEventData data) => { hovering = false; StartCoroutine(HoverGrow(chestObj.transform, 1f)); });
+        trigger.triggers.Add(exit);
+
+        StartCoroutine(HeartbeatPulse(chestObj.transform, () => hovering));
+
+        Button chestBtn = chestObj.AddComponent<Button>();
+        chestBtn.targetGraphic = chestImg;
+        int capturedIndex = index;
+        chestBtn.onClick.AddListener(() => OnOpenClicked(capturedIndex));
 
         CreateOpenButton(parent, index);
     }
@@ -599,12 +705,32 @@ public class ExhibidorUI : MonoBehaviour
 
     void CreateOpenButton(Transform parent, int index)
     {
-        GameObject btnObj = CreateButton("OPEN", new Vector2(0, -75), new Vector2(190, 45), parent);
-        btnObj.GetComponent<Image>().color = new Color(0.3f, 0.6f, 0.3f, 0.9f);
-        Text label = btnObj.GetComponentInChildren<Text>();
-        if (label != null) label.fontSize = 13;
+        GameObject btnObj = new GameObject("OpenBtn");
+        btnObj.transform.SetParent(parent, false);
+        Image btnImg = btnObj.AddComponent<Image>();
+        Sprite openSprite = LoadFirstSprite("Sprites/Menu/botin ui/botonOpen", "botonOpen_0");
+        if (openSprite != null)
+        {
+            btnImg.sprite = openSprite;
+            btnImg.preserveAspect = true;
+            btnImg.color = Color.white;
+        }
+        else
+        {
+            btnImg.color = new Color(0.3f, 0.6f, 0.3f, 0.9f);
+        }
+        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+        btnRt.anchorMin = new Vector2(0.5f, 0f);
+        btnRt.anchorMax = new Vector2(0.5f, 0f);
+        btnRt.pivot = new Vector2(0.5f, 0.5f);
+        btnRt.sizeDelta = new Vector2(170, 60);
+        btnRt.anchoredPosition = new Vector2(0, -75);
+
+        Button btn = btnObj.AddComponent<Button>();
+        btn.targetGraphic = btnImg;
         int capturedIndex = index;
-        btnObj.GetComponent<Button>().onClick.AddListener(() => OnOpenClicked(capturedIndex));
+        btn.onClick.AddListener(() => OnOpenClicked(capturedIndex));
+        StartCoroutine(HeartbeatPulse(btnObj.transform, () => false));
     }
 
     void OnOpenClicked(int slotIndex)
@@ -653,6 +779,38 @@ public class ExhibidorUI : MonoBehaviour
             t += Time.deltaTime;
             float a = 0.12f + Mathf.Sin(t * 3f) * 0.08f;
             aura.color = new Color(1f, 0.85f, 0.2f, Mathf.Max(0.05f, a));
+            yield return null;
+        }
+    }
+
+    IEnumerator HoverGrow(Transform t, float target)
+    {
+        if (t == null) yield break;
+        float from = t.localScale.x;
+        float dur = 0.12f;
+        float t0 = 0f;
+        while (t0 < dur)
+        {
+            if (t == null) yield break;
+            t0 += Time.deltaTime;
+            float s = Mathf.Lerp(from, target, t0 / dur);
+            t.localScale = new Vector3(s, s, 1);
+            yield return null;
+        }
+        if (t != null) t.localScale = new Vector3(target, target, 1);
+    }
+
+    IEnumerator HeartbeatPulse(Transform t, System.Func<bool> hovering)
+    {
+        float t0 = 0;
+        while (t != null)
+        {
+            t0 += Time.deltaTime;
+            if (!hovering())
+            {
+                float s = 1f + Mathf.Sin(t0 * 3.5f) * 0.04f;
+                t.localScale = new Vector3(s, s, 1);
+            }
             yield return null;
         }
     }
@@ -706,7 +864,16 @@ public class ExhibidorUI : MonoBehaviour
         GameObject contentObj = new GameObject("Content", typeof(RectTransform));
         contentObj.transform.SetParent(popupObj.transform, false);
         Image contentBg = contentObj.AddComponent<Image>();
-        contentBg.color = new Color(0.12f, 0.08f, 0.04f, 0.95f);
+        Sprite contentPanelSprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+        if (contentPanelSprite != null)
+        {
+            contentBg.sprite = contentPanelSprite;
+            contentBg.color = Color.white;
+        }
+        else
+        {
+            contentBg.color = new Color(0.12f, 0.08f, 0.04f, 0.95f);
+        }
         RectTransform contentRt = contentObj.GetComponent<RectTransform>();
         contentRt.anchorMin = new Vector2(0.5f, 0.5f);
         contentRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -734,10 +901,10 @@ public class ExhibidorUI : MonoBehaviour
         titleObj.transform.SetParent(contentObj.transform, false);
         Text titleText = titleObj.AddComponent<Text>();
         titleText.font = pressStart;
-        titleText.fontSize = 16;
+        titleText.fontSize = 20;
         titleText.alignment = TextAnchor.MiddleCenter;
         titleText.text = "CHEST OPENED!";
-        titleText.color = new Color(0.9f, 0.75f, 0.2f);
+        titleText.color = Color.black;
         RectTransform tRt = titleObj.GetComponent<RectTransform>();
         tRt.anchorMin = new Vector2(0f, 0.85f);
         tRt.anchorMax = new Vector2(1f, 0.95f);
@@ -751,10 +918,10 @@ public class ExhibidorUI : MonoBehaviour
             goldObj.transform.SetParent(contentObj.transform, false);
             Text goldText = goldObj.AddComponent<Text>();
             goldText.font = pressStart;
-            goldText.fontSize = 24;
+            goldText.fontSize = 22;
             goldText.alignment = TextAnchor.MiddleCenter;
             goldText.text = $"+{reward.gold} GOLD!";
-            goldText.color = new Color(1f, 0.84f, 0f);
+            goldText.color = Color.black;
             RectTransform gRt = goldObj.GetComponent<RectTransform>();
             gRt.anchorMin = new Vector2(0f, 0.72f);
             gRt.anchorMax = new Vector2(1f, 0.82f);
@@ -775,7 +942,11 @@ public class ExhibidorUI : MonoBehaviour
             GameObject itemObj = new GameObject($"Item_{i}", typeof(RectTransform));
             itemObj.transform.SetParent(contentObj.transform, false);
             Image itemBg = itemObj.AddComponent<Image>();
-            itemBg.color = new Color(rarityColor.r * 0.2f, rarityColor.g * 0.2f, rarityColor.b * 0.2f, 0.55f);
+            itemBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+            if (insignia.rarity.ToLower() == "common")
+                itemBg.color = new Color(0.45f, 0.45f, 0.45f, 0.9f);
+            else
+                itemBg.color = new Color(rarityColor.r, rarityColor.g, rarityColor.b, 0.85f);
             RectTransform itemRt = itemObj.GetComponent<RectTransform>();
             itemRt.anchorMin = new Vector2(0.5f, 0.5f);
             itemRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -842,11 +1013,29 @@ public class ExhibidorUI : MonoBehaviour
             yield return new WaitForSeconds(0.4f);
         }
 
-        GameObject closeBtnObj = CreateButton("OK", new Vector2(0, -235), new Vector2(150, 40), contentObj.transform);
-        closeBtnObj.GetComponent<Image>().color = new Color(0.4f, 0.2f, 0.1f, 0.85f);
-        Text closeLabel = closeBtnObj.GetComponentInChildren<Text>();
-        if (closeLabel != null) closeLabel.fontSize = 12;
-        closeBtnObj.GetComponent<Button>().onClick.AddListener(() =>
+        GameObject closeBtnObj = new GameObject("OK", typeof(RectTransform));
+        closeBtnObj.transform.SetParent(contentObj.transform, false);
+        Image closeBtnImg = closeBtnObj.AddComponent<Image>();
+        Sprite okSprite = LoadFirstSprite("Sprites/Menu/botin ui/botonOK", "botonOK_0");
+        if (okSprite != null)
+        {
+            closeBtnImg.sprite = okSprite;
+            closeBtnImg.preserveAspect = true;
+            closeBtnImg.color = Color.white;
+        }
+        else
+        {
+            closeBtnImg.color = new Color(0.4f, 0.2f, 0.1f, 0.85f);
+        }
+        RectTransform closeBtnRt = closeBtnObj.GetComponent<RectTransform>();
+        closeBtnRt.anchorMin = new Vector2(0.5f, 0.5f);
+        closeBtnRt.anchorMax = new Vector2(0.5f, 0.5f);
+        closeBtnRt.pivot = new Vector2(0.5f, 0.5f);
+        closeBtnRt.anchoredPosition = new Vector2(0, -235);
+        closeBtnRt.sizeDelta = new Vector2(160, 50);
+        Button closeBtn = closeBtnObj.AddComponent<Button>();
+        closeBtn.targetGraphic = closeBtnImg;
+        closeBtn.onClick.AddListener(() =>
         {
             SoundManager.Instance.PlayButton();
             Destroy(popupObj);
@@ -860,20 +1049,24 @@ public class ExhibidorUI : MonoBehaviour
         CampaignDataWrapper data = CampaignData.Load();
         if (data == null) return;
 
-        CreateText("CUPS", new Vector2(0, 190), 12, Color.white);
+        int totalLevels = data.levels != null ? data.levels.Length : 0;
+        int completedLevels = CampaignManager.Instance != null ? CampaignManager.Instance.GetCompletedCount() : 0;
+        string winsText = $"CAMPAIGN WINS: {completedLevels}/{totalLevels}";
+        Color winsColor = completedLevels >= totalLevels ? new Color(1f, 0.84f, 0f) : new Color(0.8f, 0.8f, 0.8f);
+        CreateText(winsText, new Vector2(0, 210), 10, winsColor);
+
+        CreateText("CUPS", new Vector2(0, 170), 12, Color.white);
         for (int i = 0; i < data.cups.Length; i++)
         {
             CampaignCup cup = data.cups[i];
             bool completed = CampaignManager.Instance != null && CampaignManager.Instance.IsCupCompleted(cup.id);
             float x = -330 + i * 220;
-            CreateCupVisual(cup.name, GetCupSprite(i), completed, new Vector2(x, 100), contentRoot.transform);
+            CreateCupVisual(cup.name, GetCupSprite(i), completed, new Vector2(x, 80), contentRoot.transform);
         }
 
-        CreateText("TUTORIAL", new Vector2(0, -10), 12, Color.white);
+        CreateText("TUTORIAL", new Vector2(0, -20), 12, Color.white);
         bool earned = TutorialCollectibles.HasEarned();
-        CreateTutorialItem(new Vector2(-150, -40), TutorialCollectibles.GetCupSprite(), new Color(1f, 0.84f, 0f), new Vector2(45, 45), "CUP", earned);
-        CreateTutorialItem(new Vector2(0, -40), TutorialCollectibles.GetRibbonSprite(), new Color(0.62f, 0.42f, 0.24f), new Vector2(75, 25), "RIBBON", earned);
-        CreateTutorialItem(new Vector2(150, -40), TutorialCollectibles.GetInsigniaSprite(), Color.white, new Vector2(40, 40), "BADGE", earned);
+        CreateTutorialItem(new Vector2(0, -50), TutorialCollectibles.GetCupSprite(), new Color(1f, 0.84f, 0f), new Vector2(45, 45), "CUP", earned);
     }
 
     void BuildRibbonsView()
@@ -933,12 +1126,16 @@ public class ExhibidorUI : MonoBehaviour
 
         float cardW = 110f;
         float cardH = 130f;
-        float gapX = 15f;
-        float gapY = 15f;
+        float gapX = 30f;
+        float gapY = 25f;
         int cols = 5;
 
         float totalWidth = cols * cardW + (cols - 1) * gapX;
         float startX = -totalWidth / 2f + cardW / 2f;
+
+        bool tutorialEarned = TutorialCollectibles.HasEarned();
+        CreateRibbonCard(content, null, tutorialEarned,
+            new Color(0.62f, 0.42f, 0.24f), startX, -10f, cardW, cardH, true);
 
         for (int i = 0; i < data.levels.Length; i++)
         {
@@ -946,29 +1143,33 @@ public class ExhibidorUI : MonoBehaviour
             bool has = RibbonManager.HasRibbon(level.id);
             Color color = has ? RibbonManager.GetRibbonColor(level.id) : new Color(0.3f, 0.3f, 0.3f, 0.5f);
 
-            int row = i / cols;
-            int col = i % cols;
+            int flatIndex = i + 1;
+            int row = flatIndex / cols;
+            int col = flatIndex % cols;
 
             float x = startX + col * (cardW + gapX);
             float y = -row * (cardH + gapY) - 10f;
 
-            CreateRibbonCard(content, level, has, color, x, y, cardW, cardH);
+            CreateRibbonCard(content, level, has, color, x, y, cardW, cardH, false);
         }
 
-        int totalRows = Mathf.CeilToInt((float)data.levels.Length / cols);
+        int totalRows = Mathf.CeilToInt((float)(data.levels.Length + 1) / cols);
         float contentHeight = totalRows * (cardH + gapY) + 20f;
         content.sizeDelta = new Vector2(0, contentHeight);
     }
 
-    void CreateRibbonCard(Transform parent, CampaignLevel level, bool has, Color color, float x, float y, float w, float h)
+    void CreateRibbonCard(Transform parent, CampaignLevel level, bool has, Color color, float x, float y, float w, float h, bool isTutorial)
     {
-        GameObject cardObj = new GameObject($"Ribbon_{level.id}");
+        GameObject cardObj = new GameObject($"Ribbon_{(isTutorial ? "tutorial" : level.id)}");
         cardObj.transform.SetParent(parent, false);
         Image cardBg = cardObj.AddComponent<Image>();
+        cardBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
         if (has)
-            cardBg.color = new Color(0.35f, 0.25f, 0.12f, 0.85f);
+            cardBg.color = isTutorial
+                ? new Color(0.62f, 0.42f, 0.24f, 0.85f)
+                : new Color(color.r, color.g, color.b, 0.85f);
         else
-            cardBg.color = new Color(0.1f, 0.08f, 0.06f, 0.7f);
+            cardBg.color = new Color(0.35f, 0.35f, 0.35f, 0.7f);
         RectTransform cardRt = cardObj.GetComponent<RectTransform>();
         cardRt.anchorMin = new Vector2(0.5f, 1f);
         cardRt.anchorMax = new Vector2(0.5f, 1f);
@@ -979,7 +1180,7 @@ public class ExhibidorUI : MonoBehaviour
         GameObject ribbonObj = new GameObject("Ribbon");
         ribbonObj.transform.SetParent(cardObj.transform, false);
         Image ribbonImg = ribbonObj.AddComponent<Image>();
-        ribbonImg.sprite = RibbonManager.GetRibbonSprite(level.id);
+        ribbonImg.sprite = isTutorial ? TutorialCollectibles.GetRibbonSprite() : RibbonManager.GetRibbonSprite(level.id);
         ribbonImg.preserveAspect = true;
         ribbonImg.raycastTarget = false;
         ribbonImg.color = has ? color : new Color(color.r, color.g, color.b, 0.3f);
@@ -996,7 +1197,7 @@ public class ExhibidorUI : MonoBehaviour
         nameText.font = pressStart;
         nameText.fontSize = 7;
         nameText.alignment = TextAnchor.MiddleCenter;
-        nameText.text = has ? $"L{level.id}" : "???";
+        nameText.text = has ? (isTutorial ? "TUT" : $"L{level.id}") : "???";
         nameText.color = has ? new Color(1f, 0.85f, 0.3f) : new Color(0.3f, 0.3f, 0.3f);
         RectTransform nRt = nameObj.GetComponent<RectTransform>();
         nRt.anchorMin = new Vector2(0f, 0f);
@@ -1024,7 +1225,34 @@ public class ExhibidorUI : MonoBehaviour
     void BuildSettingsView()
     {
         CreateViewTitle("SETTINGS");
-        CreateText("COMING SOON", new Vector2(0, 0), 16, new Color(0.6f, 0.55f, 0.45f));
+        CreateText("COMING SOON", new Vector2(0, 60), 16, new Color(0.6f, 0.55f, 0.45f));
+
+        GameObject testChestBtn = CreateButton("TEST CHEST", new Vector2(0, -20), new Vector2(200, 45), contentRoot.transform);
+        testChestBtn.GetComponent<Image>().color = new Color(0.3f, 0.2f, 0.45f, 0.9f);
+        Text tcLabel = testChestBtn.GetComponentInChildren<Text>();
+        if (tcLabel != null) { tcLabel.fontSize = 10; tcLabel.color = Color.white; }
+        testChestBtn.GetComponent<Button>().onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlaySelect();
+            if (ChestManager.AddReadyChestForTest())
+            {
+                ClearContent();
+                ShowView("chests");
+            }
+        });
+
+        GameObject testDailyBtn = CreateButton("TEST DAILY", new Vector2(0, -80), new Vector2(200, 45), contentRoot.transform);
+        testDailyBtn.GetComponent<Image>().color = new Color(0.3f, 0.45f, 0.2f, 0.9f);
+        Text tdLabel = testDailyBtn.GetComponentInChildren<Text>();
+        if (tdLabel != null) { tdLabel.fontSize = 10; tdLabel.color = Color.white; }
+        testDailyBtn.GetComponent<Button>().onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlaySelect();
+            PlayerPrefs.DeleteKey("LastDailyBonus");
+            PlayerPrefs.Save();
+            if (DailyBonusUI.Instance != null)
+                DailyBonusUI.Instance.ShowIfAvailable();
+        });
     }
 
     void CreateViewTitle(string title)

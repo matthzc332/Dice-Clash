@@ -227,8 +227,8 @@
     },
     {
       "id": "chest_08",
-      "name": "Dragon Scale",
-      "description": "A scale from an ancient dragon",
+      "name": "Dragonfire",
+      "description": "The scorching breath of an ancient dragon",
       "rarity": "epic",
       "source": "chest"
     },
@@ -241,22 +241,22 @@
     },
     {
       "id": "chest_10",
+      "name": "Arcane Sigil",
+      "description": "A symbol pulsing with violet energy",
+      "rarity": "epic",
+      "source": "chest"
+    },
+    {
+      "id": "chest_11",
       "name": "Phoenix Feather",
       "description": "A feather that never stops glowing",
       "rarity": "epic",
       "source": "chest"
     },
     {
-      "id": "chest_11",
+      "id": "chest_12",
       "name": "Soul Anchor",
       "description": "Keeps restless spirits at bay",
-      "rarity": "legendary",
-      "source": "chest"
-    },
-    {
-      "id": "chest_12",
-      "name": "Crown Shard",
-      "description": "A fragment of a broken crown",
       "rarity": "legendary",
       "source": "chest"
     },
@@ -264,6 +264,13 @@
       "id": "chest_13",
       "name": "Eternal Ember",
       "description": "A flame that never dies",
+      "rarity": "legendary",
+      "source": "chest"
+    },
+    {
+      "id": "chest_14",
+      "name": "Royal Crown",
+      "description": "The crown of a forgotten king",
       "rarity": "legendary",
       "source": "chest"
     }

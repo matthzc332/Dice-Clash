@@ -35,8 +35,17 @@ public static class InsigniaDetailPopup
         pRt.anchoredPosition = Vector2.zero;
 
         Image pBg = panel.AddComponent<Image>();
-        pBg.color = new Color(rarity.r * 0.15f, rarity.g * 0.15f, rarity.b * 0.15f, 0.95f);
         pBg.raycastTarget = false;
+        Sprite panelSprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+        if (panelSprite != null)
+        {
+            pBg.sprite = panelSprite;
+            pBg.color = Color.white;
+        }
+        else
+        {
+            pBg.color = new Color(rarity.r * 0.15f, rarity.g * 0.15f, rarity.b * 0.15f, 0.95f);
+        }
         Outline outline = panel.AddComponent<Outline>();
         outline.effectColor = rarity;
         outline.effectDistance = new Vector2(3, -3);
@@ -55,10 +64,19 @@ public static class InsigniaDetailPopup
             iRt.pivot = new Vector2(0.5f, 0.5f);
             iRt.sizeDelta = new Vector2(180, 180);
             iRt.anchoredPosition = new Vector2(0, 40);
+            Outline iconOutline = iconObj.AddComponent<Outline>();
+            iconOutline.effectColor = new Color(0, 0, 0, 0.5f);
+            iconOutline.effectDistance = new Vector2(3, -3);
         }
 
-        CreateText(panel.transform, font, collected ? ins.name.ToUpper() : "???", 16,
+        Text nameText = CreateText(panel.transform, font, collected ? ins.name.ToUpper() : "???", 16,
             collected ? rarity : new Color(0.5f, 0.5f, 0.5f), new Vector2(0, 185), new Vector2(330, 40));
+        if (collected)
+        {
+            Outline nameOutline = nameText.gameObject.AddComponent<Outline>();
+            nameOutline.effectColor = new Color(0, 0, 0, 0.8f);
+            nameOutline.effectDistance = new Vector2(1, -1);
+        }
 
         if (collected)
         {
@@ -71,6 +89,17 @@ public static class InsigniaDetailPopup
 
         PopIn pop = overlay.AddComponent<PopIn>();
         pop.target = pRt;
+    }
+
+    static Sprite LoadFirstSprite(string path, string name)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        if (sprites == null || sprites.Length == 0) return null;
+        foreach (var s in sprites)
+        {
+            if (s.name == name) return s;
+        }
+        return sprites[0];
     }
 
     static Text CreateText(Transform parent, Font font, string content, int fontSize, Color color, Vector2 pos, Vector2 size)

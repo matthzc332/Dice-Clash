@@ -88,8 +88,8 @@ public class GoblinDialogue : MonoBehaviour
         dialogueRt.anchorMin = new Vector2(0.5f, 0.5f);
         dialogueRt.anchorMax = new Vector2(0.5f, 0.5f);
         dialogueRt.pivot = new Vector2(0.5f, 0.5f);
-        dialogueRt.offsetMin = new Vector2(-79f, -84f);
-        dialogueRt.offsetMax = new Vector2(79f, 84f);
+        dialogueRt.offsetMin = new Vector2(-79f, -130f);
+        dialogueRt.offsetMax = new Vector2(79f, 30f);
 
         foreach (string line in lines)
         {
@@ -105,12 +105,29 @@ public class GoblinDialogue : MonoBehaviour
         GameObject btnObj = new GameObject("ContinueBtn");
         btnObj.transform.SetParent(panelObj.transform, false);
         Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.3f, 0.5f, 0.2f, 0.9f);
+        Sprite okSprite = null;
+        Sprite[] okSprites = Resources.LoadAll<Sprite>("Sprites/Menu/botin ui/botonOK");
+        if (okSprites != null && okSprites.Length > 0)
+            okSprite = System.Array.Find(okSprites, s => s.name == "botonOK_0") ?? okSprites[0];
+        if (okSprite != null)
+        {
+            btnImg.sprite = okSprite;
+            btnImg.preserveAspect = true;
+            btnImg.color = Color.white;
+        }
+        else
+        {
+            btnImg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue");
+            if (btnImg.sprite != null)
+                btnImg.color = new Color(0.3f, 0.5f, 0.2f, 0.9f);
+            else
+                btnImg.color = new Color(0.3f, 0.5f, 0.2f, 0.9f);
+        }
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0f);
         btnRt.anchorMax = new Vector2(0.5f, 0f);
         btnRt.pivot = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(180, 40);
+        btnRt.sizeDelta = new Vector2(160, 55);
         btnRt.anchoredPosition = new Vector2(0, 28);
 
         GameObject btnTextObj = new GameObject("Text");
@@ -141,5 +158,11 @@ public class GoblinDialogue : MonoBehaviour
         Destroy(overlayObj);
         Destroy(panelObj);
         Destroy(canvasObj);
+    }
+
+    Sprite LoadFirstSprite(string path)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        return sprites != null && sprites.Length > 0 ? sprites[0] : null;
     }
 }

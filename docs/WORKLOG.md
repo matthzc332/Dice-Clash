@@ -598,4 +598,35 @@ Registro de trabajo y backlog del proyecto.
 - **Vista Ribbons** — `BuildRibbonsView()` dedicada: grid scrolleable idéntico a badges (`offsetMin (20,90)`, `offsetMax (-20,-160)`, 5 columnas, cards 110×130, listón 50×75 + etiqueta `L{id}`/`???`, color por raza / gris 30% si no ganado). Sin contador ni paginación (22 listones caben en el scroll). Listones removidos de `BuildTrophiesView` (queda copas + tutorial en y=-40).
 - **Back unificado** — `ChestUI`, `InsigniaUI`, `CampaignUI` y `ModeSelectionUI` usan ahora `Sprites/Menu/botin ui/panel total back` (`panel total back_0`, fallback color) en vez de `Retry_0`/color plano. Tamaño 150×70, sin texto superpuesto (el sprite trae la etiqueta, como los nav buttons). `ExhibidorUI` ya lo usaba.
 
+## Feature: Game Feel, Jump Animation & Reward Polish
+
+> 2026-08-17 — Hit-stop, pitch variation, dramatic silence, knight jump, paladin beam, campaign rewards, badges cleanup.
+
+| #   | ID                 | Tarea                                                     | Spec | Estado |
+| --- | ------------------ | --------------------------------------------------------- | ---- | ------ |
+| 57  | 057-game-feel-polish | Game feel (hit-stop, pitch, silence) + knight jump + rewards | —  | done   |
+
+### Detalle 057
+
+- **Hit-stop** — `SoundManager.HitStop(0.05s)` at dice clash, `HitStop(0.06s)` at attacker/defender kills. Freezes `Time.timeScale` via `WaitForSecondsRealtime`. Prevents stacking with `isHitStopRunning` flag.
+- **Pitch random ±10%** — All procedural SFX in `GenerateTone`, `GenerateDescendingTone` randomize frequency. Chord voices ±5% per voice. Noise ±15% volume.
+- **Dramatic silence** — 0.15s `WaitForSecondsRealtime` pause after dice spin before result reveal.
+- **Knight jump animation** — `KnightJump` coroutine with parabolic arc, Salto1 in air + Salto2 landing, squash, `PlayHammer()` + `CombatShake`, dust particles. Triggered when Knight moves >1 cell. Scale 0.55x idle. Back sprite overrides: Human 0.10, Orc 0.33/0.24, Beastfolk 0.38.
+- **Beastfolk back jump fix** — `SpritePrefix("Beastfolk")` maps to `"beast"`. `LoadLargestSprite()` picks largest sub-sprite from spriteMode 2 textures.
+- **Paladin light beam** — `PaladinLightBeam(visual)` procedural rect beam follows visual, fadeIn→hold with flicker→fadeOut, 6 holy sparks, `PlayHolyBeam()` sound. Triggered on every Paladin movement. Slide 1.3s.
+- **CampaignRewardUI** — Full-screen popup (sortingOrder 210) with sequential reveal of gold/insignia/ribbon/chest with white flash, scale pop, panel shake, sounds, coin bounce + particles, sparkle particles. OK button with `botonOK_0`.
+- **Cup completion animation** — `CampaignManager.CompleteLevel()` returns cup race on first-time completion. `CampaignRewardUI` shows cup sprite with bounce animation (scale 0.3→1.6→1.0) + `PlayVictory()` at end of reward sequence.
+- **Scoreboard skip button** — "SKIP >>" at bottom-right, instantly completes counting with no hammer sounds, 0.2s delay before win/defeat reveal.
+- **Scoreboard faster counting** — Normal delays 0.4s→0.25s, inter-team 0.3s→0.2s, post-count 0.5s→0.4s.
+- **Post-tutorial flow** — ScoreboardUI → GameOverUI → TutorialRewardUI → GoblinDialogue → ModeSelectionUI (campaign tickets) → FlashAndStartCampaign → level 3 "The Garrison" (scans `cups[1]`).
+- **ExhibidorUI badges cleanup** — Removed PREV/NEXT pagination, all badges in one scrollable list. BlueFlag sprite covers broken 1/2 + arrow at bottom (X=-1, Y=-204, 326×269).
+- **EnemyBanner** — Loads `enemyBanner` sprite from `Sprites/Decor` (spriteMode 2), white text with black outline, `preserveAspect`.
+- **Power-up glow** — Uses `cambio` sprite from `Sprites/PowerUps/Icon/cambio` via `GetGlowSprite()`.
+- **CampaignUI lighter panels** — Completed `(0.25, 0.55, 0.25)`, unlocked `(0.3, 0.38, 0.55)`, locked `(0.35, 0.35, 0.38)`. Insignias shifted left to `(0.74-0.90)`.
+- **ModeSelectionUI campaign mode** — `ShowCampaign(Canvas)`, campaign tickets (FREE/PREMIUM 20g), HeartbeatPulse on premium, HoverGrow, flash+sound on selection.
+- **Common reward panels** — Both ChestUI and ExhibidorUI use darker `(0.45, 0.45, 0.45, 0.9)` for common badges so they don't blend with panelCartaBlue behind.
+- **Test buttons moved** — Removed from ChestUI, added to ExhibidorUI settings (TEST CHEST + TEST DAILY).
+- **TutorialRewardUI** — panelCartaBlue background, `botonOK_0` claim button. **GoblinDialogue** — lower text, `botonOK_0` continue button.
+- **MAGIC powerup icon** — Procedural star fallback via `CreateProceduralMagicIcon()` (no PNG exists).
+
 

@@ -22,6 +22,12 @@ public class EnemyBanner : MonoBehaviour
         Font pressStart = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
         if (pressStart == null) pressStart = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
+        Sprite bannerSprite = null;
+        Sprite[] allDecor = Resources.LoadAll<Sprite>("Sprites/Decor");
+        if (allDecor != null)
+            foreach (var s in allDecor)
+                if (s.name.StartsWith("enemyBanner")) { bannerSprite = s; break; }
+
         Canvas canvas = FindFirstObjectByType<Canvas>();
         if (canvas == null) yield break;
 
@@ -31,15 +37,21 @@ public class EnemyBanner : MonoBehaviour
         RectTransform bannerRt = bannerObj.AddComponent<RectTransform>();
         bannerRt.anchorMin = new Vector2(0.5f, 0.5f);
         bannerRt.anchorMax = new Vector2(0.5f, 0.5f);
-        bannerRt.sizeDelta = new Vector2(600, 80);
+        bannerRt.sizeDelta = new Vector2(600, 120);
 
         Image bg = bannerObj.AddComponent<Image>();
-        bg.color = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.9f);
+        if (bannerSprite != null)
+        {
+            bg.sprite = bannerSprite;
+            bg.color = Color.white;
+            bg.type = Image.Type.Simple;
+            bg.preserveAspect = true;
+        }
+        else
+        {
+            bg.color = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.9f);
+        }
         bg.raycastTarget = false;
-
-        Outline border = bannerObj.AddComponent<Outline>();
-        border.effectColor = new Color(color.r, color.g, color.b, 0.8f);
-        border.effectDistance = new Vector2(4, -4);
 
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(bannerObj.transform, false);
@@ -48,7 +60,7 @@ public class EnemyBanner : MonoBehaviour
         text.text = name.ToUpper();
         text.fontSize = 14;
         text.alignment = TextAnchor.MiddleCenter;
-        text.color = color;
+        text.color = Color.white;
         RectTransform textRt = textObj.GetComponent<RectTransform>();
         textRt.anchorMin = Vector2.zero;
         textRt.anchorMax = Vector2.one;

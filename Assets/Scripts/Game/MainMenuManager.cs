@@ -180,6 +180,7 @@ public class MainMenuManager : MonoBehaviour
         }
 
         BuildTrophiesButton(font);
+        BuildRankedButton(font);
 
         if (CampaignManager.Instance == null)
         {
@@ -196,6 +197,7 @@ public class MainMenuManager : MonoBehaviour
         CreateChestButton(canvasTransform, font);
         CreateInsigniaButton(canvasTransform, font);
         CreateCollectAllButton(canvasTransform, font);
+        CreateRankingButton(canvasTransform, font);
         CreateResetButton(canvasTransform, font);
 
         Sprite[] playSprites = Resources.LoadAll<Sprite>("Sprites/Menu/botonPlay");
@@ -308,26 +310,26 @@ public class MainMenuManager : MonoBehaviour
         GameObject btnObj = new GameObject("TrophiesButton", typeof(RectTransform));
         btnObj.transform.SetParent(canvasTransform, false);
         Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.5f, 0.4f, 0.15f, 0.9f);
+        Sprite[] trophySprites = Resources.LoadAll<Sprite>("Sprites/Menu/botin ui/botonTrofeo");
+        Sprite trophySprite = trophySprites != null
+            ? System.Array.Find(trophySprites, s => s.name == "botonTrofeo_0")
+            : null;
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0.5f);
         btnRt.anchorMax = new Vector2(0.5f, 0.5f);
         btnRt.pivot = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(200, 50);
+        btnRt.sizeDelta = new Vector2(260, 112);
         btnRt.anchoredPosition = new Vector2(814, 187);
-
-        GameObject textObj = new GameObject("Text", typeof(RectTransform));
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text label = textObj.AddComponent<Text>();
-        label.font = font;
-        label.fontSize = 12;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.text = "TROPHIES";
-        label.color = new Color(1f, 0.9f, 0.6f);
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
+        if (trophySprite != null)
+        {
+            btnImg.sprite = trophySprite;
+            btnImg.preserveAspect = true;
+            btnImg.color = Color.white;
+        }
+        else
+        {
+            btnImg.color = new Color(0.5f, 0.4f, 0.15f, 0.9f);
+        }
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImg;
@@ -363,6 +365,96 @@ public class MainMenuManager : MonoBehaviour
         progRt.anchorMin = new Vector2(0f, -0.8f);
         progRt.anchorMax = new Vector2(1f, -0.2f);
         progRt.sizeDelta = Vector2.zero;
+    }
+
+    void BuildRankedButton(Font font)
+    {
+        bool unlocked = PlayerPrefs.GetInt("RankedUnlocked", 0) == 1;
+
+        GameObject btnObj = new GameObject("RankedButton", typeof(RectTransform));
+        btnObj.transform.SetParent(canvasTransform, false);
+        Image btnImg = btnObj.AddComponent<Image>();
+        btnImg.color = unlocked
+            ? new Color(0.2f, 0.5f, 0.8f, 0.9f)
+            : new Color(0.35f, 0.35f, 0.35f, 0.7f);
+        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+        btnRt.anchorMin = new Vector2(0.5f, 0.5f);
+        btnRt.anchorMax = new Vector2(0.5f, 0.5f);
+        btnRt.pivot = new Vector2(0.5f, 0.5f);
+        btnRt.sizeDelta = new Vector2(220, 55);
+        btnRt.anchoredPosition = new Vector2(814, 50);
+
+        GameObject textObj = new GameObject("Text", typeof(RectTransform));
+        textObj.transform.SetParent(btnObj.transform, false);
+        Text label = textObj.AddComponent<Text>();
+        label.font = font;
+        label.fontSize = 13;
+        label.alignment = TextAnchor.MiddleCenter;
+        label.text = "RANKING";
+        label.color = unlocked ? new Color(0.8f, 0.95f, 1f) : new Color(0.55f, 0.55f, 0.55f);
+        RectTransform textRt = textObj.GetComponent<RectTransform>();
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.sizeDelta = Vector2.zero;
+
+        Button btn = btnObj.AddComponent<Button>();
+        btn.targetGraphic = btnImg;
+
+        if (!unlocked)
+        {
+            GameObject lockPanel = new GameObject("LockPanel", typeof(RectTransform));
+            lockPanel.transform.SetParent(btnObj.transform, false);
+            Image lockBg = lockPanel.AddComponent<Image>();
+            lockBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+            if (lockBg.sprite != null)
+                lockBg.color = new Color(0.2f, 0.2f, 0.2f, 0.65f);
+            else
+                lockBg.color = new Color(0.15f, 0.15f, 0.15f, 0.65f);
+            RectTransform lockRt = lockPanel.GetComponent<RectTransform>();
+            lockRt.anchorMin = Vector2.zero;
+            lockRt.anchorMax = Vector2.one;
+            lockRt.sizeDelta = Vector2.zero;
+
+            GameObject lockIcon = new GameObject("LockIcon", typeof(RectTransform));
+            lockIcon.transform.SetParent(lockPanel.transform, false);
+            Image lockImg = lockIcon.AddComponent<Image>();
+            int lockSize = 36;
+            Texture2D lockTex = new Texture2D(lockSize, lockSize);
+            Color lockColor = new Color(0.8f, 0.75f, 0.5f);
+            Color bgColor = Color.clear;
+            int[,] lockData = {
+                {0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+            };
+            for (int y = 0; y < lockSize; y++)
+                for (int x = 0; x < lockSize; x++)
+                    lockTex.SetPixel(x, y, bgColor);
+            for (int y = 0; y < 8; y++)
+                for (int x = 0; x < 6; x++)
+                    if (lockData[y, x] == 1 && x < lockSize && y < lockSize)
+                        lockTex.SetPixel(x + 15, lockSize - 1 - y - 14, lockColor);
+            lockTex.Apply();
+            lockImg.sprite = Sprite.Create(lockTex, new Rect(0, 0, lockSize, lockSize), new Vector2(0.5f, 0.5f));
+            RectTransform lockIconRt = lockIcon.GetComponent<RectTransform>();
+            lockIconRt.anchorMin = new Vector2(0.5f, 0.5f);
+            lockIconRt.anchorMax = new Vector2(0.5f, 0.5f);
+            lockIconRt.sizeDelta = new Vector2(36, 36);
+
+            btn.onClick.AddListener(() => SoundManager.Instance.PlaySelect());
+        }
+        else
+        {
+            btn.onClick.AddListener(() =>
+            {
+                SoundManager.Instance.PlaySelect();
+            });
+        }
     }
 
     void DestroyOldCarousel()
@@ -448,18 +540,36 @@ public class MainMenuManager : MonoBehaviour
         return null;
     }
 
+    Sprite LoadFirstSprite(string path, string name)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        if (sprites == null || sprites.Length == 0) return null;
+        foreach (var s in sprites)
+        {
+            if (s.name == name) return s;
+        }
+        return sprites[0];
+    }
+
     void OnPlayClicked()
     {
         Debug.LogWarning($"[Play] selected={selected} species={species[selected]} unlocked={IsUnlocked(selected)}");
         if (!IsUnlocked(selected)) return;
         SoundManager.Instance.PlaySelect();
 
-        if (modeSelectionUI == null)
+        if (!TutorialProgress.HasPlayed())
+        {
+            GameConfig.PlayTutorial();
+            return;
+        }
+
+        if (campaignUI == null)
         {
             if (menuCanvas != null)
             {
-                modeSelectionUI = gameObject.AddComponent<ModeSelectionUI>();
-                modeSelectionUI.Show(menuCanvas);
+                campaignUI = gameObject.AddComponent<CampaignUI>();
+                campaignUI.OnClose = () => { campaignUI = null; };
+                campaignUI.Show(menuCanvas);
             }
         }
     }
@@ -663,6 +773,40 @@ public class MainMenuManager : MonoBehaviour
                 GrantAllCollections();
                 label.text = "RESET ALL";
             }
+        });
+    }
+
+    void CreateRankingButton(Transform parent, Font f)
+    {
+        GameObject btnObj = new GameObject("RankingButton", typeof(RectTransform));
+        btnObj.transform.SetParent(parent, false);
+        Image btnImg = btnObj.AddComponent<Image>();
+        btnImg.color = new Color(0.15f, 0.35f, 0.65f, 0.9f);
+        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+        btnRt.anchorMin = new Vector2(0.5f, 0.5f);
+        btnRt.anchorMax = new Vector2(0.5f, 0.5f);
+        btnRt.pivot = new Vector2(0.5f, 0.5f);
+        btnRt.sizeDelta = new Vector2(170, 42);
+        btnRt.anchoredPosition = new Vector2(640, -510);
+
+        GameObject textObj = new GameObject("Text", typeof(RectTransform));
+        textObj.transform.SetParent(btnObj.transform, false);
+        Text label = textObj.AddComponent<Text>();
+        label.font = f;
+        label.fontSize = 10;
+        label.alignment = TextAnchor.MiddleCenter;
+        label.text = "RANKING";
+        label.color = new Color(0.7f, 0.9f, 1f);
+        RectTransform textRt = textObj.GetComponent<RectTransform>();
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.sizeDelta = Vector2.zero;
+
+        Button btn = btnObj.AddComponent<Button>();
+        btn.targetGraphic = btnImg;
+        btn.onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlaySelect();
         });
     }
 

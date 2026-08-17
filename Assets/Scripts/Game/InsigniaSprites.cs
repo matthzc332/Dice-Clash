@@ -4,6 +4,20 @@ public static class InsigniaSprites
 {
     public static Sprite Get(Insignia ins)
     {
+        if (ins == null) return null;
+
+        if (!string.IsNullOrEmpty(ins.id))
+        {
+            Sprite[] relleno = Resources.LoadAll<Sprite>("Sprites/Relleno_Insignias");
+            if (relleno != null)
+            {
+                foreach (var s in relleno)
+                {
+                    if (s.name == ins.id || s.name.StartsWith(ins.id + "_")) return s;
+                }
+            }
+        }
+
         int idx = -1;
         if (ins.id.StartsWith("camp_"))
         {

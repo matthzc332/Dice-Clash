@@ -32,6 +32,7 @@ public class PowerUpManager : MonoBehaviour
     private Coroutine autoSpawnCoroutine;
     private Sprite[] allIcons;
     private Sprite circleSprite;
+    private Sprite glowSprite;
     private Sprite magoIdleSprite;
     private Sprite magoAttackSprite;
     private Sprite magoBackSprite;
@@ -61,6 +62,15 @@ public class PowerUpManager : MonoBehaviour
         magoIdleSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/magoIdle");
         magoAttackSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/magoAttack");
         magoBackSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/magoback");
+
+        glowSprite = Resources.Load<Sprite>("Sprites/PowerUps/Icon/cambio");
+        if (glowSprite == null)
+        {
+            Sprite[] loaded = Resources.LoadAll<Sprite>("Sprites/PowerUps/Icon");
+            if (loaded != null)
+                foreach (var s in loaded)
+                    if (s.name == "cambio") { glowSprite = s; break; }
+        }
     }
 
     void Update()
@@ -69,6 +79,12 @@ public class PowerUpManager : MonoBehaviour
         if (GameConfig.isTutorial && !board.isShadowPhase) return;
         CheckCollectionForTeam(Team.Blue);
         CheckCollectionForTeam(Team.Red);
+    }
+
+    Sprite GetGlowSprite()
+    {
+        if (glowSprite != null) return glowSprite;
+        return GetCircleSprite();
     }
 
     Sprite GetCircleSprite()
@@ -172,7 +188,7 @@ public class PowerUpManager : MonoBehaviour
         pu.glow = new GameObject("Glow");
         pu.glow.transform.SetParent(pu.container.transform, false);
         SpriteRenderer gsr = pu.glow.AddComponent<SpriteRenderer>();
-        gsr.sprite = GetCircleSprite();
+        gsr.sprite = GetGlowSprite();
         gsr.color = new Color(color.r, color.g, color.b, 0.25f);
         gsr.sortingOrder = 13;
         pu.glow.transform.localScale = Vector3.one * 0.9f;
@@ -253,7 +269,7 @@ public class PowerUpManager : MonoBehaviour
             pu.glow = new GameObject("Glow");
             pu.glow.transform.SetParent(pu.container.transform, false);
             SpriteRenderer gsr = pu.glow.AddComponent<SpriteRenderer>();
-            gsr.sprite = GetCircleSprite();
+            gsr.sprite = GetGlowSprite();
             gsr.color = new Color(color.r, color.g, color.b, 0.25f);
             gsr.sortingOrder = 13;
             pu.glow.transform.localScale = Vector3.one * 0.9f;

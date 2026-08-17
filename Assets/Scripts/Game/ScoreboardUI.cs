@@ -26,8 +26,12 @@ public class ScoreboardUI : MonoBehaviour
     private Sprite circleSprite;
     private List<GameObject> pieceIcons = new();
     private bool isShowing;
+    private bool skipRequested;
     private Coroutine scoreRoutine;
     private Team? pendingWinner;
+    private Team delayedWinner;
+    private bool showCampaignRewards;
+    private string cupCompletedRace;
 
     void Awake()
     {
@@ -108,6 +112,40 @@ public class ScoreboardUI : MonoBehaviour
 
         redTotalText = MakeLabel(finConteoRed.transform, "RedTotal", "", 26, new Color(1f, 1f, 1f),
             TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -45), new Vector2(300, 40));
+
+        GameObject skipBtn = new GameObject("SkipBtn");
+        skipBtn.transform.SetParent(canvasObj.transform);
+        Image skipBg = skipBtn.AddComponent<Image>();
+        skipBg.color = new Color(0.2f, 0.2f, 0.2f, 0.7f);
+        RectTransform skipRt = skipBtn.GetComponent<RectTransform>();
+        skipRt.anchorMin = new Vector2(1f, 0f);
+        skipRt.anchorMax = new Vector2(1f, 0f);
+        skipRt.pivot = new Vector2(1f, 0f);
+        skipRt.sizeDelta = new Vector2(160, 45);
+        skipRt.anchoredPosition = new Vector2(-20, 20);
+
+        Font skipFont = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
+        if (skipFont == null) skipFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        GameObject skipTextObj = new GameObject("SkipText");
+        skipTextObj.transform.SetParent(skipBtn.transform);
+        Text skipLabel = skipTextObj.AddComponent<Text>();
+        skipLabel.font = skipFont;
+        skipLabel.text = "SKIP >>";
+        skipLabel.fontSize = 12;
+        skipLabel.alignment = TextAnchor.MiddleCenter;
+        skipLabel.color = Color.white;
+        RectTransform stRt = skipTextObj.GetComponent<RectTransform>();
+        stRt.anchorMin = Vector2.zero;
+        stRt.anchorMax = Vector2.one;
+        stRt.sizeDelta = Vector2.zero;
+
+        Button skipButton = skipBtn.AddComponent<Button>();
+        skipButton.targetGraphic = skipBg;
+        skipButton.onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlaySelect();
+            skipRequested = true;
+        });
     }
 
     GameObject MakeImagePanel(Transform parent, string name, string spritePath, Vector2 pos, Vector2 size)
@@ -151,6 +189,7 @@ public class ScoreboardUI : MonoBehaviour
         if (isShowing) return;
         isShowing = true;
         pendingWinner = forcedWinner;
+        skipRequested = false;
         gameObject.SetActive(true);
         ClearIcons();
 
@@ -237,33 +276,45 @@ public class ScoreboardUI : MonoBehaviour
         redImg.color = Color.white;
         pieceIcons.Add(redIcon);
 
-        yield return new WaitForSeconds(GameConfig.isAutoPlay ? 0.05f : 0.5f);
+        yield return new WaitForSeconds(skipRequested ? 0.01f : 0.4f);
 
         for (int i = 0; i < bluePieces.Count; i++)
         {
-            if (!GameConfig.isAutoPlay) SoundManager.Instance.PlayHammer();
+            if (skipRequested)
+            {
+                blueRunning = blueTotal;
+                blueTotalText.text = $"{blueTotal} pts";
+                break;
+            }
+            SoundManager.Instance.PlayHammer();
             StartCoroutine(HitEffect(finConteoBlue.transform));
             blueRunning += bluePieces[i].PointValue;
             blueTotalText.text = $"{blueRunning} pts";
-            yield return new WaitForSeconds(GameConfig.isAutoPlay ? 0.02f : 0.4f);
+            yield return new WaitForSeconds(0.25f);
         }
 
         blueTotalText.text = $"{blueTotal} pts";
 
-        yield return new WaitForSeconds(GameConfig.isAutoPlay ? 0.02f : 0.3f);
+        yield return new WaitForSeconds(skipRequested ? 0.01f : 0.2f);
 
         for (int i = 0; i < redPieces.Count; i++)
         {
-            if (!GameConfig.isAutoPlay) SoundManager.Instance.PlayHammer();
+            if (skipRequested)
+            {
+                redRunning = redTotal;
+                redTotalText.text = $"{redTotal} pts";
+                break;
+            }
+            SoundManager.Instance.PlayHammer();
             StartCoroutine(HitEffect(finConteoRed.transform));
             redRunning += redPieces[i].PointValue;
             redTotalText.text = $"{redRunning} pts";
-            yield return new WaitForSeconds(GameConfig.isAutoPlay ? 0.02f : 0.4f);
+            yield return new WaitForSeconds(0.25f);
         }
 
         redTotalText.text = $"{redTotal} pts";
 
-        yield return new WaitForSeconds(GameConfig.isAutoPlay ? 0.05f : 0.5f);
+        yield return new WaitForSeconds(skipRequested ? 0.01f : 0.4f);
 
         // Winner gets pose + fanfare, loser gets darkened + X
         if (winner == Team.Blue)
@@ -290,15 +341,21 @@ public class ScoreboardUI : MonoBehaviour
         else
             StartCoroutine(DefeatBanner());
 
-        yield return new WaitForSeconds(GameConfig.isAutoPlay ? 0.1f : 2f);
+        yield return new WaitForSeconds(skipRequested ? 0.2f : 2f);
 
         isShowing = false;
+        bool chestGranted = false;
         if (winner == Team.Blue)
         {
             if (!GameConfig.isAutoPlay && CoinManager.Instance != null)
                 CoinManager.Instance.RecordMatchWin();
             if (!GameConfig.isAutoPlay && GameConfig.isCampaign && CampaignManager.Instance != null)
-                CampaignManager.Instance.CompleteLevel(GameConfig.selectedLevel);
+            {
+                int emptyBefore = ChestManager.HasEmptySlot() ? 1 : 0;
+                cupCompletedRace = CampaignManager.Instance.CompleteLevel(GameConfig.selectedLevel);
+                int emptyAfter = ChestManager.HasEmptySlot() ? 1 : 0;
+                chestGranted = emptyBefore > emptyAfter;
+            }
         }
 
         if (GameConfig.isAutoPlay)
@@ -311,8 +368,30 @@ public class ScoreboardUI : MonoBehaviour
             yield break;
         }
 
-        GameOverUI.Instance.Show(winner);
+        if (winner == Team.Blue && GameConfig.isCampaign && !GameConfig.isTutorial)
+        {
+            delayedWinner = winner;
+            showCampaignRewards = true;
+            CampaignLevel level = CampaignData.GetLevel(GameConfig.selectedLevel);
+            int goldReward = level != null ? level.goldReward : 0;
+
+            GameObject rewardObj = new GameObject("CampaignReward");
+            CampaignRewardUI reward = rewardObj.AddComponent<CampaignRewardUI>();
+            reward.Show(GameConfig.selectedLevel, goldReward, chestGranted, cupCompletedRace);
+        }
+        else
+        {
+            GameOverUI.Instance.Show(winner);
+            gameObject.SetActive(false);
+        }
+    }
+
+    public void ProceedToGameOver()
+    {
+        showCampaignRewards = false;
+        cupCompletedRace = null;
         gameObject.SetActive(false);
+        GameOverUI.Instance.Show(delayedWinner);
     }
 
     void CreateXOverlay(RectTransform parentRt)

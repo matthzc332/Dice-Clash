@@ -30,7 +30,7 @@ public class DailyBonusUI : MonoBehaviour
     {
         if (popupObj != null) return;
 
-        GameObject canvasObj = new GameObject("DailyBonusCanvas");
+        GameObject canvasObj = new GameObject("DailyBonusCanvas", typeof(RectTransform));
         ownCanvas = canvasObj.AddComponent<Canvas>();
         ownCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         ownCanvas.sortingOrder = 220;
@@ -48,17 +48,28 @@ public class DailyBonusUI : MonoBehaviour
         RectTransform overlayRt = popupObj.GetComponent<RectTransform>();
         overlayRt.anchorMin = Vector2.zero;
         overlayRt.anchorMax = Vector2.one;
-        overlayRt.sizeDelta = Vector2.zero;
+        overlayRt.offsetMin = new Vector2(2, -23);
+        overlayRt.offsetMax = new Vector2(-2, 23);
 
         GameObject panel = new GameObject("Panel");
         panel.transform.SetParent(popupObj.transform);
         Image panelBg = panel.AddComponent<Image>();
-        panelBg.color = new Color(0.15f, 0.1f, 0.05f, 0.95f);
+        Sprite panelSprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+        if (panelSprite != null)
+        {
+            panelBg.sprite = panelSprite;
+            panelBg.color = Color.white;
+        }
+        else
+        {
+            panelBg.color = new Color(0.15f, 0.1f, 0.05f, 0.95f);
+        }
         RectTransform panelRt = panel.GetComponent<RectTransform>();
         panelRt.anchorMin = new Vector2(0.5f, 0.5f);
         panelRt.anchorMax = new Vector2(0.5f, 0.5f);
         panelRt.pivot = new Vector2(0.5f, 0.5f);
         panelRt.sizeDelta = new Vector2(500, 320);
+        panelRt.anchoredPosition = new Vector2(0, 170);
 
         Font font = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
         if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
@@ -121,28 +132,25 @@ public class DailyBonusUI : MonoBehaviour
         GameObject btnObj = new GameObject("OKButton");
         btnObj.transform.SetParent(panel.transform);
         Image btnBg = btnObj.AddComponent<Image>();
-        btnBg.color = new Color(0.2f, 0.5f, 0.2f);
+        Sprite openSprite = LoadFirstSprite("Sprites/Menu/botin ui/botonOpen", "botonOpen_0");
+        if (openSprite != null)
+        {
+            btnBg.sprite = openSprite;
+            btnBg.preserveAspect = true;
+            btnBg.color = Color.white;
+        }
+        else
+        {
+            btnBg.color = new Color(0.2f, 0.5f, 0.2f);
+        }
         Button btn = btnObj.AddComponent<Button>();
         btn.onClick.AddListener(Close);
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0);
         btnRt.anchorMax = new Vector2(0.5f, 0);
         btnRt.pivot = new Vector2(0.5f, 0);
-        btnRt.sizeDelta = new Vector2(200, 50);
+        btnRt.sizeDelta = new Vector2(170, 60);
         btnRt.anchoredPosition = new Vector2(0, 20);
-
-        GameObject btnTextObj = new GameObject("Text");
-        btnTextObj.transform.SetParent(btnObj.transform);
-        Text btnText = btnTextObj.AddComponent<Text>();
-        btnText.font = font;
-        btnText.fontSize = 18;
-        btnText.alignment = TextAnchor.MiddleCenter;
-        btnText.color = Color.white;
-        btnText.text = "OK";
-        RectTransform btnTextRt = btnTextObj.GetComponent<RectTransform>();
-        btnTextRt.anchorMin = Vector2.zero;
-        btnTextRt.anchorMax = Vector2.one;
-        btnTextRt.sizeDelta = Vector2.zero;
     }
 
     public void Close()
@@ -151,6 +159,17 @@ public class DailyBonusUI : MonoBehaviour
         if (ownCanvas != null) Destroy(ownCanvas.gameObject);
         popupObj = null;
         ownCanvas = null;
+    }
+
+    Sprite LoadFirstSprite(string path, string name)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        if (sprites == null || sprites.Length == 0) return null;
+        foreach (var s in sprites)
+        {
+            if (s.name == name) return s;
+        }
+        return sprites[0];
     }
 
     Sprite CreateCoinSprite()

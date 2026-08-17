@@ -38,6 +38,17 @@ public class ChestUI : MonoBehaviour
         return chestSprites.Length > 0 ? chestSprites[0] : null;
     }
 
+    Sprite LoadFirstSprite(string path, string name)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        if (sprites == null || sprites.Length == 0) return null;
+        foreach (var s in sprites)
+        {
+            if (s.name == name) return s;
+        }
+        return sprites[0];
+    }
+
     public void Show(Canvas parentCanvas)
     {
         font = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
@@ -86,45 +97,10 @@ public class ChestUI : MonoBehaviour
 
         CreateTitle();
         CreateSlots();
-        CreateTestButton();
         CreateBackButton();
     }
 
-    void CreateTestButton()
-    {
-        GameObject btnObj = new GameObject("TestChestButton");
-        btnObj.transform.SetParent(panelObj.transform, false);
-        Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.3f, 0.2f, 0.45f, 0.9f);
-        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
-        btnRt.anchorMin = new Vector2(0f, 0f);
-        btnRt.anchorMax = new Vector2(0f, 0f);
-        btnRt.pivot = new Vector2(0f, 0f);
-        btnRt.sizeDelta = new Vector2(150, 40);
-        btnRt.anchoredPosition = new Vector2(15, 15);
 
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text btnText = textObj.AddComponent<Text>();
-        btnText.font = font;
-        btnText.fontSize = 10;
-        btnText.alignment = TextAnchor.MiddleCenter;
-        btnText.text = "TEST CHEST";
-        btnText.color = Color.white;
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
-
-        Button btn = btnObj.AddComponent<Button>();
-        btn.targetGraphic = btnImg;
-        btn.onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-            if (ChestManager.AddReadyChestForTest())
-                RefreshSlots();
-        });
-    }
 
     void CreateTitle()
     {
@@ -177,9 +153,9 @@ public class ChestUI : MonoBehaviour
             slotRt.anchoredPosition = new Vector2(slotX[i], 20);
 
             Image slotBg = slotObj.AddComponent<Image>();
-            slotBg.color = new Color(0.15f, 0.1f, 0.06f, 0.9f);
-
-            CreateSlotBorder(slotObj.transform);
+            slotBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaRed", "panelCartaRed");
+            slotBg.preserveAspect = true;
+            slotBg.color = Color.white;
 
             if (!slot.occupied)
             {
@@ -194,19 +170,6 @@ public class ChestUI : MonoBehaviour
                 CreateLockedSlot(slotObj.transform, i);
             }
         }
-    }
-
-    void CreateSlotBorder(Transform parent)
-    {
-        GameObject borderObj = new GameObject("Border");
-        borderObj.transform.SetParent(parent, false);
-        Image borderImg = borderObj.AddComponent<Image>();
-        borderImg.color = new Color(0.6f, 0.45f, 0.2f, 0.6f);
-        borderImg.raycastTarget = false;
-        RectTransform bRt = borderObj.GetComponent<RectTransform>();
-        bRt.anchorMin = Vector2.zero;
-        bRt.anchorMax = Vector2.one;
-        bRt.sizeDelta = new Vector2(6, 6);
     }
 
     void CreateEmptySlot(Transform parent, int index)
@@ -250,28 +213,23 @@ public class ChestUI : MonoBehaviour
         cRt.sizeDelta = new Vector2(170, 170);
         cRt.anchoredPosition = new Vector2(0, 75);
 
+        bool hovering = false;
         EventTrigger trigger = parent.gameObject.AddComponent<EventTrigger>();
         EventTrigger.Entry enter = new EventTrigger.Entry();
         enter.eventID = EventTriggerType.PointerEnter;
-        enter.callback.AddListener((BaseEventData data) => StartCoroutine(HoverGrow(chestObj.transform, 1.25f)));
+        enter.callback.AddListener((BaseEventData data) => { hovering = true; StartCoroutine(HoverGrow(chestObj.transform, 1.25f)); });
         trigger.triggers.Add(enter);
         EventTrigger.Entry exit = new EventTrigger.Entry();
         exit.eventID = EventTriggerType.PointerExit;
-        exit.callback.AddListener((BaseEventData data) => StartCoroutine(HoverGrow(chestObj.transform, 1f)));
+        exit.callback.AddListener((BaseEventData data) => { hovering = false; StartCoroutine(HoverGrow(chestObj.transform, 1f)); });
         trigger.triggers.Add(exit);
 
-        GameObject labelObj = new GameObject("ReadyLabel");
-        labelObj.transform.SetParent(parent, false);
-        Text labelText = labelObj.AddComponent<Text>();
-        labelText.font = font;
-        labelText.fontSize = 18;
-        labelText.alignment = TextAnchor.MiddleCenter;
-        labelText.text = "READY!";
-        labelText.color = new Color(0.3f, 1f, 0.3f);
-        RectTransform lRt = labelObj.GetComponent<RectTransform>();
-        lRt.anchorMin = new Vector2(0f, 0.45f);
-        lRt.anchorMax = new Vector2(1f, 0.55f);
-        lRt.sizeDelta = Vector2.zero;
+        StartCoroutine(HeartbeatPulse(chestObj.transform, () => hovering));
+
+        Button chestBtn = chestObj.AddComponent<Button>();
+        chestBtn.targetGraphic = chestImg;
+        int capturedIndex = index;
+        chestBtn.onClick.AddListener(() => OnOpenClicked(capturedIndex));
 
         CreateOpenButton(parent, index, -90);
     }
@@ -303,6 +261,21 @@ public class ChestUI : MonoBehaviour
             yield return null;
         }
         if (t != null) t.localScale = new Vector3(target, target, 1);
+    }
+
+    IEnumerator HeartbeatPulse(Transform t, System.Func<bool> hovering)
+    {
+        float t0 = 0;
+        while (t != null)
+        {
+            t0 += Time.deltaTime;
+            if (!hovering())
+            {
+                float s = 1f + Mathf.Sin(t0 * 3.5f) * 0.04f;
+                t.localScale = new Vector3(s, s, 1);
+            }
+            yield return null;
+        }
     }
 
     void CreateLockedSlot(Transform parent, int index)
@@ -358,31 +331,29 @@ public class ChestUI : MonoBehaviour
         GameObject btnObj = new GameObject("OpenBtn");
         btnObj.transform.SetParent(parent, false);
         Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.3f, 0.6f, 0.3f, 0.9f);
+        Sprite openSprite = LoadFirstSprite("Sprites/Menu/botin ui/botonOpen", "botonOpen_0");
+        if (openSprite != null)
+        {
+            btnImg.sprite = openSprite;
+            btnImg.preserveAspect = true;
+            btnImg.color = Color.white;
+        }
+        else
+        {
+            btnImg.color = new Color(0.3f, 0.6f, 0.3f, 0.9f);
+        }
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0f);
         btnRt.anchorMax = new Vector2(0.5f, 0f);
         btnRt.pivot = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(200, 45);
+        btnRt.sizeDelta = new Vector2(170, 60);
         btnRt.anchoredPosition = new Vector2(0, 50 + yOffset);
-
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text btnText = textObj.AddComponent<Text>();
-        btnText.font = font;
-        btnText.fontSize = 14;
-        btnText.alignment = TextAnchor.MiddleCenter;
-        btnText.text = "OPEN";
-        btnText.color = Color.white;
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImg;
         int capturedIndex = index;
         btn.onClick.AddListener(() => OnOpenClicked(capturedIndex));
+        StartCoroutine(HeartbeatPulse(btnObj.transform, () => false));
     }
 
     void OnOpenClicked(int slotIndex)
@@ -411,7 +382,16 @@ public class ChestUI : MonoBehaviour
         GameObject contentObj = new GameObject("Content", typeof(RectTransform));
         contentObj.transform.SetParent(popupObj.transform, false);
         Image contentBg = contentObj.AddComponent<Image>();
-        contentBg.color = new Color(0.12f, 0.08f, 0.04f, 0.95f);
+        Sprite contentPanelSprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+        if (contentPanelSprite != null)
+        {
+            contentBg.sprite = contentPanelSprite;
+            contentBg.color = Color.white;
+        }
+        else
+        {
+            contentBg.color = new Color(0.12f, 0.08f, 0.04f, 0.95f);
+        }
         RectTransform contentRt = contentObj.GetComponent<RectTransform>();
         contentRt.anchorMin = new Vector2(0.5f, 0.5f);
         contentRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -482,10 +462,10 @@ public class ChestUI : MonoBehaviour
         titleText.fontSize = 18;
         titleText.alignment = TextAnchor.MiddleCenter;
         titleText.text = "CHEST OPENED!";
-        titleText.color = new Color(0.9f, 0.75f, 0.2f);
+        titleText.color = Color.black;
             RectTransform tRt = titleObj.GetComponent<RectTransform>();
-            tRt.anchorMin = new Vector2(0f, 0.9f);
-            tRt.anchorMax = new Vector2(1f, 1f);
+            tRt.anchorMin = new Vector2(0f, 0.82f);
+            tRt.anchorMax = new Vector2(1f, 0.95f);
             tRt.sizeDelta = Vector2.zero;
         Vector3 titleOrig = tRt.localScale;
         tRt.localScale = Vector3.zero;
@@ -507,17 +487,17 @@ public class ChestUI : MonoBehaviour
             goldObj.transform.SetParent(contentObj.transform, false);
             Text goldText = goldObj.AddComponent<Text>();
             goldText.font = font;
-            goldText.fontSize = 26;
+            goldText.fontSize = 22;
             goldText.alignment = TextAnchor.MiddleCenter;
             goldText.text = $"+{reward.gold} GOLD!";
-            goldText.color = new Color(1f, 0.84f, 0f);
+            goldText.color = Color.black;
             RectTransform gRt = goldObj.GetComponent<RectTransform>();
-            gRt.anchorMin = new Vector2(0f, 0.8f);
-            gRt.anchorMax = new Vector2(1f, 0.9f);
+            gRt.anchorMin = new Vector2(0f, 0.7f);
+            gRt.anchorMax = new Vector2(1f, 0.82f);
             gRt.sizeDelta = Vector2.zero;
 
             Outline goldOutline = goldObj.AddComponent<Outline>();
-            goldOutline.effectColor = new Color(0.5f, 0.3f, 0f);
+            goldOutline.effectColor = Color.black;
             goldOutline.effectDistance = new Vector2(2, -2);
 
             Vector3 gOrig = gRt.localScale;
@@ -553,30 +533,46 @@ public class ChestUI : MonoBehaviour
         }
 
         int bonusPowerups = Random.Range(1, 4);
-        Color[] pwColors = {
-            new Color(0.4f, 0.9f, 0.4f),
-            new Color(1f, 0.5f, 0.2f),
-            new Color(1f, 0.3f, 0.2f),
-            new Color(0.5f, 0.7f, 1f),
-            new Color(0.6f, 0.2f, 1f)
-        };
+        PowerUpType[] pwTypes = { PowerUpType.Shake, PowerUpType.Explosion, PowerUpType.Fireball, PowerUpType.Lightning, PowerUpType.MAGIC };
         string[] pwNames = { "SHAKE", "EXPLOSION", "FIREBALL", "LIGHTNING", "MAGIC" };
+        Sprite[] pwIconSprites = new Sprite[pwTypes.Length];
+        Sprite[] allPwIcons = Resources.LoadAll<Sprite>("Sprites/PowerUps/Icon");
+        for (int t = 0; t < pwTypes.Length; t++)
+        {
+            string typeName = pwTypes[t].ToString();
+            if (allPwIcons != null)
+                foreach (var s in allPwIcons)
+                    if (s.name == typeName || s.name == typeName + "_0") { pwIconSprites[t] = s; break; }
+            if (pwIconSprites[t] == null)
+                pwIconSprites[t] = CreateProceduralMagicIcon(PowerUpManager.GetColor(pwTypes[t]), pwTypes[t]);
+        }
 
         for (int p = 0; p < bonusPowerups; p++)
         {
             int pwIdx = Random.Range(0, pwNames.Length);
-            Color pwCol = pwColors[pwIdx];
+            Color pwCol = PowerUpManager.GetColor(pwTypes[pwIdx]);
 
             GameObject pwObj = new GameObject($"Powerup_{p}", typeof(RectTransform));
             pwObj.transform.SetParent(contentObj.transform, false);
             Image pwIcon = pwObj.AddComponent<Image>();
-            pwIcon.sprite = circleSprite;
-            pwIcon.color = pwCol;
+            if (pwIconSprites[pwIdx] != null)
+            {
+                pwIcon.sprite = pwIconSprites[pwIdx];
+                pwIcon.preserveAspect = true;
+                pwIcon.color = Color.white;
+            }
+            else
+            {
+                Color pwFallbackCol = PowerUpManager.GetColor(pwTypes[pwIdx]);
+                pwIcon.sprite = CreateProceduralMagicIcon(pwFallbackCol, pwTypes[pwIdx]);
+                pwIcon.preserveAspect = true;
+                pwIcon.color = Color.white;
+            }
             pwIcon.raycastTarget = false;
             RectTransform pwIconRt = pwObj.GetComponent<RectTransform>();
             pwIconRt.anchorMin = new Vector2(0.5f, 0.5f);
             pwIconRt.anchorMax = new Vector2(0.5f, 0.5f);
-            pwIconRt.sizeDelta = new Vector2(16, 16);
+            pwIconRt.sizeDelta = new Vector2(32, 32);
             pwIconRt.anchoredPosition = new Vector2(-170, 75 - p * 26);
 
             GameObject pwLabel = new GameObject("Label", typeof(RectTransform));
@@ -637,7 +633,11 @@ public class ChestUI : MonoBehaviour
             GameObject itemObj = new GameObject($"Item_{i}", typeof(RectTransform));
             itemObj.transform.SetParent(contentObj.transform, false);
             Image itemBg = itemObj.AddComponent<Image>();
-            itemBg.color = new Color(rarityColor.r * 0.2f, rarityColor.g * 0.2f, rarityColor.b * 0.2f, 0.55f);
+            itemBg.sprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
+            if (insignia.rarity.ToLower() == "common")
+                itemBg.color = new Color(0.45f, 0.45f, 0.45f, 0.9f);
+            else
+                itemBg.color = new Color(rarityColor.r, rarityColor.g, rarityColor.b, 0.85f);
             RectTransform itemRt = itemObj.GetComponent<RectTransform>();
             itemRt.anchorMin = new Vector2(0.5f, 0.5f);
             itemRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -760,12 +760,22 @@ public class ChestUI : MonoBehaviour
         GameObject closeBtnObj = new GameObject("CloseBtn", typeof(RectTransform));
         closeBtnObj.transform.SetParent(contentObj.transform, false);
         Image closeBtnImg = closeBtnObj.AddComponent<Image>();
-        closeBtnImg.color = new Color(0.4f, 0.2f, 0.1f, 0.85f);
+        Sprite okSprite = LoadFirstSprite("Sprites/Menu/botin ui/botonOK", "botonOK_0");
+        if (okSprite != null)
+        {
+            closeBtnImg.sprite = okSprite;
+            closeBtnImg.preserveAspect = true;
+            closeBtnImg.color = Color.white;
+        }
+        else
+        {
+            closeBtnImg.color = new Color(0.4f, 0.2f, 0.1f, 0.85f);
+        }
         RectTransform closeBtnRt = closeBtnObj.GetComponent<RectTransform>();
         closeBtnRt.anchorMin = new Vector2(0.5f, 0f);
         closeBtnRt.anchorMax = new Vector2(0.5f, 0f);
         closeBtnRt.pivot = new Vector2(0.5f, 0.5f);
-        closeBtnRt.sizeDelta = new Vector2(160, 40);
+        closeBtnRt.sizeDelta = new Vector2(160, 50);
         closeBtnRt.anchoredPosition = new Vector2(0, 25);
         Vector3 cbOrig = closeBtnRt.localScale;
         closeBtnRt.localScale = Vector3.zero;
@@ -778,19 +788,6 @@ public class ChestUI : MonoBehaviour
             yield return null;
         }
         closeBtnRt.localScale = cbOrig;
-
-        GameObject closeTextObj = new GameObject("Text", typeof(RectTransform));
-        closeTextObj.transform.SetParent(closeBtnObj.transform, false);
-        Text closeText = closeTextObj.AddComponent<Text>();
-        closeText.font = font;
-        closeText.fontSize = 12;
-        closeText.alignment = TextAnchor.MiddleCenter;
-        closeText.text = "OK";
-        closeText.color = Color.white;
-        RectTransform ctRt = closeTextObj.GetComponent<RectTransform>();
-        ctRt.anchorMin = Vector2.zero;
-        ctRt.anchorMax = Vector2.one;
-        ctRt.sizeDelta = Vector2.zero;
 
         Button closeBtn = closeBtnObj.AddComponent<Button>();
         closeBtn.targetGraphic = closeBtnImg;
@@ -922,5 +919,81 @@ public class ChestUI : MonoBehaviour
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImg;
         btn.onClick.AddListener(() => { SoundManager.Instance.PlayButton(); Hide(); });
+    }
+
+    Sprite CreateProceduralMagicIcon(Color color, PowerUpType type)
+    {
+        int size = 64;
+        Texture2D tex = new Texture2D(size, size);
+        Color clear = Color.clear;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                tex.SetPixel(x, y, clear);
+
+        int cx = size / 2, cy = size / 2;
+        Color dark = color * 0.7f;
+        dark.a = 1f;
+
+        if (type == PowerUpType.MAGIC)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                float a1 = (i * 72f - 90f) * Mathf.Deg2Rad;
+                float a2 = ((i + 2) * 72f - 90f) * Mathf.Deg2Rad;
+                DrawLine(tex, cx + (int)(Mathf.Cos(a1) * 14), cy + (int)(Mathf.Sin(a1) * 14),
+                    cx + (int)(Mathf.Cos(a2) * 14), cy + (int)(Mathf.Sin(a2) * 14), 3, color);
+            }
+            for (int i = 0; i < 5; i++)
+            {
+                float angle = (i * 72f - 90f) * Mathf.Deg2Rad;
+                DrawCircle(tex, cx + (int)(Mathf.Cos(angle) * 14), cy + (int)(Mathf.Sin(angle) * 14), 3, color);
+            }
+            DrawCircle(tex, cx, cy, 4, dark);
+        }
+        else
+        {
+            for (int r = 14; r > 0; r -= 2)
+            {
+                Color c = Color.Lerp(dark, color, 1f - (float)r / 14f);
+                DrawCircle(tex, cx, cy, r, c);
+            }
+            DrawLine(tex, cx - 10, cy, cx + 10, cy, 3, Color.white);
+            DrawLine(tex, cx, cy - 10, cx, cy + 10, 3, Color.white);
+        }
+
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+    }
+
+    void DrawLine(Texture2D tex, int x1, int y1, int x2, int y2, int thick, Color color)
+    {
+        int steps = Mathf.Max(Mathf.Abs(x2 - x1), Mathf.Abs(y2 - y1));
+        for (int s = 0; s <= steps; s++)
+        {
+            float t = steps > 0 ? (float)s / steps : 0;
+            int px = Mathf.RoundToInt(Mathf.Lerp(x1, x2, t));
+            int py = Mathf.RoundToInt(Mathf.Lerp(y1, y2, t));
+            for (int dy = -thick / 2; dy <= thick / 2; dy++)
+                for (int dx = -thick / 2; dx <= thick / 2; dx++)
+                {
+                    int sx = px + dx, sy = py + dy;
+                    if (sx >= 0 && sx < 64 && sy >= 0 && sy < 64)
+                        tex.SetPixel(sx, sy, color);
+                }
+        }
+    }
+
+    void DrawCircle(Texture2D tex, int cx, int cy, int radius, Color color)
+    {
+        for (int dy = -radius; dy <= radius; dy++)
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (dx * dx + dy * dy <= radius * radius)
+                {
+                    int px = cx + dx, py = cy + dy;
+                    if (px >= 0 && px < 64 && py >= 0 && py < 64)
+                        tex.SetPixel(px, py, color);
+                }
+            }
     }
 }
