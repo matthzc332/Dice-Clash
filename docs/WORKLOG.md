@@ -629,4 +629,21 @@ Registro de trabajo y backlog del proyecto.
 - **TutorialRewardUI** — panelCartaBlue background, `botonOK_0` claim button. **GoblinDialogue** — lower text, `botonOK_0` continue button.
 - **MAGIC powerup icon** — Procedural star fallback via `CreateProceduralMagicIcon()` (no PNG exists).
 
+## Feature: Sound Effects, Visual Polish & Campaign UI
+
+> 2026-08-19 — Knight/Ninja sounds, Paladin holy trail, cloud-beam fix, campaign panels bigger, tutorial trophy repositioned.
+
+| #   | ID                 | Tarea                                                     | Spec | Estado |
+| --- | ------------------ | --------------------------------------------------------- | ---- | ------ |
+| 58  | 058-sound-visual-polish | Sonidos caballero/ninja, pasos sagrados, nube, campaña UI | —  | done   |
+
+### Detalle 058
+
+- **Paladin light beam cloud fix** — `PaladinLightBeam()` in `BoardManager.cs`: cloud (`Nube` sprite, sortingOrder 4, scale 0.35) positioned at `pos + Vector3.up * 4.5f`, beam (height 4f, sortingOrder 2) at `pos + Vector3.up * 2.5f` — beam top meets cloud bottom, cloud covers beam's top edge. Both follow visual and fade together. `SoundManager.PlayChoir()` loads `Sounds/Efectos/choir.mp3`, called at beam start.
+- **Knight salto2 sound** — `SoundManager.PlaySalto2()` loads `Sounds/Efectos/salto2.mp3` (volumen 0.8). Llamado en `BoardManager.KnightJump()` al mostrar sprite salto2 (aterrizaje). Eliminado `PlayHammer()` del KnightJump (duplicado).
+- **Ninja move sound** — `SoundManager.PlayNinja()` loads `Sounds/Efectos/ninja.mp3` (volumen 0.7). Llamado en `AnimatedMove()` cuando `movingData.type == PieceType.Ninja`.
+- **Paladin pasos sagrados** — `PaladinPasos(visual, fromPos, toPos, duration)` en `BoardManager.cs`: spawna sprites `Sprites/PowerUps/Efect/pasos` cada 0.18s en la posición actual del Paladín durante el slide. Scatter ±0.25 horizontal, ±0.2 vertical. Rotación random ±15°. Escala 0.28–0.38. Color dorado `rgba(1, 0.95, 0.7, 0.5)`, sortingOrder -1. `FadePasos()` espera 0.3s visible luego desvanece en 0.9s. Se ejecuta durante movimiento de Paladín (1.3s slide).
+- **Campaign UI más grande** — `CampaignUI.cs`: tarjetas de nivel 330×135 (antes 280×90), sprite de copa 245×259 (antes 110×140). Default `cardHeight = 135f`.
+- **Tutorial trophy repositioned** — `ExhibidorUI.cs`: copa tutorial movida a `(-161, 76)` (antes `(-303, 82)`), ya no tapada por Iron Crown. Nombre de corona tutorial en `(-10, -12)` (solo aplica a TUTORIAL, el resto queda en `(0, -12)`).
+- **Build v0003** — EXE compilado a `Builds/v0003/DiceClashTactics_v0003.exe`.
 

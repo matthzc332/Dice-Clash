@@ -96,48 +96,64 @@ public class CampaignUI : MonoBehaviour
             var cup = data.cups[cupIdx];
             if (cup == null) continue;
 
+            bool cupCompleted = CampaignManager.Instance != null && IsCupCompleted(cup);
+
+            float cupWidth = 1000f;
+            float cupSpriteWidth = 245f;
+            float cupHeaderHeight = 50f;
+            float levelCardHeight = 135f;
+            float levelSpacing = 12f;
+            int levelCount = cup.levels?.Length ?? 0;
+            float cupHeight = cupHeaderHeight + levelCount * (levelCardHeight + levelSpacing) + 20f;
+
             GameObject cupObj = new GameObject($"Cup_{cup.id}");
             cupObj.transform.SetParent(contentObj.transform, false);
             RectTransform cupRt = cupObj.AddComponent<RectTransform>();
-            cupRt.anchorMin = new Vector2(0f, 1f);
-            cupRt.anchorMax = new Vector2(1f, 1f);
+            cupRt.anchorMin = new Vector2(0.5f, 1f);
+            cupRt.anchorMax = new Vector2(0.5f, 1f);
             cupRt.pivot = new Vector2(0.5f, 1f);
             cupRt.anchoredPosition = new Vector2(0, yPos);
-
-            bool cupCompleted = CampaignManager.Instance != null && IsCupCompleted(cup);
+            cupRt.sizeDelta = new Vector2(cupWidth, cupHeight);
 
             Image cupBg = cupObj.AddComponent<Image>();
-            cupBg.sprite = GetCupSprite(cup.race);
-            if (cupBg.sprite != null)
-            {
-                cupBg.preserveAspect = true;
-                cupBg.color = cupCompleted ? Color.white : new Color(0.5f, 0.5f, 0.5f, 0.6f);
-            }
-            else
-            {
-                float shade = cupCompleted ? 0.35f : 0.2f;
-                cupBg.color = new Color(shade, shade * 0.8f, shade * 0.6f, 0.3f);
-            }
+            cupBg.color = new Color(0.08f, 0.06f, 0.04f, 0.6f);
 
             GameObject cupTitle = new GameObject("CupTitle");
             cupTitle.transform.SetParent(cupObj.transform, false);
             Text cupText = cupTitle.AddComponent<Text>();
             cupText.font = font;
-            cupText.fontSize = 16;
-            cupText.alignment = TextAnchor.MiddleCenter;
+            cupText.fontSize = 18;
+            cupText.alignment = TextAnchor.MiddleLeft;
             cupText.text = cup.name.ToUpper();
-            cupText.color = new Color(0.9f, 0.75f, 0.3f);
+            cupText.color = cupCompleted ? new Color(1f, 0.84f, 0f) : new Color(0.9f, 0.75f, 0.3f);
             Outline cupOutline = cupTitle.AddComponent<Outline>();
             cupOutline.effectColor = Color.black;
             cupOutline.effectDistance = new Vector2(1, -1);
             RectTransform ctRt = cupTitle.GetComponent<RectTransform>();
-            ctRt.anchorMin = new Vector2(0.15f, 1f);
+            ctRt.anchorMin = new Vector2(0.02f, 1f);
             ctRt.anchorMax = new Vector2(0.85f, 1f);
-            ctRt.pivot = new Vector2(0.5f, 1f);
-            ctRt.sizeDelta = new Vector2(0, 35);
-            ctRt.anchoredPosition = new Vector2(0, 0);
+            ctRt.pivot = new Vector2(0f, 1f);
+            ctRt.sizeDelta = new Vector2(0, cupHeaderHeight);
+            ctRt.anchoredPosition = new Vector2(10, 0);
 
-            float levelY = -40f;
+            Sprite cupSprite = GetCupSprite(cup.race);
+            if (cupSprite != null)
+            {
+                GameObject cupImgObj = new GameObject("CupSprite");
+                cupImgObj.transform.SetParent(cupObj.transform, false);
+                Image cupImg = cupImgObj.AddComponent<Image>();
+                cupImg.sprite = cupSprite;
+                cupImg.preserveAspect = true;
+                cupImg.color = cupCompleted ? Color.white : new Color(0.5f, 0.5f, 0.5f, 0.6f);
+                RectTransform cupImgRt = cupImgObj.GetComponent<RectTransform>();
+                cupImgRt.anchorMin = new Vector2(1f, 1f);
+                cupImgRt.anchorMax = new Vector2(1f, 1f);
+                cupImgRt.pivot = new Vector2(1f, 1f);
+                cupImgRt.sizeDelta = new Vector2(cupSpriteWidth, 259f);
+                cupImgRt.anchoredPosition = new Vector2(-10, 0);
+            }
+
+            float levelY = -(cupHeaderHeight + 5f);
             if (cup.levels != null)
             {
                 for (int i = 0; i < cup.levels.Length; i++)
@@ -149,13 +165,12 @@ public class CampaignUI : MonoBehaviour
                     bool completed = CampaignManager.Instance != null && CampaignManager.Instance.IsLevelCompleted(levelId);
                     bool unlocked = CampaignManager.Instance != null && CampaignManager.Instance.IsLevelUnlocked(levelId);
 
-                    CreateLevelCard(cupObj.transform, level, completed, unlocked, i, levelY);
-                    levelY -= 80f;
+                    CreateLevelCard(cupObj.transform, level, completed, unlocked, i, levelY, levelCardHeight);
+                    levelY -= (levelCardHeight + levelSpacing);
                 }
             }
 
-            float cupHeight = 40f + (cup.levels?.Length ?? 0) * 80f + 20f;
-            cupRt.sizeDelta = new Vector2(0, cupHeight);
+            cupRt.sizeDelta = new Vector2(cupWidth, cupHeight);
             yPos -= cupHeight + 12f;
         }
 
@@ -173,7 +188,7 @@ public class CampaignUI : MonoBehaviour
         return true;
     }
 
-    void CreateLevelCard(Transform parent, CampaignLevel level, bool completed, bool unlocked, int index, float yOffset)
+    void CreateLevelCard(Transform parent, CampaignLevel level, bool completed, bool unlocked, int index, float yOffset, float cardHeight = 135f)
     {
         float[] rowX = { -300f, 0f, 300f };
         float xPos = rowX[index % rowX.Length];
@@ -184,7 +199,7 @@ public class CampaignUI : MonoBehaviour
         cardRt.anchorMin = new Vector2(0.5f, 1f);
         cardRt.anchorMax = new Vector2(0.5f, 1f);
         cardRt.pivot = new Vector2(0.5f, 1f);
-        cardRt.sizeDelta = new Vector2(260, 72);
+        cardRt.sizeDelta = new Vector2(330, cardHeight);
         cardRt.anchoredPosition = new Vector2(xPos, yOffset);
 
         Image cardBg = cardObj.AddComponent<Image>();
@@ -212,7 +227,7 @@ public class CampaignUI : MonoBehaviour
         numObj.transform.SetParent(cardObj.transform, false);
         Text numText = numObj.AddComponent<Text>();
         numText.font = font;
-        numText.fontSize = 24;
+        numText.fontSize = 28;
         numText.alignment = TextAnchor.MiddleCenter;
         numText.text = level.id.ToString("D2");
         numText.color = completed ? new Color(0.4f, 1f, 0.4f) : unlocked ? Color.white : new Color(0.5f, 0.5f, 0.5f);
@@ -221,14 +236,14 @@ public class CampaignUI : MonoBehaviour
         numOutline.effectDistance = new Vector2(1, -1);
         RectTransform numRt = numObj.GetComponent<RectTransform>();
         numRt.anchorMin = new Vector2(0f, 0.3f);
-        numRt.anchorMax = new Vector2(0.22f, 0.95f);
+        numRt.anchorMax = new Vector2(0.2f, 0.95f);
         numRt.sizeDelta = Vector2.zero;
 
         GameObject nameObj = new GameObject("Name");
         nameObj.transform.SetParent(cardObj.transform, false);
         Text nameText = nameObj.AddComponent<Text>();
         nameText.font = font;
-        nameText.fontSize = 9;
+        nameText.fontSize = 11;
         nameText.alignment = TextAnchor.MiddleLeft;
         nameText.text = level.name;
         nameText.color = completed ? new Color(0.7f, 1f, 0.7f) : unlocked ? new Color(0.85f, 0.85f, 0.85f) : new Color(0.45f, 0.45f, 0.45f);
@@ -236,7 +251,7 @@ public class CampaignUI : MonoBehaviour
         nameOutline.effectColor = Color.black;
         nameOutline.effectDistance = new Vector2(1, -1);
         RectTransform nameRt = nameObj.GetComponent<RectTransform>();
-        nameRt.anchorMin = new Vector2(0.22f, 0.52f);
+        nameRt.anchorMin = new Vector2(0.2f, 0.52f);
         nameRt.anchorMax = new Vector2(0.6f, 0.95f);
         nameRt.sizeDelta = Vector2.zero;
 
@@ -244,15 +259,13 @@ public class CampaignUI : MonoBehaviour
         infoObj.transform.SetParent(cardObj.transform, false);
         Text infoText = infoObj.AddComponent<Text>();
         infoText.font = font;
-        infoText.fontSize = 7;
+        infoText.fontSize = 8;
         infoText.alignment = TextAnchor.MiddleLeft;
         string enemyLabel = level.enemyRace.ToUpper();
-        int pLen = level.powerups != null ? level.powerups.Length : 0;
-        int oLen = level.obstacles != null ? level.obstacles.Length : 0;
         infoText.text = $"{enemyLabel} | E:{level.enemyCount} | +{level.goldReward}g";
         infoText.color = completed ? new Color(0.5f, 0.8f, 0.5f, 0.8f) : unlocked ? new Color(0.7f, 0.7f, 0.7f) : new Color(0.4f, 0.4f, 0.4f, 0.6f);
         RectTransform infoRt = infoObj.GetComponent<RectTransform>();
-        infoRt.anchorMin = new Vector2(0.22f, 0.05f);
+        infoRt.anchorMin = new Vector2(0.2f, 0.05f);
         infoRt.anchorMax = new Vector2(0.6f, 0.48f);
         infoRt.sizeDelta = Vector2.zero;
 
@@ -283,8 +296,8 @@ public class CampaignUI : MonoBehaviour
             insImg.raycastTarget = false;
             insImg.color = completed ? Color.white : new Color(0.4f, 0.4f, 0.4f, 0.5f);
             RectTransform iRt = insObj.GetComponent<RectTransform>();
-            iRt.anchorMin = new Vector2(0.74f, 0.15f);
-            iRt.anchorMax = new Vector2(0.90f, 0.85f);
+            iRt.anchorMin = new Vector2(0.78f, 0.15f);
+            iRt.anchorMax = new Vector2(0.95f, 0.85f);
             iRt.sizeDelta = Vector2.zero;
         }
 
@@ -294,7 +307,7 @@ public class CampaignUI : MonoBehaviour
             checkObj.transform.SetParent(cardObj.transform, false);
             Text checkText = checkObj.AddComponent<Text>();
             checkText.font = font;
-            checkText.fontSize = 14;
+            checkText.fontSize = 16;
             checkText.alignment = TextAnchor.MiddleCenter;
             checkText.text = "\u2713";
             checkText.color = new Color(0.3f, 1f, 0.3f);
@@ -302,8 +315,8 @@ public class CampaignUI : MonoBehaviour
             checkOutline.effectColor = Color.black;
             checkOutline.effectDistance = new Vector2(1, -1);
             RectTransform checkRt = checkObj.GetComponent<RectTransform>();
-            checkRt.anchorMin = new Vector2(0.75f, 0.5f);
-            checkRt.anchorMax = new Vector2(0.9f, 0.95f);
+            checkRt.anchorMin = new Vector2(0.85f, 0.5f);
+            checkRt.anchorMax = new Vector2(1f, 0.95f);
             checkRt.sizeDelta = Vector2.zero;
         }
 

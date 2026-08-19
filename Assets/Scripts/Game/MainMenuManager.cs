@@ -17,7 +17,6 @@ public class MainMenuManager : MonoBehaviour
     private InsigniaUI insigniaUI;
     private ExhibidorUI exhibidorUI;
     private ModeSelectionUI modeSelectionUI;
-    private Text collectAllLabel;
 
     static bool IsUnlocked(int index)
     {
@@ -44,10 +43,6 @@ public class MainMenuManager : MonoBehaviour
         if (TutorialProgress.HasPlayed())
             StartCoroutine(ShowDailyBonusDelayed());
         SoundManager.Instance.PlayMenuMusic();
-    }
-
-    void Update()
-    {
     }
 
     void StartPlayButtonAura(RectTransform playRt, Transform parent)
@@ -196,9 +191,6 @@ public class MainMenuManager : MonoBehaviour
         CreateCampaignButton(canvasTransform, font);
         CreateChestButton(canvasTransform, font);
         CreateInsigniaButton(canvasTransform, font);
-        CreateCollectAllButton(canvasTransform, font);
-        CreateRankingButton(canvasTransform, font);
-        CreateResetButton(canvasTransform, font);
 
         Sprite[] playSprites = Resources.LoadAll<Sprite>("Sprites/Menu/botonPlay");
         Sprite playSprite = System.Array.Find(playSprites, s => s.name == "botonplay2_0");
@@ -359,7 +351,7 @@ public class MainMenuManager : MonoBehaviour
         progressText.font = font;
         progressText.fontSize = 8;
         progressText.alignment = TextAnchor.MiddleCenter;
-        progressText.text = $"{cupCount}/4 cups | {ribbonCount}/22 ribbons";
+        progressText.text = $"{cupCount}/5 cups | {ribbonCount}/22 ribbons";
         progressText.color = new Color(0.8f, 0.7f, 0.4f);
         RectTransform progRt = progressObj.GetComponent<RectTransform>();
         progRt.anchorMin = new Vector2(0f, -0.8f);
@@ -390,7 +382,7 @@ public class MainMenuManager : MonoBehaviour
         label.font = font;
         label.fontSize = 13;
         label.alignment = TextAnchor.MiddleCenter;
-        label.text = "RANKING";
+        label.text = "RANKED";
         label.color = unlocked ? new Color(0.8f, 0.95f, 1f) : new Color(0.55f, 0.55f, 0.55f);
         RectTransform textRt = textObj.GetComponent<RectTransform>();
         textRt.anchorMin = Vector2.zero;
@@ -453,6 +445,11 @@ public class MainMenuManager : MonoBehaviour
             btn.onClick.AddListener(() =>
             {
                 SoundManager.Instance.PlaySelect();
+                if (modeSelectionUI == null && menuCanvas != null)
+                {
+                    modeSelectionUI = gameObject.AddComponent<ModeSelectionUI>();
+                    modeSelectionUI.Show(menuCanvas);
+                }
             });
         }
     }
@@ -553,7 +550,6 @@ public class MainMenuManager : MonoBehaviour
 
     void OnPlayClicked()
     {
-        Debug.LogWarning($"[Play] selected={selected} species={species[selected]} unlocked={IsUnlocked(selected)}");
         if (!IsUnlocked(selected)) return;
         SoundManager.Instance.PlaySelect();
 
@@ -731,222 +727,130 @@ public class MainMenuManager : MonoBehaviour
         });
     }
 
-    void CreateCollectAllButton(Transform parent, Font f)
-    {
-        GameObject btnObj = new GameObject("CollectAllButton", typeof(RectTransform));
-        btnObj.transform.SetParent(parent, false);
-        Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.4f, 0.18f, 0.4f, 0.9f);
-        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
-        btnRt.anchorMin = new Vector2(0.5f, 0.5f);
-        btnRt.anchorMax = new Vector2(0.5f, 0.5f);
-        btnRt.pivot = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(170, 42);
-        btnRt.anchoredPosition = new Vector2(-280, -510);
-
-        GameObject textObj = new GameObject("Text", typeof(RectTransform));
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text label = textObj.AddComponent<Text>();
-        label.font = f;
-        label.fontSize = 9;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.text = "COLLECT ALL";
-        label.color = new Color(1f, 0.8f, 1f);
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
-        collectAllLabel = label;
-
-        Button btn = btnObj.AddComponent<Button>();
-        btn.targetGraphic = btnImg;
-        btn.onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-            if (IsEverythingCollected())
-            {
-                ResetAllCollections();
-                label.text = "COLLECT ALL";
-            }
-            else
-            {
-                GrantAllCollections();
-                label.text = "RESET ALL";
-            }
-        });
-    }
-
-    void CreateRankingButton(Transform parent, Font f)
-    {
-        GameObject btnObj = new GameObject("RankingButton", typeof(RectTransform));
-        btnObj.transform.SetParent(parent, false);
-        Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.15f, 0.35f, 0.65f, 0.9f);
-        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
-        btnRt.anchorMin = new Vector2(0.5f, 0.5f);
-        btnRt.anchorMax = new Vector2(0.5f, 0.5f);
-        btnRt.pivot = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(170, 42);
-        btnRt.anchoredPosition = new Vector2(640, -510);
-
-        GameObject textObj = new GameObject("Text", typeof(RectTransform));
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text label = textObj.AddComponent<Text>();
-        label.font = f;
-        label.fontSize = 10;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.text = "RANKING";
-        label.color = new Color(0.7f, 0.9f, 1f);
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
-
-        Button btn = btnObj.AddComponent<Button>();
-        btn.targetGraphic = btnImg;
-        btn.onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-        });
-    }
-
-    void CreateResetButton(Transform parent, Font f)
-    {
-        GameObject btnObj = new GameObject("ResetButton", typeof(RectTransform));
-        btnObj.transform.SetParent(parent, false);
-        Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.5f, 0.2f, 0.2f, 0.9f);
-        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
-        btnRt.anchorMin = new Vector2(0.5f, 0.5f);
-        btnRt.anchorMax = new Vector2(0.5f, 0.5f);
-        btnRt.pivot = new Vector2(0.5f, 0.5f);
-        btnRt.sizeDelta = new Vector2(120, 42);
-        btnRt.anchoredPosition = new Vector2(700, -510);
-
-        GameObject textObj = new GameObject("Text", typeof(RectTransform));
-        textObj.transform.SetParent(btnObj.transform, false);
-        Text label = textObj.AddComponent<Text>();
-        label.font = f;
-        label.fontSize = 9;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.text = "RESET";
-        label.color = new Color(1f, 0.7f, 0.7f);
-        RectTransform textRt = textObj.GetComponent<RectTransform>();
-        textRt.anchorMin = Vector2.zero;
-        textRt.anchorMax = Vector2.one;
-        textRt.sizeDelta = Vector2.zero;
-
-        Button btn = btnObj.AddComponent<Button>();
-        btn.targetGraphic = btnImg;
-        btn.onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-            ResetAllCollections();
-            if (collectAllLabel != null) collectAllLabel.text = "COLLECT ALL";
-        });
-    }
-
-    bool IsEverythingCollected()
-    {
-        return InsigniaManager.GetCollectedCount() >= InsigniaManager.GetTotalCount()
-            && RibbonManager.GetTotalRibbons() >= RibbonManager.GetTotalPossibleRibbons();
-    }
-
-    void GrantAllCollections()
-    {
-        CampaignDataWrapper data = CampaignData.Load();
-        if (data == null) return;
-
-        if (data.levels != null)
-        {
-            foreach (CampaignLevel level in data.levels)
-            {
-                PlayerPrefs.SetInt("Campaign_Level_" + level.id, 1);
-                RibbonManager.GrantRibbon(level.id);
-                InsigniaManager.GrantCampaignInsignia(level.id);
-            }
-        }
-
-        InsigniaDataWrapper insigniaData = InsigniaData.Load();
-        if (insigniaData != null && insigniaData.insignias != null)
-        {
-            foreach (Insignia ins in insigniaData.insignias)
-            {
-                InsigniaManager.GrantInsignia(ins.id);
-            }
-        }
-
-        if (data.cups != null)
-        {
-            foreach (CampaignCup cup in data.cups)
-            {
-                PlayerPrefs.SetInt("Unlocked_" + cup.race, 1);
-            }
-        }
-
-        foreach (string sp in species)
-        {
-            PlayerPrefs.SetInt("Unlocked_" + sp, 1);
-            PlayerPrefs.SetInt("Trophy_" + sp, 1);
-        }
-
-        PlayerPrefs.Save();
-        Debug.Log("CollectAll: all cups/insignias/ribbons granted");
-    }
-
-    void ResetAllCollections()
-    {
-        if (CampaignManager.Instance != null)
-        {
-            CampaignManager.Instance.ResetProgress();
-        }
-        else
-        {
-            CampaignDataWrapper data = CampaignData.Load();
-            if (data != null && data.levels != null)
-            {
-                foreach (CampaignLevel level in data.levels)
-                {
-                    PlayerPrefs.DeleteKey("Campaign_Level_" + level.id);
-                }
-            }
-        }
-
-        CampaignDataWrapper data2 = CampaignData.Load();
-        if (data2 != null && data2.levels != null)
-        {
-            foreach (CampaignLevel level in data2.levels)
-            {
-                PlayerPrefs.DeleteKey("Ribbon_Level_" + level.id);
-            }
-        }
-
-        InsigniaManager.ResetAll();
-        ChestManager.ResetAll();
-
-        if (data2 != null && data2.cups != null)
-        {
-            foreach (CampaignCup cup in data2.cups)
-            {
-                PlayerPrefs.DeleteKey("Unlocked_" + cup.race);
-            }
-        }
-
-        foreach (string sp in species)
-        {
-            PlayerPrefs.DeleteKey("Unlocked_" + sp);
-            PlayerPrefs.DeleteKey("Trophy_" + sp);
-        }
-
-        PlayerPrefs.Save();
-        Debug.Log("CollectAll: all progress reset");
-    }
-
     IEnumerator ShowDailyBonusDelayed()
     {
         yield return null;
         if (DailyBonusUI.Instance != null)
             DailyBonusUI.Instance.ShowIfAvailable();
+    }
+
+    public void PlayRankedUnlockAnimation()
+    {
+        StartCoroutine(RankedUnlockSequence());
+    }
+
+    IEnumerator RankedUnlockSequence()
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        Transform rankedBtn = FindDirectChild(canvasTransform, "RankedButton");
+        if (rankedBtn == null) yield break;
+
+        Image btnImg = rankedBtn.GetComponent<Image>();
+        RectTransform btnRt = rankedBtn.GetComponent<RectTransform>();
+
+        btnImg.color = new Color(0.2f, 0.5f, 0.8f, 0.9f);
+        Transform lockPanel = FindDirectChild(rankedBtn, "LockPanel");
+        if (lockPanel != null) Destroy(lockPanel.gameObject);
+
+        Transform textChild = FindDirectChild(rankedBtn, "Text");
+        if (textChild != null)
+        {
+            Text label = textChild.GetComponent<Text>();
+            if (label != null) label.color = new Color(0.8f, 0.95f, 1f);
+        }
+
+        Button btn = rankedBtn.GetComponent<Button>();
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlaySelect();
+            if (modeSelectionUI == null && menuCanvas != null)
+            {
+                modeSelectionUI = gameObject.AddComponent<ModeSelectionUI>();
+                modeSelectionUI.Show(menuCanvas);
+            }
+        });
+
+        SoundManager.Instance.PlayVictory();
+
+        Vector3 origScale = btnRt.localScale;
+        float dur = 0.2f;
+        float t = 0f;
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            float s = Mathf.Lerp(1f, 1.3f, t / dur);
+            btnRt.localScale = origScale * s;
+            yield return null;
+        }
+        t = 0f;
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            float s = Mathf.Lerp(1.3f, 0.85f, t / dur);
+            btnRt.localScale = origScale * s;
+            yield return null;
+        }
+        t = 0f;
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            float s = Mathf.Lerp(0.85f, 1f, t / dur);
+            btnRt.localScale = origScale * s;
+            yield return null;
+        }
+        btnRt.localScale = origScale;
+
+        for (int i = 0; i < 8; i++)
+        {
+            GameObject spark = new GameObject("FlashSpark", typeof(RectTransform));
+            spark.transform.SetParent(rankedBtn, false);
+            Image sparkImg = spark.AddComponent<Image>();
+            Texture2D sparkTex = new Texture2D(8, 8);
+            for (int y = 0; y < 8; y++)
+                for (int x = 0; x < 8; x++)
+                {
+                    float dx = x - 3.5f;
+                    float dy = y - 3.5f;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    sparkTex.SetPixel(x, y, dist <= 3.5f ? Color.white : Color.clear);
+                }
+            sparkTex.Apply();
+            sparkImg.sprite = Sprite.Create(sparkTex, new Rect(0, 0, 8, 8), new Vector2(0.5f, 0.5f));
+            sparkImg.color = new Color(1f, 0.9f, 0.3f);
+            sparkImg.raycastTarget = false;
+            RectTransform sparkRt = spark.GetComponent<RectTransform>();
+            sparkRt.anchorMin = new Vector2(0.5f, 0.5f);
+            sparkRt.anchorMax = new Vector2(0.5f, 0.5f);
+            sparkRt.sizeDelta = new Vector2(12, 12);
+            float angle = (360f / 8) * i;
+            float rad = angle * Mathf.Deg2Rad;
+            Vector2 offset = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * 50f;
+            sparkRt.anchoredPosition = offset;
+            StartCoroutine(AnimateUnlockSpark(spark, offset));
+            yield return new WaitForSeconds(0.06f);
+        }
+    }
+
+    IEnumerator AnimateUnlockSpark(GameObject spark, Vector2 startOffset)
+    {
+        float t = 0f;
+        float life = 0.6f;
+        Image img = spark.GetComponent<Image>();
+        RectTransform rt = spark.GetComponent<RectTransform>();
+        while (t < life)
+        {
+            if (spark == null) yield break;
+            t += Time.deltaTime;
+            float life01 = t / life;
+            rt.anchoredPosition = startOffset * (1f + life01 * 1.5f);
+            img.color = new Color(1f, 0.9f, 0.3f, Mathf.Clamp01(1f - life01));
+            float s = 1f + life01 * 0.5f;
+            rt.localScale = new Vector3(s, s, 1);
+            yield return null;
+        }
+        if (spark != null) Destroy(spark);
     }
 
 }

@@ -132,8 +132,30 @@ public class CampaignManager : MonoBehaviour
                 PlayerPrefs.SetInt(raceKey, 1);
                 PlayerPrefs.Save();
                 Debug.Log($"CampaignManager: Unlocked {cup.race} from cup {cup.name}");
-                return cup.race;
             }
+
+            CampaignDataWrapper data = CampaignData.Load();
+            if (data != null && data.cups != null)
+            {
+                bool allCupsDone = true;
+                foreach (CampaignCup c in data.cups)
+                {
+                    if (!IsCupCompleted(c.id))
+                    {
+                        allCupsDone = false;
+                        break;
+                    }
+                }
+                if (allCupsDone && !RankedManager.IsUnlocked())
+                {
+                    RankedManager.Unlock();
+                    PlayerPrefs.SetInt("RankedUnlocked", 1);
+                    PlayerPrefs.Save();
+                    Debug.Log("CampaignManager: All cups completed - Ranked mode unlocked!");
+                }
+            }
+
+            return cup.race;
         }
         return null;
     }

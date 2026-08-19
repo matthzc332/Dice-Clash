@@ -122,6 +122,7 @@ Implement single-player mode with AI-controlled red team, combat system overhaul
 - **Common reward panels**: Darker `(0.45,0.45,0.45,0.9)` so they don't blend with panelCartaBlue.
 - **Test buttons moved**: TEST CHEST + TEST DAILY now in ExhibidorUI settings.
 - **TutorialRewardUI**: panelCartaBlue background, `botonOK_0` claim button. **GoblinDialogue**: lower text, `botonOK_0` continue button.
+- **Fight cloud (nube de pelea)**: Reemplaza sprites de ataque durante combate. 6 combinaciones de especies (HumanHuman, HumanOrc, HumanBeast, OrcOrc, OrcBeast, BeastBeast), 3 frames de animación por nube (0.35s/frame), rotación 40°/s, pulse ±4% escala ±7% alpha. Sprites en `Sprites/PowerUps/Efect/FightCloud_{sp1}{sp2}{1|2|3}`. Escala normalizada proporcional (referencia 251px). Sort por tier: Human=0 < Orc=1 < Beast=2. Fallback procedural (5 círculos + estrella central, 256×256). Ambas piezas ocultas con `SetActive(false)` durante la nube. Perdedor destruido silenciosamente (`Destroy`). Ganador muestra con `ResetPieceSprite` + `SetActive(true)`. `DeathPoof` + `OnKillEffect` en posición. `PlaySwordClash()` al inicio. Tutorial y sombras usan siempre `FightCloud_HumanHuman`.
 
 ### Key Decisions
 
@@ -160,6 +161,7 @@ Implement single-player mode with AI-controlled red team, combat system overhaul
 - Cup completion: `CompleteLevel()` returns race name (or null) on first-time cup completion. CampaignRewardUI shows cup sprite with bounce animation (0.3→1.6→1.0) at end of reward sequence.
 - Knight jump: triggered when Knight moves >1 cell. Back sprite overrides: Human 0.10, Orc salto1 0.33/0.30 salto2 0.24/0.28, Beastfolk 0.38. `SpritePrefix` maps "Beastfolk"→"beast".
 - Paladin light beam: procedural rect follows visual during movement, 0.15s fadeIn, 0.6s hold with flicker, 0.3s fadeOut, 6 holy sparks. Slide 1.3s for Paladins.
+- Fight cloud replaces attack sprite animations during combat. Sprites at `Sprites/PowerUps/Efect/FightCloud_{species1}{species2}{1|2|3}`. Species sort order: Human=0, Orc=1, Beast=2 (not alphabetical). Scale normalized to 251px reference. Sprites < 50px filtered out. Cloud at defender cell (`toPos`), sortingOrder 15. Both pieces hidden during cloud; loser silently destroyed, winner reset and shown.
 
 ### Bugs (no arreglados)
 - **Ninja idle scale**: Después de un ataque, la ninja se queda con escala 0.6 (sombra) en vez de restaurar su escala original (~0.37/0.45). Causa: `originalScales` keyeado con `GameObject.GetInstanceID()` en `AnimatedMove` pero buscado con `SpriteRenderer.GetInstanceID()` en `ResetPieceSprite`.

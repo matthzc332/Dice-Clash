@@ -234,6 +234,27 @@ public class SoundManager : MonoBehaviour
         StartCoroutine(PlayHolyBeamDelayed(0.05f));
     }
 
+    public void PlayChoir()
+    {
+        AudioClip clip = Resources.Load<AudioClip>("Sounds/Efectos/choir");
+        if (clip != null)
+            source.PlayOneShot(clip, 0.7f);
+    }
+
+    public void PlaySalto2()
+    {
+        AudioClip clip = Resources.Load<AudioClip>("Sounds/Efectos/salto2");
+        if (clip != null)
+            source.PlayOneShot(clip, 0.8f);
+    }
+
+    public void PlayNinja()
+    {
+        AudioClip clip = Resources.Load<AudioClip>("Sounds/Efectos/ninja");
+        if (clip != null)
+            source.PlayOneShot(clip, 0.7f);
+    }
+
     IEnumerator PlayHolyBeamDelayed(float delay)
     {
         yield return new WaitForSeconds(delay);

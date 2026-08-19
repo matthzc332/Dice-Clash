@@ -239,19 +239,42 @@ public class GameOverUI : MonoBehaviour
             {
                 int nextLevel = CampaignManager.Instance != null ? CampaignManager.Instance.GetNextUncompletedLevel() : -1;
 
-                GameObject nextBtn = CreateButton("NextButton", nextSprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                    () => {
-                        if (nextLevel > 0)
-                            GameConfig.PlayCampaign(nextLevel);
-                        else
-                            SceneManager.LoadScene("MainMenuScene");
-                    });
-                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(nextBtn, 0.03f)));
-
-                if (quitSprite != null)
+                if (nextLevel > 0)
                 {
-                    CreateButton("QuitButton", quitSprite, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                    GameObject nextBtn = CreateButton("NextButton", nextSprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                        () => {
+                            GameConfig.PlayCampaign(nextLevel);
+                        });
+                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(nextBtn, 0.03f)));
+
+                    if (quitSprite != null)
+                    {
+                        CreateButton("QuitButton", quitSprite, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                            () => SceneManager.LoadScene("MainMenuScene"));
+                    }
+                }
+                else
+                {
+                    Font font = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
+                    if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                    GameObject completeObj = new GameObject("CampaignComplete");
+                    completeObj.transform.SetParent(canvasObj.transform, false);
+                    Text completeText = completeObj.AddComponent<Text>();
+                    completeText.font = font;
+                    completeText.fontSize = 16;
+                    completeText.alignment = TextAnchor.MiddleCenter;
+                    completeText.text = "CAMPAIGN COMPLETE!";
+                    completeText.color = new Color(1f, 0.84f, 0f);
+                    RectTransform compRt = completeObj.GetComponent<RectTransform>();
+                    compRt.anchorMin = new Vector2(0.5f, 0.5f);
+                    compRt.anchorMax = new Vector2(0.5f, 0.5f);
+                    compRt.sizeDelta = new Vector2(500, 50);
+                    compRt.anchoredPosition = new Vector2(0, -280);
+                    buttons.Add(completeObj);
+
+                    GameObject menuBtn = CreateButton("MenuButton", retrySprite, new Vector2(0, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
                         () => SceneManager.LoadScene("MainMenuScene"));
+                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.03f)));
                 }
             }
             else if (GameConfig.isTutorial)
@@ -265,6 +288,37 @@ public class GameOverUI : MonoBehaviour
                         }
                     });
                 activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(nextBtn, 0.03f)));
+            }
+            else if (GameConfig.isRanked)
+            {
+                int goldReward = RankedManager.GetGoldReward();
+                if (EconomyManager.Instance != null)
+                    EconomyManager.Instance.AddGold(goldReward);
+
+                Font rFont = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
+                if (rFont == null) rFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                GameObject rewardObj = new GameObject("RankedReward");
+                rewardObj.transform.SetParent(canvasObj.transform, false);
+                Text rewardText = rewardObj.AddComponent<Text>();
+                rewardText.font = rFont;
+                rewardText.fontSize = 14;
+                rewardText.alignment = TextAnchor.MiddleCenter;
+                rewardText.text = $"+{goldReward} GOLD!";
+                rewardText.color = new Color(1f, 0.84f, 0f);
+                RectTransform rRt = rewardObj.GetComponent<RectTransform>();
+                rRt.anchorMin = new Vector2(0.5f, 0.5f);
+                rRt.anchorMax = new Vector2(0.5f, 0.5f);
+                rRt.sizeDelta = new Vector2(400, 40);
+                rRt.anchoredPosition = new Vector2(0, -280);
+                buttons.Add(rewardObj);
+
+                GameObject retryBtnRanked = CreateButton("RetryButton", nextSprite, new Vector2(-280, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                    () => GameConfig.PlayRanked(GameConfig.currentPowerupMode));
+                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtnRanked, 0.03f)));
+
+                GameObject menuBtn = CreateButton("MenuButton", retrySprite, new Vector2(0, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                    () => SceneManager.LoadScene("MainMenuScene"));
+                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.03f)));
             }
             else
             {
@@ -300,9 +354,6 @@ public class GameOverUI : MonoBehaviour
                     {
                         dialogImg.sprite = dialogSprite;
                         dialogImg.type = Image.Type.Sliced;
-                    }
-                    else
-                    {
                         dialogImg.color = new Color(1f, 0.97f, 0.88f, 0.92f);
                     }
                     RectTransform dialogRt = dialogObj.GetComponent<RectTransform>();
@@ -337,21 +388,36 @@ public class GameOverUI : MonoBehaviour
         }
         else
         {
-            GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
-            if (quitSprite != null)
+            if (GameConfig.isRanked)
             {
-                CreateButton("QuitButton", quitSprite, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                GameObject menuBtn = CreateButton("MenuButton", retrySprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
                     () => SceneManager.LoadScene("MainMenuScene"));
+                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.04f)));
+
+                if (quitSprite != null)
+                {
+                    CreateButton("RetryButton", quitSprite, new Vector2(156, -378), new Vector2(160, 56), new Vector3(1.7f, 1.7f, 1),
+                        () => GameConfig.PlayRanked(GameConfig.currentPowerupMode));
+                }
             }
             else
             {
-                GameObject qb = CreateButton("QuitButton", null, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
-                    () => SceneManager.LoadScene("MainMenuScene"));
-                Image qi = qb.GetComponent<Image>();
-                qi.color = new Color(0.5f, 0.1f, 0.1f, 1f);
+                GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                    () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
+                if (quitSprite != null)
+                {
+                    CreateButton("QuitButton", quitSprite, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                        () => SceneManager.LoadScene("MainMenuScene"));
+                }
+                else
+                {
+                    GameObject qb = CreateButton("QuitButton", null, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                        () => SceneManager.LoadScene("MainMenuScene"));
+                    Image qi = qb.GetComponent<Image>();
+                    qi.color = new Color(0.5f, 0.1f, 0.1f, 1f);
+                }
+                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtn, 0.04f)));
             }
-            activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtn, 0.04f)));
             activeCoroutines.Add(StartCoroutine(AnimateDefeatParticles()));
         }
     }

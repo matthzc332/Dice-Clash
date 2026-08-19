@@ -69,23 +69,23 @@ public static class InsigniaDetailPopup
             iconOutline.effectDistance = new Vector2(3, -3);
         }
 
-        Text nameText = CreateText(panel.transform, font, collected ? ins.name.ToUpper() : "???", 16,
-            collected ? rarity : new Color(0.5f, 0.5f, 0.5f), new Vector2(0, 185), new Vector2(330, 40));
+        Text nameText = CreateText(panel.transform, font, collected ? ins.name.ToUpper() : "???", 18,
+            Color.black, new Vector2(0, 185), new Vector2(330, 40));
         if (collected)
         {
             Outline nameOutline = nameText.gameObject.AddComponent<Outline>();
-            nameOutline.effectColor = new Color(0, 0, 0, 0.8f);
+            nameOutline.effectColor = new Color(1f, 1f, 1f, 0.6f);
             nameOutline.effectDistance = new Vector2(1, -1);
         }
 
         if (collected)
         {
-            CreateText(panel.transform, font, ins.description, 10,
-                new Color(0.75f, 0.7f, 0.6f), new Vector2(0, -140), new Vector2(300, 120));
+            CreateText(panel.transform, font, ins.description, 11,
+                Color.black, new Vector2(0, -140), new Vector2(300, 120));
         }
 
-        CreateText(panel.transform, font, ins.rarity.ToUpper(), 12,
-            collected ? rarity : new Color(0.4f, 0.4f, 0.4f), new Vector2(0, -190), new Vector2(300, 30));
+        CreateText(panel.transform, font, ins.rarity.ToUpper(), 14,
+            Color.black, new Vector2(0, -190), new Vector2(300, 30));
 
         PopIn pop = overlay.AddComponent<PopIn>();
         pop.target = pRt;

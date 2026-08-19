@@ -70,4 +70,9 @@ public class BuildScript
         LogBuild(buildNum, "WebGL");
         Debug.Log($"WebGL build v{buildNum:D4} complete → {dir}");
     }
+
+    public static void BuildWindowsCLI()
+    {
+        BuildWindows();
+    }
 }

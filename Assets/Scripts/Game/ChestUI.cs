@@ -231,7 +231,7 @@ public class ChestUI : MonoBehaviour
         int capturedIndex = index;
         chestBtn.onClick.AddListener(() => OnOpenClicked(capturedIndex));
 
-        CreateOpenButton(parent, index, -90);
+        CreateOpenButton(parent, index, -55);
     }
 
     IEnumerator PulseReadyAura(Image aura)
@@ -775,7 +775,7 @@ public class ChestUI : MonoBehaviour
         closeBtnRt.anchorMin = new Vector2(0.5f, 0f);
         closeBtnRt.anchorMax = new Vector2(0.5f, 0f);
         closeBtnRt.pivot = new Vector2(0.5f, 0.5f);
-        closeBtnRt.sizeDelta = new Vector2(160, 50);
+        closeBtnRt.sizeDelta = new Vector2(200, 65);
         closeBtnRt.anchoredPosition = new Vector2(0, 25);
         Vector3 cbOrig = closeBtnRt.localScale;
         closeBtnRt.localScale = Vector3.zero;

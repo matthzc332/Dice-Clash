@@ -45,6 +45,7 @@ public class BoardManager : MonoBehaviour
     private Dictionary<int, Vector3> originalScales = new();
     private Dictionary<int, Vector3> originalPositions = new();
     private Dictionary<string, Sprite> poseCache = new();
+    private Dictionary<string, Sprite[]> fightCloudCache = new();
     private GameObject blueFlagObj;
     private GameObject redFlagObj;
     private ParticleSystem blueSparkles;
@@ -1103,6 +1104,178 @@ public class BoardManager : MonoBehaviour
 
     float GetPoseYOffset(PieceType type) => 0.2f;
 
+    string GetFightSpecies(Team team)
+    {
+        string species = team == Team.Blue ? speciesTheme : scenarioTheme;
+        if (species == "Beastfolk" || species == "Wolf") return "Beast";
+        if (species == "NewRace") return "Beast";
+        return species;
+    }
+
+    Sprite[] LoadFightCloud(string species1, string species2)
+    {
+        int SpeciesOrder(string s)
+        {
+            if (s == "Human") return 0;
+            if (s == "Orc") return 1;
+            return 2;
+        }
+        string[] sorted = SpeciesOrder(species1) <= SpeciesOrder(species2)
+            ? new[] { species1, species2 }
+            : new[] { species2, species1 };
+        string key = $"FightCloud_{sorted[0]}{sorted[1]}";
+
+        if (fightCloudCache.TryGetValue(key, out Sprite[] cached))
+            return cached;
+
+        Sprite[] frames = new Sprite[3];
+        bool found = false;
+        for (int i = 0; i < 3; i++)
+        {
+            string path = $"Sprites/PowerUps/Efect/{key}{i + 1}";
+            Sprite s = Resources.Load<Sprite>(path);
+            Debug.Log($"[FightCloud] Loading '{path}' -> {(s != null ? $"OK ({s.rect.width}x{s.rect.height})" : "NULL")}");
+            if (s != null && s.rect.width >= 50 && s.rect.height >= 50)
+            {
+                frames[i] = s;
+                found = true;
+            }
+        }
+
+        if (found)
+        {
+            Sprite firstValid = null;
+            for (int i = 0; i < 3; i++)
+            {
+                if (frames[i] != null) { firstValid = frames[i]; break; }
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                if (frames[i] == null)
+                    frames[i] = firstValid;
+            }
+            fightCloudCache[key] = frames;
+            return frames;
+        }
+
+        Sprite[] fallback = CreateProceduralFightCloud();
+        fightCloudCache[key] = fallback;
+        return fallback;
+    }
+
+    Sprite[] CreateProceduralFightCloud()
+    {
+        Sprite[] frames = new Sprite[3];
+        int size = 256;
+        float center = size / 2f;
+
+        float[][] offsets = {
+            new[] { 0f, -0.18f, 0.20f, -0.12f, 0.15f },
+            new[] { 0.05f, -0.15f, 0.22f, -0.10f, 0.13f },
+            new[] { -0.05f, -0.20f, 0.18f, -0.14f, 0.17f }
+        };
+        float[] extraScale = { 1f, 1.08f, 0.94f };
+
+        for (int f = 0; f < 3; f++)
+        {
+            Texture2D tex = new Texture2D(size, size);
+            Color[] pixels = new Color[size * size];
+
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                int x = i % size;
+                int y = i / size;
+                float dx = (x - center) / center;
+                float dy = (y - center) / center;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                float cloudAlpha = 0f;
+                float[] radii = { 0.35f, 0.42f, 0.38f, 0.30f, 0.25f };
+                float[] offY = { 0f, 0.10f, -0.08f, -0.15f, 0.12f };
+
+                for (int j = 0; j < radii.Length; j++)
+                {
+                    float r = radii[j] * extraScale[f];
+                    float cdx = dx - offsets[f][j];
+                    float cdy = dy - offY[j];
+                    float cdist = Mathf.Sqrt(cdx * cdx + cdy * cdy);
+                    if (cdist < r)
+                        cloudAlpha = Mathf.Max(cloudAlpha, 1f - cdist / r);
+                }
+
+                if (dist < 0.15f * extraScale[f])
+                {
+                    float starAngle = Mathf.Atan2(dy, dx);
+                    float starDist = dist / (0.15f * extraScale[f]);
+                    float star = Mathf.Abs(Mathf.Sin(starAngle * 3f + f * 0.5f)) * 0.5f + 0.5f;
+                    if (starDist < star)
+                        cloudAlpha = Mathf.Max(cloudAlpha, 0.9f);
+                }
+
+                float edgeFade = Mathf.Clamp01((0.5f - dist) / 0.15f);
+                cloudAlpha *= edgeFade;
+
+                pixels[i] = new Color(0.95f, 0.95f, 0.95f, cloudAlpha * 0.92f);
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply();
+            frames[f] = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+
+        return frames;
+    }
+
+    GameObject SpawnFightCloud(Vector3 position, Sprite[] cloudFrames)
+    {
+        GameObject cloud = new GameObject("FightCloud");
+        cloud.transform.position = position;
+        SpriteRenderer sr = cloud.AddComponent<SpriteRenderer>();
+        sr.sprite = cloudFrames[0];
+        sr.sortingOrder = 15;
+
+        float refSize = 251f;
+        float spriteSize = Mathf.Max(sr.sprite.rect.width, sr.sprite.rect.height);
+        float scaleFactor = refSize / spriteSize;
+        cloud.transform.localScale = new Vector3(0.47f * scaleFactor, 0.58f * scaleFactor, 1f);
+
+        StartCoroutine(AnimateFightCloud(cloud, cloudFrames));
+        return cloud;
+    }
+
+    IEnumerator AnimateFightCloud(GameObject cloud, Sprite[] frames)
+    {
+        if (cloud == null) yield break;
+        SpriteRenderer sr = cloud.GetComponent<SpriteRenderer>();
+        if (sr == null) yield break;
+        Vector3 baseScale = cloud.transform.localScale;
+        float t = 0f;
+        int frameIndex = 0;
+        float frameTimer = 0f;
+        float frameInterval = 0.35f;
+
+        while (cloud != null)
+        {
+            t += Time.deltaTime;
+            frameTimer += Time.deltaTime;
+
+            if (frameTimer >= frameInterval)
+            {
+                frameTimer -= frameInterval;
+                frameIndex = (frameIndex + 1) % frames.Length;
+                if (sr != null && frames[frameIndex] != null)
+                    sr.sprite = frames[frameIndex];
+            }
+
+            float pulse = 1f + Mathf.Sin(t * 2f) * 0.03f;
+            cloud.transform.localScale = baseScale * pulse;
+            cloud.transform.Rotate(0f, 0f, 40f * Time.deltaTime);
+            if (sr != null)
+                sr.color = new Color(1f, 1f, 1f, 0.88f + Mathf.Sin(t * 3f) * 0.07f);
+            yield return null;
+        }
+    }
+
     Sprite LoadPoseSprite(string species, string className)
     {
         string cacheKey = $"{species}_{className}";
@@ -1221,11 +1394,16 @@ public class BoardManager : MonoBehaviour
         if (moveSprite != null && sr != null) sr.sprite = moveSprite;
 
         if (movingData.type == PieceType.Ninja)
+        {
+            SoundManager.Instance.PlayNinja();
             StartCoroutine(NinjaMoveCloud(fromPos));
+        }
         else if (movingData.type == PieceType.Paladin)
         {
+            float palDur = GameConfig.isAutoPlay ? 0.08f : 1.3f;
             StartCoroutine(PaladinAura(movingVisual, fromPos, toPos, false));
             StartCoroutine(PaladinLightBeam(movingVisual));
+            StartCoroutine(PaladinPasos(movingVisual, fromPos, toPos, palDur));
         }
 
         if (to.IsOccupied && to.pieceData.HasValue && to.pieceData.Value.team != movingData.team)
@@ -1260,40 +1438,23 @@ public class BoardManager : MonoBehaviour
             GameObject defenderVisual = to.pieceVisual;
             if (defenderVisual == null) yield break;
 
-            Vector3 attackDir = (toPos - fromPos).normalized;
+            string atkSpecies = GetFightSpecies(movingData.team);
+            string defSpecies = GetFightSpecies(defenderData.team);
+            if (isTutorial || isShadowPhase) { atkSpecies = "Human"; defSpecies = "Human"; }
+            Sprite[] fightCloudFrames = LoadFightCloud(atkSpecies, defSpecies);
+            Vector3 cloudPos = toPos;
+            GameObject fightCloud = SpawnFightCloud(cloudPos, fightCloudFrames);
 
-            int atkId = sr != null ? sr.GetInstanceID() : movingVisual.GetInstanceID();
-            if (!originalScales.ContainsKey(atkId))
-                originalScales[atkId] = movingVisual.transform.localScale;
+            SoundManager.Instance.PlaySwordClash();
 
-            Sprite[] atkSprites = IsTutorialDummy(movingData.team) ? null : LoadSprites(movingData.type, movingForward, "Attack", movingData.team);
-            if (atkSprites != null && sr != null)
-            {
-                sr.sprite = atkSprites[0];
-                PlayAnimation(movingVisual, atkSprites, 0.3f);
-                if (movingData.type == PieceType.Paladin && movingForward)
-                    sr.transform.localScale = new Vector3(0.46f, 0.52f, 1f);
-            }
-            SpriteRenderer defSr = defenderVisual.GetComponent<SpriteRenderer>();
-            bool defForward = !movingForward;
-            Sprite[] defAtk = IsTutorialDummy(defenderData.team) ? null : LoadSprites(defenderData.type, defForward, "Attack", defenderData.team);
-            if (defAtk != null && defSr != null)
-            {
-                defSr.sprite = defAtk[0];
-                PlayAnimation(defenderVisual, defAtk, 0.3f);
-                if (defenderData.type == PieceType.Paladin && defForward)
-                    defSr.transform.localScale = new Vector3(0.46f, 0.52f, 1f);
-            }
+            if (movingVisual != null) movingVisual.SetActive(false);
+            if (defenderVisual != null) defenderVisual.SetActive(false);
 
-            StartCoroutine(AnimateAttackLunge(movingVisual, attackDir));
             StartCoroutine(CombatShake(0.15f));
 
-            if (movingData.type == PieceType.Paladin)
-                StartCoroutine(PaladinAura(movingVisual, fromPos, toPos, true));
-
-            float combatDelay = GameConfig.isAutoPlay ? 0.1f : 1f;
+            float combatDelay = GameConfig.isAutoPlay ? 0.1f : 0.5f;
             yield return new WaitForSeconds(combatDelay);
-            if (movingVisual == null) yield break;
+            if (movingVisual == null) { if (fightCloud != null) Destroy(fightCloud); yield break; }
 
             CombatOutcome outcome = CombatManager.Resolve(movingData, defenderData, fromRow, fromCol, to, this);
 
@@ -1317,37 +1478,45 @@ public class BoardManager : MonoBehaviour
             if (turnManager != null) turnManager.ResumeTimer();
             TimerManager.Instance.Resume();
 
+            if (fightCloud != null) Destroy(fightCloud);
+
             if (outcome.result == CombatResult.AttackerWins)
             {
                 SoundManager.HitStop(0.06f);
-                StartCoroutine(AnimateHitImpact(defenderVisual));
-                Vector3 deathPos = defenderVisual != null ? defenderVisual.transform.position : toPos;
+
+                Vector3 deathPos = toPos;
                 OnKillEffect(deathPos, defenderData.team, defenderData.type, false);
-                yield return AnimateDestroy(defenderVisual, defenderData.team);
+                DeathPoof(toPos, defenderData.team);
+                if (defenderVisual != null) Destroy(defenderVisual);
                 to.ClearPiece();
+
                 if (CoinManager.Instance != null)
-                    CoinManager.Instance.AwardKill(movingData.team, movingVisual != null ? movingVisual.transform.position : fromPos, defenderData.type, false);
+                    CoinManager.Instance.AwardKill(movingData.team, toPos, defenderData.type, false);
 
                 if (movingVisual == null) yield break;
                 movingVisual.transform.SetParent(transform);
                 movingVisual.transform.position = toPos;
                 from.ClearPiece();
                 to.SetPiece(movingData, movingVisual);
-
                 ResetPieceSprite(movingVisual, movingData.type, movingData.team);
+                movingVisual.SetActive(true);
             }
             else
             {
                 SoundManager.HitStop(0.06f);
                 SoundManager.Instance.PlayBlock();
-                StartCoroutine(AnimateHitImpact(movingVisual));
-                Vector3 deathPos2 = movingVisual != null ? movingVisual.transform.position : fromPos;
+
+                Vector3 deathPos2 = fromPos;
                 OnKillEffect(deathPos2, movingData.team, movingData.type, false);
-                yield return AnimateDestroy(movingVisual, movingData.team);
+                DeathPoof(fromPos, movingData.team);
+                if (movingVisual != null) Destroy(movingVisual);
                 from.ClearPiece();
 
                 if (defenderVisual != null)
+                {
                     ResetPieceSprite(defenderVisual, defenderData.type, defenderData.team);
+                    defenderVisual.SetActive(true);
+                }
             }
 
             SpawnEmojis(outcome, movingData, defenderData);
@@ -1529,6 +1698,8 @@ public class BoardManager : MonoBehaviour
 
         if (salto2 != null && sr != null) sr.sprite = salto2;
 
+        SoundManager.Instance.PlaySalto2();
+
         yield return new WaitForSecondsRealtime(0.08f);
 
         float squashTime = 0.1f;
@@ -1543,7 +1714,6 @@ public class BoardManager : MonoBehaviour
         }
         if (visual != null) visual.transform.localScale = baseScale;
 
-        SoundManager.Instance.PlayHammer();
         StartCoroutine(CombatShake(0.12f + distance * 0.04f));
 
         if (visual != null)
@@ -1800,6 +1970,59 @@ public class BoardManager : MonoBehaviour
         if (obj != null) Destroy(obj);
     }
 
+    IEnumerator PaladinPasos(GameObject visual, Vector3 fromPos, Vector3 toPos, float duration)
+    {
+        Sprite pasosSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/pasos");
+        if (pasosSprite == null) yield break;
+
+        float spawnInterval = 0.18f;
+        float nextSpawn = 0;
+        float t = 0;
+        while (t < duration)
+        {
+            if (visual == null) yield break;
+            nextSpawn -= Time.deltaTime;
+            if (nextSpawn <= 0)
+            {
+                nextSpawn = spawnInterval;
+                Vector3 basePos = visual.transform.position;
+                Vector3 scatter = new Vector3(Random.Range(-0.25f, 0.25f), Random.Range(-0.2f, 0.2f), 0);
+                GameObject paso = new GameObject("PaladinPaso");
+                paso.transform.position = basePos + scatter;
+                SpriteRenderer sr = paso.AddComponent<SpriteRenderer>();
+                sr.sprite = pasosSprite;
+                sr.color = new Color(1f, 0.95f, 0.7f, 0.5f);
+                sr.sortingOrder = -1;
+                paso.transform.localScale = Vector3.one * Random.Range(0.28f, 0.38f);
+                paso.transform.rotation = Quaternion.Euler(0, 0, Random.Range(-15f, 15f));
+                StartCoroutine(FadePasos(paso, 1.2f));
+            }
+            t += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    IEnumerator FadePasos(GameObject obj, float duration)
+    {
+        if (obj == null) yield break;
+        yield return new WaitForSecondsRealtime(0.3f);
+        SpriteRenderer sr = obj != null ? obj.GetComponent<SpriteRenderer>() : null;
+        if (sr == null) yield break;
+        float t = 0;
+        float fadeDur = duration - 0.3f;
+        if (fadeDur <= 0) fadeDur = 0.5f;
+        while (t < fadeDur)
+        {
+            if (obj == null) yield break;
+            Color c = sr.color;
+            c.a = Mathf.Lerp(0.5f, 0, t / fadeDur);
+            sr.color = c;
+            t += Time.deltaTime;
+            yield return null;
+        }
+        if (obj != null) Destroy(obj);
+    }
+
     IEnumerator NinjaMoveCloud(Vector3 fromPos)
     {
         for (int i = 0; i < 5; i++)
@@ -1863,11 +2086,23 @@ public class BoardManager : MonoBehaviour
     {
         if (visual == null) yield break;
         SoundManager.Instance.PlayHolyBeam();
+        SoundManager.Instance.PlayChoir();
 
         GameObject beam = new GameObject("LightBeam");
         SpriteRenderer beamSr = beam.AddComponent<SpriteRenderer>();
-        beamSr.sprite = CreateRectSprite(0.45f, 6f, new Color(1f, 0.95f, 0.7f, 0.45f));
+        beamSr.sprite = CreateRectSprite(0.45f, 4f, new Color(1f, 0.95f, 0.7f, 0.45f));
         beamSr.sortingOrder = 2;
+
+        Sprite nubeSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/Nube");
+        GameObject cloud = new GameObject("Nube");
+        SpriteRenderer cloudSr = cloud.AddComponent<SpriteRenderer>();
+        cloudSr.sprite = nubeSprite;
+        cloudSr.sortingOrder = 4;
+        cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f);
+        cloud.transform.localScale = Vector3.one * 0.35f;
+
+        float cloudY = 4.5f;
+        float beamHalfH = 2f;
 
         float fadeIn = 0.15f;
         float hold = 0.6f;
@@ -1877,10 +2112,13 @@ public class BoardManager : MonoBehaviour
         while (t < fadeIn)
         {
             if (beam == null || visual == null) yield break;
-            beam.transform.position = visual.transform.position + Vector3.up * 3f;
+            Vector3 pos = visual.transform.position;
+            cloud.transform.position = pos + Vector3.up * cloudY;
+            beam.transform.position = pos + Vector3.up * (cloudY - beamHalfH);
             float p = t / fadeIn;
             beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * p);
             beam.transform.localScale = Vector3.one * (0.5f + p * 0.5f);
+            cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f * p);
             t += Time.deltaTime;
             yield return null;
         }
@@ -1889,28 +2127,34 @@ public class BoardManager : MonoBehaviour
         while (t < hold)
         {
             if (beam == null || visual == null) yield break;
-            beam.transform.position = visual.transform.position + Vector3.up * 3f;
+            Vector3 pos = visual.transform.position;
+            cloud.transform.position = pos + Vector3.up * cloudY;
+            beam.transform.position = pos + Vector3.up * (cloudY - beamHalfH);
             float flicker = 1f + Mathf.Sin(t * 30f) * 0.08f;
             beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * flicker);
+            cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f * flicker);
             t += Time.deltaTime;
             yield return null;
         }
 
         t = 0;
-        Vector3 lastPos = visual != null ? visual.transform.position : beam.transform.position - Vector3.up * 3f;
+        Vector3 lastPos = visual != null ? visual.transform.position : beam.transform.position - Vector3.up * (cloudY - beamHalfH);
         while (t < fadeOut)
         {
             if (beam == null) yield break;
             if (visual != null) lastPos = visual.transform.position;
-            beam.transform.position = lastPos + Vector3.up * 3f;
+            cloud.transform.position = lastPos + Vector3.up * cloudY;
+            beam.transform.position = lastPos + Vector3.up * (cloudY - beamHalfH);
             float p = 1f - t / fadeOut;
             beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * p);
             beam.transform.localScale = Vector3.one * (0.5f + p * 0.5f);
+            cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f * p);
             t += Time.deltaTime;
             yield return null;
         }
         Vector3 finalPos = visual != null ? visual.transform.position : lastPos;
         if (beam != null) Destroy(beam);
+        if (cloud != null) Destroy(cloud);
 
         for (int i = 0; i < 6; i++)
         {
