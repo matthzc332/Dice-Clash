@@ -343,13 +343,14 @@ public class CampaignUI : MonoBehaviour
 
     Sprite GetCupSprite(string race)
     {
-        string cupPath = race switch
+        string resolved = BoardManager.SpriteFolder(race);
+        string cupPath = resolved switch
         {
             "Human" => "Sprites/Menu/copaHuman",
             "Orc" => "Sprites/Menu/copaOrc",
             "Beastfolk" => "Sprites/Menu/copaBeast",
-            "Nigromantes" => "Sprites/Menu/copaMenu",
-            _ => "Sprites/Menu/copaMenu"
+            "Nigromantes" => "Sprites/Menu/copaMenu-copy-0",
+            _ => "Sprites/Menu/copaMenu-copy-0"
         };
         Sprite[] sprites = Resources.LoadAll<Sprite>(cupPath);
         if (sprites == null || sprites.Length == 0) return null;
@@ -362,16 +363,8 @@ public class CampaignUI : MonoBehaviour
 
     Sprite GetRaceIcon(string race)
     {
-        string scenarioTheme = race switch
-        {
-            "Human" => "Human",
-            "Orc" => "Orc",
-            "Wolf" => "Wolf",
-            "Beastfolk" => "Wolf",
-            "NewRace" => "Nigromantes",
-            _ => "Human"
-        };
-        string iconPath = $"Sprites/{scenarioTheme}/Icono";
+        string resolved = BoardManager.SpriteFolder(race);
+        string iconPath = $"Sprites/{resolved}/Icono";
         Sprite[] sprites = Resources.LoadAll<Sprite>(iconPath);
         if (sprites != null && sprites.Length > 0)
         {

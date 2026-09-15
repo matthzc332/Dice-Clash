@@ -250,15 +250,15 @@ public class InsigniaUI : MonoBehaviour
         nameObj.transform.SetParent(cardObj.transform, false);
         Text nameText = nameObj.AddComponent<Text>();
         nameText.font = font;
-        nameText.fontSize = 8;
+        nameText.fontSize = 11;
         nameText.alignment = collected ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter;
         nameText.text = collected ? ins.name.ToUpper() : "???";
         nameText.color = collected ? rarityColor : new Color(0.3f, 0.3f, 0.3f);
         RectTransform nRt = nameObj.GetComponent<RectTransform>();
         if (collected)
         {
-            nRt.anchorMin = new Vector2(0.38f, 0.5f);
-            nRt.anchorMax = new Vector2(0.95f, 0.9f);
+            nRt.anchorMin = new Vector2(0.38f, 0.6f);
+            nRt.anchorMax = new Vector2(0.95f, 0.98f);
         }
         else
         {
@@ -266,22 +266,6 @@ public class InsigniaUI : MonoBehaviour
             nRt.anchorMax = new Vector2(1f, 0.7f);
         }
         nRt.sizeDelta = Vector2.zero;
-
-        if (collected)
-        {
-            GameObject descObj = new GameObject("Desc");
-            descObj.transform.SetParent(cardObj.transform, false);
-            Text descText = descObj.AddComponent<Text>();
-            descText.font = font;
-            descText.fontSize = 6;
-            descText.alignment = TextAnchor.MiddleLeft;
-            descText.text = ins.description;
-            descText.color = new Color(0.6f, 0.55f, 0.45f);
-            RectTransform dRt = descObj.GetComponent<RectTransform>();
-            dRt.anchorMin = new Vector2(0.38f, 0.05f);
-            dRt.anchorMax = new Vector2(0.95f, 0.5f);
-            dRt.sizeDelta = Vector2.zero;
-        }
 
         GameObject rarityObj = new GameObject("Rarity");
         rarityObj.transform.SetParent(cardObj.transform, false);
@@ -304,10 +288,13 @@ public class InsigniaUI : MonoBehaviour
             checkObj.transform.SetParent(cardObj.transform, false);
             Text checkText = checkObj.AddComponent<Text>();
             checkText.font = font;
-            checkText.fontSize = 10;
+            checkText.fontSize = 18;
             checkText.alignment = TextAnchor.MiddleCenter;
             checkText.text = "\u2713";
             checkText.color = new Color(0.3f, 0.9f, 0.3f);
+            Outline checkOutline = checkObj.AddComponent<Outline>();
+            checkOutline.effectColor = new Color(0.05f, 0.45f, 0.05f);
+            checkOutline.effectDistance = new Vector2(1, -1);
             RectTransform checkRt = checkObj.GetComponent<RectTransform>();
             checkRt.anchorMin = new Vector2(0.8f, 0.7f);
             checkRt.anchorMax = new Vector2(1f, 1f);

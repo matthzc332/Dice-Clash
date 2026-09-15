@@ -44,6 +44,8 @@ public class TutorialManager : MonoBehaviour
     private Sprite dialogueBienSprite;
     private Vector2 smallPos = new Vector2(-684.4f, -406.7f);
     private Vector3 smallScale = new Vector3(0.83f, 0.83f, 1f);
+    private Vector2 bigPos = new Vector2(0f, -200f);
+    private Vector3 bigScale = new Vector3(1.85f, 1.85f, 1f);
     private RectTransform textRt;
     private bool shadowMidMessageShown;
 
@@ -210,8 +212,8 @@ public class TutorialManager : MonoBehaviour
             GameObject container = new GameObject($"PowerUp_{type}");
             container.transform.position = worldPos;
 
-            Sprite iconSprite = null;
-            if (allIcons != null && allIcons.Length > 0)
+            Sprite iconSprite = PowerUpManager.LoadIcon(type);
+            if (iconSprite == null && allIcons != null && allIcons.Length > 0)
             {
                 foreach (var s in allIcons)
                     if (s.name == type.ToString() || s.name == type.ToString() + "_0") { iconSprite = s; break; }
@@ -221,7 +223,7 @@ public class TutorialManager : MonoBehaviour
                 Texture2D[] texs = Resources.LoadAll<Texture2D>("Sprites/PowerUps/Icon");
                 if (texs != null)
                     foreach (var t in texs)
-                        if (t.name == type.ToString())
+                        if (t.name == type.ToString() && t.isReadable)
                             iconSprite = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f));
             }
 
@@ -234,13 +236,18 @@ public class TutorialManager : MonoBehaviour
             {
                 sr.sprite = iconSprite;
                 sr.color = Color.white;
+                Vector3 bs = iconSprite.bounds.size;
+                iconObj.transform.localScale = Vector3.one * 0.25f;
+                float pPnX = iconSprite.rect.width > 0.001f ? iconSprite.pivot.x / iconSprite.rect.width : 0.5f;
+                float pPnY = iconSprite.rect.height > 0.001f ? iconSprite.pivot.y / iconSprite.rect.height : 0.5f;
+                iconObj.transform.localPosition = new Vector3((pPnX - 0.5f) * bs.x * 0.25f, (pPnY - 0.5f) * bs.y * 0.25f, 0f);
             }
             else
             {
                 sr.sprite = CreatePowerUpIcon(type, color);
                 sr.color = Color.white;
+                iconObj.transform.localScale = Vector3.one * 0.25f;
             }
-            iconObj.transform.localScale = Vector3.one * 0.25f;
 
             GameObject glowObj = new GameObject("Glow");
             glowObj.transform.SetParent(container.transform, false);
@@ -444,13 +451,13 @@ public class TutorialManager : MonoBehaviour
         {
             float raw = t / dur;
             float e = raw * raw * (3f - 2f * raw);
-            panelRt.anchoredPosition = Vector2.Lerp(fromPos, new Vector2(0, -120), e);
-            panelRt.localScale = Vector3.Lerp(fromScale, new Vector3(2.4f, 2.4f, 1f), e);
+            panelRt.anchoredPosition = Vector2.Lerp(fromPos, bigPos, e);
+            panelRt.localScale = Vector3.Lerp(fromScale, bigScale, e);
             t += Time.deltaTime;
             yield return null;
         }
-        panelRt.anchoredPosition = new Vector2(0, -120);
-        panelRt.localScale = new Vector3(2.4f, 2.4f, 1f);
+        panelRt.anchoredPosition = bigPos;
+        panelRt.localScale = bigScale;
         if (textRt != null)
         {
             textRt.offsetMin = new Vector2(150, 12);
@@ -489,8 +496,8 @@ public class TutorialManager : MonoBehaviour
 
         if (panelRt != null)
         {
-            panelRt.anchoredPosition = new Vector2(0, -120);
-            panelRt.localScale = new Vector3(2.4f, 2.4f, 1f);
+            panelRt.anchoredPosition = bigPos;
+            panelRt.localScale = bigScale;
         }
         SetInstruction("Choose a champion\nand move");
         yield return new WaitForSeconds(3f);
@@ -513,15 +520,6 @@ public class TutorialManager : MonoBehaviour
             while (currentStep != Step.AttackDummies || HasSelection())
                 yield return null;
 
-            float idle = 0f;
-            while (currentStep == Step.AttackDummies && !HasSelection() && idle < 4f)
-            {
-                idle += Time.deltaTime;
-                yield return null;
-            }
-
-            if (currentStep != Step.AttackDummies || HasSelection()) continue;
-
             List<SpriteRenderer> blueRenderers = new();
             for (int r = 0; r < board.rows; r++)
                 for (int c = 0; c < board.cols; c++)
@@ -537,7 +535,7 @@ public class TutorialManager : MonoBehaviour
             if (blueRenderers.Count == 0) continue;
 
             float t = 0;
-            while (currentStep == Step.AttackDummies && !HasSelection() && t < 3f)
+            while (currentStep == Step.AttackDummies && !HasSelection() && t < 2.5f)
             {
                 float brightness = 0.3f + (Mathf.Sin(t * 8f) * 0.5f + 0.5f) * 0.7f;
                 foreach (var sr in blueRenderers)
@@ -553,6 +551,15 @@ public class TutorialManager : MonoBehaviour
             {
                 if (sr != null)
                     sr.color = Color.white;
+            }
+
+            if (currentStep != Step.AttackDummies || HasSelection()) continue;
+
+            float pause = 0f;
+            while (currentStep == Step.AttackDummies && !HasSelection() && pause < 1f)
+            {
+                pause += Time.deltaTime;
+                yield return null;
             }
         }
     }
@@ -664,6 +671,11 @@ public class TutorialManager : MonoBehaviour
             panelImg.sprite = dialogueSustoSprite;
         yield return StartCoroutine(MovePanelBig());
         yield return new WaitForSeconds(0.3f);
+        if (textRt != null)
+        {
+            textRt.offsetMin = new Vector2(textRt.offsetMin.x + 8f, textRt.offsetMin.y);
+            textRt.offsetMax = new Vector2(textRt.offsetMax.x + 8f, textRt.offsetMax.y);
+        }
         SetInstruction("Shadows? Defeat them!!");
         yield return new WaitForSeconds(1.2f);
 

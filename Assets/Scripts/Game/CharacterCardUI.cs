@@ -100,6 +100,8 @@ public class CharacterCardUI : MonoBehaviour
     void AdjustEnemyCard()
     {
         AdjustCard(enemyCard, new Vector2(143, -48), new Vector2(292, -50), new Vector2(233, -40), new Vector2(26, -257), new Vector2(154, -254));
+        RectTransform enemyDefDiceRt = enemyCard.transform.Find("DefBlock/DefDice").GetComponent<RectTransform>();
+        enemyDefDiceRt.anchoredPosition = new Vector2(68, 1);
     }
 
     void AdjustCard(GameObject card, Vector2 namePos, Vector2 scorePos, Vector2 scoreIconPos, Vector2 atkBlockPos, Vector2 defBlockPos)
@@ -221,12 +223,12 @@ public class CharacterCardUI : MonoBehaviour
         Image atkBlockBg = atkBlock.AddComponent<Image>();
         atkBlockBg.color = new Color(0.85f, 0.78f, 0.68f, 0.3f);
 
-        MakeIcon(atkBlock, "AtkIcon", new Vector2(8, 0), swordSprite, new Vector2(36, 36));
+        MakeIcon(atkBlock, "AtkIcon", new Vector2(10, 0), swordSprite, new Vector2(36, 36));
         atkPrefix = MakeLabel(atkBlock, "AtkPrefix", "2", 14, Color.black, TextAnchor.MiddleLeft,
-            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(50, 0), new Vector2(16, 18));
-        atkDice = MakeIcon(atkBlock, "AtkDice", new Vector2(70, 0), diceSprite, new Vector2(22, 22));
+            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(54, 0), new Vector2(16, 18));
+        atkDice = MakeIcon(atkBlock, "AtkDice", new Vector2(66, 2), diceSprite, new Vector2(26, 26));
         atkSuffix = MakeLabel(atkBlock, "AtkSuffix", "6+1", 12, Color.black, TextAnchor.MiddleLeft,
-            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(98, 0), new Vector2(60, 18));
+            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(124, 0), new Vector2(52, 18));
 
         GameObject defBlock = new GameObject("DefBlock");
         defBlock.transform.SetParent(card.transform);
@@ -239,12 +241,12 @@ public class CharacterCardUI : MonoBehaviour
         Image defBlockBg = defBlock.AddComponent<Image>();
         defBlockBg.color = new Color(0.85f, 0.78f, 0.68f, 0.3f);
 
-        MakeIcon(defBlock, "DefIcon", new Vector2(8, 0), shieldSprite, new Vector2(36, 36));
+        MakeIcon(defBlock, "DefIcon", new Vector2(10, 0), shieldSprite, new Vector2(36, 36));
         defPrefix = MakeLabel(defBlock, "DefPrefix", "2", 14, Color.black, TextAnchor.MiddleLeft,
-            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(50, 0), new Vector2(16, 18));
-        defDice = MakeIcon(defBlock, "DefDice", new Vector2(70, 0), diceSprite, new Vector2(22, 22));
+            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(54, 0), new Vector2(16, 18));
+        defDice = MakeIcon(defBlock, "DefDice", new Vector2(69, 0), diceSprite, new Vector2(26, 26));
         defSuffix = MakeLabel(defBlock, "DefSuffix", "6+0", 12, Color.black, TextAnchor.MiddleLeft,
-            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(98, 0), new Vector2(60, 18));
+            new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(124, 0), new Vector2(52, 18));
 
         return card;
     }

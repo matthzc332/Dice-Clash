@@ -1,7 +1,10 @@
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 
 public class BuildScript
 {
@@ -65,14 +68,82 @@ public class BuildScript
             options = BuildOptions.None
         };
 
-        BuildPipeline.BuildPlayer(options);
+        BuildReport report = BuildPipeline.BuildPlayer(options);
         WriteBuildNumber(buildNum + 1);
         LogBuild(buildNum, "WebGL");
+        LogBuildReport(report);
         Debug.Log($"WebGL build v{buildNum:D4} complete → {dir}");
+    }
+
+    static void LogBuildReport(BuildReport report)
+    {
+        if (report == null) return;
+        string outPath = "Builds/websize_report.txt";
+        List<string> lines = new List<string>();
+        lines.Add($"== WebGL Build Report | total {report.summary.totalSize:N0} bytes ({report.summary.totalSize / 1048576.0:N2} MB) ==");
+
+        List<KeyValuePair<string, ulong>> assets = new List<KeyValuePair<string, ulong>>();
+        foreach (UnityEditor.Build.Reporting.PackedAssetInfo info in report.packedAssets.SelectMany(p => p.contents))
+        {
+            string name = info.sourceAssetPath;
+            if (string.IsNullOrEmpty(name)) name = info.type.ToString();
+            assets.Add(new KeyValuePair<string, ulong>(name, info.packedSize));
+        }
+
+        Dictionary<string, ulong> grouped = new Dictionary<string, ulong>();
+        foreach (KeyValuePair<string, ulong> a in assets)
+        {
+            string key = a.Key;
+            if (!grouped.ContainsKey(key)) grouped[key] = 0;
+            grouped[key] += a.Value;
+        }
+
+        IEnumerable<KeyValuePair<string, ulong>> sorted = grouped.OrderByDescending(a => a.Value).Take(40);
+        ulong totalListed = 0;
+        foreach (KeyValuePair<string, ulong> a in sorted)
+        {
+            lines.Add($"{(a.Value / 1048576.0):N2} MB\t{a.Key}");
+            totalListed += a.Value;
+        }
+        lines.Add($"-- listed {sorted.Count()} assets, {totalListed / 1048576.0:N2} MB --");
+        File.WriteAllLines(outPath, lines.ToArray());
+        Debug.Log("Build report written to " + outPath);
+    }
+
+    [MenuItem("Build/Build Android APK")]
+    public static void BuildAndroid()
+    {
+        int buildNum = ReadBuildNumber();
+        string dir = "Builds/v" + buildNum.ToString("D4") + "_Android";
+        Directory.CreateDirectory(dir);
+        string apkPath = dir + "/DiceClashTactics_v" + buildNum.ToString("D4") + ".apk";
+
+        BuildPlayerOptions options = new BuildPlayerOptions
+        {
+            scenes = scenes,
+            locationPathName = apkPath,
+            target = BuildTarget.Android,
+            options = BuildOptions.None
+        };
+
+        BuildPipeline.BuildPlayer(options);
+        WriteBuildNumber(buildNum + 1);
+        LogBuild(buildNum, "Android");
+        Debug.Log($"Android apk v{buildNum:D4} complete → {apkPath}");
     }
 
     public static void BuildWindowsCLI()
     {
         BuildWindows();
+    }
+
+    public static void BuildAndroidCLI()
+    {
+        BuildAndroid();
+    }
+
+    public static void BuildWebGLCLI()
+    {
+        BuildWebGL();
     }
 }

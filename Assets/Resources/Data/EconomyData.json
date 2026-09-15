@@ -13,7 +13,7 @@
     { "key": "MAGIC", "value": 40 }
   ],
   "levelEntryCosts": [
-    { "key": "cup1", "value": 0 },
+    { "key": "cup1", "value": 5 },
     { "key": "cup2", "value": 10 },
     { "key": "cup3", "value": 20 },
     { "key": "cup4", "value": 30 }

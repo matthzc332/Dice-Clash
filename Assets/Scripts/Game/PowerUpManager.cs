@@ -26,16 +26,24 @@ public class PowerUpManager : MonoBehaviour
         public GameObject container;
         public GameObject icon;
         public GameObject glow;
+        public float baseScale;
+        public float iconW;
+        public float iconH;
     }
 
     private List<ActivePowerUp> spawnedPowerUps = new();
     private Coroutine autoSpawnCoroutine;
+    private readonly List<PowerUpType> rotationQueue = new();
     private Sprite[] allIcons;
     private Sprite circleSprite;
-    private Sprite glowSprite;
     private Sprite magoIdleSprite;
     private Sprite magoAttackSprite;
     private Sprite magoBackSprite;
+    private Sprite ritualSprite;
+    private Sprite punioSprite;
+    private Sprite magicIconSprite;
+    private Sprite[] fireHitFrames;
+    private Sprite[] lightningHitFrames;
 
     void Awake()
     {
@@ -55,22 +63,183 @@ public class PowerUpManager : MonoBehaviour
             {
                 allIcons = new Sprite[texs.Length];
                 for (int i = 0; i < texs.Length; i++)
-                    allIcons[i] = Sprite.Create(texs[i], new Rect(0, 0, texs[i].width, texs[i].height), new Vector2(0.5f, 0.5f));
+                    if (texs[i].isReadable)
+                        allIcons[i] = Sprite.Create(texs[i], new Rect(0, 0, texs[i].width, texs[i].height), new Vector2(0.5f, 0.5f));
             }
         }
 
-        magoIdleSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/magoIdle");
-        magoAttackSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/magoAttack");
-        magoBackSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/magoback");
+        magoIdleSprite = LoadFirstSprite("Sprites/PowerUps/Efect/magoIdle");
+        magoAttackSprite = LoadFirstSprite("Sprites/PowerUps/Efect/magoAttack");
+        magoBackSprite = LoadFirstSprite("Sprites/PowerUps/Efect/magoback");
 
-        glowSprite = Resources.Load<Sprite>("Sprites/PowerUps/Icon/cambio");
-        if (glowSprite == null)
+        ritualSprite = LoadFullSprite("Sprites/PowerUps/Efect/ritual");
+        punioSprite = LoadBestSprite("Sprites/PowerUps/Efect/punio");
+        magicIconSprite = null;
+        if (allIcons != null)
         {
-            Sprite[] loaded = Resources.LoadAll<Sprite>("Sprites/PowerUps/Icon");
-            if (loaded != null)
-                foreach (var s in loaded)
-                    if (s.name == "cambio") { glowSprite = s; break; }
+            float bestArea = 0f;
+            foreach (var s in allIcons)
+            {
+                if (!s.name.StartsWith("cambio")) continue;
+                float area = s.rect.width * s.rect.height;
+                if (area > bestArea) { magicIconSprite = s; bestArea = area; }
+            }
+            if (magicIconSprite != null) magicIconSprite = FixPivot(magicIconSprite);
         }
+        if (magicIconSprite == null)
+            magicIconSprite = LoadFullSprite("Sprites/PowerUps/Icon/cambio");
+
+        fireHitFrames = CollectFrames("Sprites/PowerUps/Efect/fuego1", "Sprites/PowerUps/Efect/fuego2");
+        lightningHitFrames = CollectFrames("Sprites/PowerUps/Efect/rayo1", "Sprites/PowerUps/Efect/rayo2");
+    }
+
+    Sprite LoadBestSprite(string basePath)
+    {
+        Sprite best = null;
+        float bestArea = 0f;
+        foreach (string cand in new[] { basePath, basePath + " 1" })
+        {
+            Sprite[] arr = Resources.LoadAll<Sprite>(cand);
+            if (arr == null) continue;
+            foreach (var s in arr)
+            {
+                if (s == null) continue;
+                float area = s.rect.width * s.rect.height;
+                if (area > bestArea) { best = s; bestArea = area; }
+            }
+        }
+        if (best != null) return best;
+        return LoadFullSprite(basePath);
+    }
+
+    Sprite[] CollectFrames(params string[] paths)
+    {
+        List<Sprite> frames = new();
+        foreach (string path in paths)
+        {
+            Sprite s = Resources.Load<Sprite>(path);
+            if (s != null) { frames.Add(s); continue; }
+            Sprite[] arr = Resources.LoadAll<Sprite>(path);
+            if (arr != null && arr.Length > 0) frames.Add(arr[0]);
+        }
+        return frames.ToArray();
+    }
+
+    Sprite LoadFullSprite(string path)
+    {
+        Sprite[] arr = Resources.LoadAll<Sprite>(path);
+        if (arr != null && arr.Length > 0)
+        {
+            Sprite best = null;
+            float bestArea = 0f;
+            foreach (var s in arr)
+            {
+                if (s == null) continue;
+                float area = s.rect.width * s.rect.height;
+                if (area > bestArea) { best = s; bestArea = area; }
+            }
+            if (best != null) return best;
+        }
+        Sprite single = Resources.Load<Sprite>(path);
+        if (single != null) return single;
+        Texture2D tex = Resources.Load<Texture2D>(path);
+        if (tex != null)
+        {
+            try { return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f); }
+            catch (System.Exception) { }
+        }
+        return null;
+    }
+
+    Sprite LoadFirstSprite(string path)
+    {
+        Sprite single = Resources.Load<Sprite>(path);
+        if (single != null) return single;
+        Sprite[] arr = Resources.LoadAll<Sprite>(path);
+        if (arr != null && arr.Length > 0) return arr[0];
+        return null;
+    }
+
+    public static Sprite LoadIcon(PowerUpType type)
+    {
+        string file = type == PowerUpType.MAGIC ? "cambio" : type.ToString();
+        Sprite[] arr = Resources.LoadAll<Sprite>("Sprites/PowerUps/Icon/" + file);
+        if (arr != null && arr.Length > 0)
+        {
+            Sprite best = null;
+            float bestArea = 0f;
+            foreach (var s in arr)
+            {
+                if (s == null) continue;
+                float area = s.rect.width * s.rect.height;
+                if (area > bestArea) { best = s; bestArea = area; }
+            }
+            if (best != null) return best;
+        }
+        Sprite single = Resources.Load<Sprite>("Sprites/PowerUps/Icon/" + file);
+        if (single != null) return single;
+        Texture2D tex = Resources.Load<Texture2D>("Sprites/PowerUps/Icon/" + file);
+        if (tex != null && tex.isReadable)
+        {
+            try { return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f); }
+            catch (System.Exception) { }
+        }
+        return null;
+    }
+
+    Sprite FixPivot(Sprite s)
+    {
+        return s;
+    }
+
+    Vector2 NormalizedPivot(Sprite s)
+    {
+        if (s == null) return new Vector2(0.5f, 0.5f);
+        float pw = s.rect.width > 0.001f ? s.pivot.x / s.rect.width : 0.5f;
+        float ph = s.rect.height > 0.001f ? s.pivot.y / s.rect.height : 0.5f;
+        return new Vector2(pw, ph);
+    }
+
+    Vector3 IconLocalPos(Sprite s, float sizeX, float sizeY, float scale)
+    {
+        Vector2 p = NormalizedPivot(s);
+        return new Vector3((p.x - 0.5f) * sizeX * scale, (p.y - 0.5f) * sizeY * scale, 0f);
+    }
+
+    Sprite PickIcon(PowerUpType type, Color color)
+    {
+        Sprite direct = LoadIcon(type);
+        if (direct != null) return FixPivot(direct);
+        if (allIcons == null) return CreatePowerUpIcon(type, color);
+        if (type == PowerUpType.MAGIC)
+        {
+            Sprite best = null;
+            float bestArea = 0f;
+            foreach (var s in allIcons)
+            {
+                if (!s.name.StartsWith("cambio")) continue;
+                float area = s.rect.width * s.rect.height;
+                if (area > bestArea) { best = s; bestArea = area; }
+            }
+            if (best != null) return FixPivot(best);
+            return magicIconSprite != null ? magicIconSprite : CreatePowerUpIcon(type, color);
+        }
+        Sprite exact = null;
+        foreach (var s in allIcons)
+        {
+            if (s.name == type.ToString() || s.name == type.ToString() + "_0") { exact = s; break; }
+        }
+        if (exact != null) return FixPivot(exact);
+        Sprite prefixBest = null;
+        float prefixArea = 0f;
+        foreach (var s in allIcons)
+        {
+            if (!s.name.StartsWith(type.ToString())) continue;
+            float area = s.rect.width * s.rect.height;
+            if (area > prefixArea) { prefixBest = s; prefixArea = area; }
+        }
+        if (prefixBest != null) return FixPivot(prefixBest);
+        return CreatePowerUpIcon(type, color);
     }
 
     void Update()
@@ -83,7 +252,6 @@ public class PowerUpManager : MonoBehaviour
 
     Sprite GetGlowSprite()
     {
-        if (glowSprite != null) return glowSprite;
         return GetCircleSprite();
     }
 
@@ -130,7 +298,7 @@ public class PowerUpManager : MonoBehaviour
         IsExecuting = true;
         switch (type)
         {
-            case PowerUpType.Shake: StartCoroutine(ShakeEffect(collectingTeam)); break;
+            case PowerUpType.Shake: StartCoroutine(ShakeWithFist(sourceRow, sourceCol, collectingTeam)); break;
             case PowerUpType.Explosion: StartCoroutine(ExplosionEffect(sourceRow, sourceCol, collectingTeam)); break;
             case PowerUpType.Fireball: StartCoroutine(FireballEffect(collectingTeam)); break;
             case PowerUpType.Lightning: StartCoroutine(LightningEffect(sourceRow, sourceCol, collectingTeam)); break;
@@ -170,12 +338,7 @@ public class PowerUpManager : MonoBehaviour
         pu.container = new GameObject($"SpawnedPowerUp_{type}");
         pu.container.transform.position = wPos;
 
-        Sprite iconSprite = null;
-        if (allIcons != null)
-            foreach (var s in allIcons)
-                if (s.name == type.ToString() || s.name == type.ToString() + "_0") { iconSprite = s; break; }
-        if (iconSprite == null)
-            iconSprite = CreatePowerUpIcon(type, color);
+        Sprite iconSprite = PickIcon(type, color);
 
         pu.icon = new GameObject("Icon");
         pu.icon.transform.SetParent(pu.container.transform, false);
@@ -183,7 +346,15 @@ public class PowerUpManager : MonoBehaviour
         sr.sortingOrder = 14;
         sr.sprite = iconSprite;
         sr.color = Color.white;
-        pu.icon.transform.localScale = Vector3.one * 0.25f;
+        float cellSize0 = GetCellWorldSize();
+        float sprW0 = iconSprite.bounds.size.x;
+        pu.baseScale = sprW0 > 0.001f ? cellSize0 * 0.7f / sprW0 : 0.25f;
+        pu.iconW = iconSprite.bounds.size.x;
+        pu.iconH = iconSprite.bounds.size.y;
+        pu.icon.transform.localScale = Vector3.one * pu.baseScale;
+        float pivotX = iconSprite.rect.width > 0f ? iconSprite.pivot.x / iconSprite.rect.width : 0.5f;
+        float pivotY = iconSprite.rect.height > 0f ? iconSprite.pivot.y / iconSprite.rect.height : 0.5f;
+        pu.icon.transform.localPosition = new Vector3((pivotX - 0.5f) * pu.iconW * pu.baseScale, (pivotY - 0.5f) * pu.iconH * pu.baseScale, 0f);
 
         pu.glow = new GameObject("Glow");
         pu.glow.transform.SetParent(pu.container.transform, false);
@@ -204,7 +375,7 @@ public class PowerUpManager : MonoBehaviour
         PowerUpType[] allTypes = new[] { PowerUpType.Shake, PowerUpType.Explosion, PowerUpType.Fireball, PowerUpType.Lightning, PowerUpType.MAGIC };
 
         PowerUpType[] types;
-        if (GameConfig.isCampaign && GameConfig.selectedLevel > 0)
+        if (GameConfig.isCampaign && GameConfig.selectedLevel > 0 && !ExpoConfig.Enabled)
         {
             CampaignLevel level = CampaignData.GetLevel(GameConfig.selectedLevel);
             if (level != null && level.powerups != null && level.powerups.Length > 0)
@@ -237,7 +408,7 @@ public class PowerUpManager : MonoBehaviour
             if (cell == null || cell.IsOccupied || cell.isObstacle) continue;
             if (IsPowerUpAt(r, c)) continue;
 
-            PowerUpType type = available[Random.Range(0, available.Count)];
+            PowerUpType type = PickRotatedType(types, available);
             Color color = GetColor(type);
 
             ActivePowerUp pu = new ActivePowerUp();
@@ -251,12 +422,7 @@ public class PowerUpManager : MonoBehaviour
             pu.container = new GameObject($"SpawnedPowerUp_{type}");
             pu.container.transform.position = wPos;
 
-            Sprite iconSprite = null;
-            if (allIcons != null)
-                foreach (var s in allIcons)
-                    if (s.name == type.ToString() || s.name == type.ToString() + "_0") { iconSprite = s; break; }
-            if (iconSprite == null)
-                iconSprite = CreatePowerUpIcon(type, color);
+            Sprite iconSprite = PickIcon(type, color);
 
             pu.icon = new GameObject("Icon");
             pu.icon.transform.SetParent(pu.container.transform, false);
@@ -264,7 +430,13 @@ public class PowerUpManager : MonoBehaviour
             sr.sortingOrder = 14;
             sr.sprite = iconSprite;
             sr.color = Color.white;
-            pu.icon.transform.localScale = Vector3.one * 0.25f;
+            float cellSize1 = GetCellWorldSize();
+            float sprW1 = iconSprite.bounds.size.x;
+            pu.baseScale = sprW1 > 0.001f ? cellSize1 * 0.7f / sprW1 : 0.25f;
+            pu.iconW = iconSprite.bounds.size.x;
+            pu.iconH = iconSprite.bounds.size.y;
+            pu.icon.transform.localScale = Vector3.one * pu.baseScale;
+            pu.icon.transform.localPosition = IconLocalPos(iconSprite, pu.iconW, pu.iconH, pu.baseScale);
 
             pu.glow = new GameObject("Glow");
             pu.glow.transform.SetParent(pu.container.transform, false);
@@ -276,12 +448,35 @@ public class PowerUpManager : MonoBehaviour
 
             spawnedPowerUps.Add(pu);
             StartCoroutine(AnimateSpawned(pu, color));
-
-            if (autoSpawnCoroutine != null)
-                StopCoroutine(autoSpawnCoroutine);
-            autoSpawnCoroutine = StartCoroutine(AutoSpawnTimer());
             break;
         }
+    }
+
+    PowerUpType PickRotatedType(PowerUpType[] types, System.Collections.Generic.List<PowerUpType> available)
+    {
+        if (rotationQueue.Count == 0)
+        {
+            System.Collections.Generic.List<PowerUpType> pool = new System.Collections.Generic.List<PowerUpType>(types);
+            for (int i = pool.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                PowerUpType tmp = pool[i];
+                pool[i] = pool[j];
+                pool[j] = tmp;
+            }
+            rotationQueue.AddRange(pool);
+        }
+
+        for (int i = rotationQueue.Count - 1; i >= 0; i--)
+        {
+            PowerUpType candidate = rotationQueue[i];
+            if (available.Contains(candidate))
+            {
+                rotationQueue.RemoveAt(i);
+                return candidate;
+            }
+        }
+        return available[Random.Range(0, available.Count)];
     }
 
     IEnumerator AnimateSpawned(ActivePowerUp pu, Color color)
@@ -296,7 +491,12 @@ public class PowerUpManager : MonoBehaviour
             if (pu.icon != null)
             {
                 float pulse = 1f + Mathf.Sin(t * 3f) * 0.1f;
-                pu.icon.transform.localScale = Vector3.one * 0.25f * pulse;
+                float curScale = pu.baseScale * pulse;
+                pu.icon.transform.localScale = Vector3.one * curScale;
+                SpriteRenderer curSr = pu.icon.GetComponent<SpriteRenderer>();
+                Sprite curSprite = curSr != null ? curSr.sprite : null;
+                if (curSprite != null)
+                    pu.icon.transform.localPosition = IconLocalPos(curSprite, pu.iconW, pu.iconH, curScale);
             }
 
             if (pu.glow != null)
@@ -316,25 +516,43 @@ public class PowerUpManager : MonoBehaviour
         }
     }
 
+    public void StartAutoSpawn()
+    {
+        if (autoSpawnCoroutine != null)
+            StopCoroutine(autoSpawnCoroutine);
+        autoSpawnCoroutine = StartCoroutine(AutoSpawnTimer());
+    }
+
+    int CountSpawned()
+    {
+        int count = 0;
+        for (int i = 0; i < spawnedPowerUps.Count; i++)
+            if (spawnedPowerUps[i].container != null)
+                count++;
+        return count;
+    }
+
     IEnumerator AutoSpawnTimer()
     {
-        int alive = 0;
-        for (int r = 0; r < board.rows; r++)
-            for (int c = 0; c < board.cols; c++)
-                if (board.grid[r, c].IsOccupied)
-                    alive++;
+        while (true)
+        {
+            while (CountSpawned() >= 2)
+                yield return new WaitForSeconds(1f);
 
-        float timeLeft = TimerManager.Instance != null ? TimerManager.Instance.timeRemaining : 300f;
-        float delay;
-        if (timeLeft > 180f)
-            delay = Random.Range(10f, 18f);
-        else if (timeLeft > 60f)
-            delay = Random.Range(8f, 15f);
-        else
-            delay = Random.Range(6f, 12f);
-        delay = Mathf.Max(delay, 4f);
-        yield return new WaitForSeconds(delay);
-        SpawnOnBoard();
+            float timeLeft = TimerManager.Instance != null ? TimerManager.Instance.timeRemaining : 300f;
+            float delay;
+            if (timeLeft > 240f)
+                delay = Random.Range(28f, 34f);
+            else if (timeLeft > 120f)
+                delay = Random.Range(20f, 26f);
+            else
+                delay = Random.Range(15f, 20f);
+            if (ExpoConfig.Enabled)
+                delay *= 0.75f;
+            delay = Mathf.Max(delay, 6f);
+            yield return new WaitForSeconds(delay);
+            SpawnOnBoard();
+        }
     }
 
     public bool IsPowerUpAt(int r, int c)
@@ -385,6 +603,73 @@ public class PowerUpManager : MonoBehaviour
         {
             StopCoroutine(autoSpawnCoroutine);
             autoSpawnCoroutine = null;
+        }
+    }
+
+    IEnumerator ShakeWithFist(int sourceRow, int sourceCol, Team collectingTeam)
+    {
+        Vector3 impactPos = board.CellToWorld(sourceRow, sourceCol);
+
+        GameObject fist = null;
+        SpriteRenderer fsr = null;
+        if (punioSprite != null)
+        {
+            float cellSize = GetCellWorldSize();
+            fist = new GameObject("ShakeFist");
+            fsr = fist.AddComponent<SpriteRenderer>();
+            fsr.sprite = punioSprite;
+            fsr.sortingOrder = 17;
+            float sprW = punioSprite.bounds.size.x;
+            float fistScale = sprW > 0.001f ? cellSize * 2.2f / sprW : 1f;
+            fist.transform.localScale = Vector3.one * fistScale;
+            Vector2 fistPivot = NormalizedPivot(punioSprite);
+            Vector3 fistRoot = impactPos - new Vector3((fistPivot.x - 0.5f) * punioSprite.bounds.size.x * fistScale, (fistPivot.y - 0.5f) * punioSprite.bounds.size.y * fistScale, 0f);
+
+            Vector3 start = fistRoot + new Vector3(3.5f, 7f, 0f);
+            Vector3 apex = fistRoot + new Vector3(1f, 9f, 0f);
+            float dur = 0.55f;
+            float t = 0;
+            while (t < dur)
+            {
+                if (fist == null) yield break;
+                float p = t / dur;
+                Vector3 a = Vector3.Lerp(start, apex, p);
+                Vector3 b = Vector3.Lerp(apex, fistRoot, p);
+                fist.transform.position = Vector3.Lerp(a, b, p);
+                fist.transform.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(25f, 0f, p));
+                t += Time.deltaTime;
+                yield return null;
+            }
+            if (fist == null) yield break;
+            fist.transform.position = fistRoot;
+            fist.transform.rotation = Quaternion.identity;
+
+            StartCoroutine(DirtChunks(impactPos, 6));
+        }
+        else
+        {
+            yield return new WaitForSeconds(0.25f);
+        }
+
+        yield return StartCoroutine(ShakeEffect(collectingTeam));
+
+        if (fist != null)
+        {
+            StartCoroutine(SmokeBurst(fist.transform.position, 10));
+            float ft = 0;
+            while (ft < 0.25f)
+            {
+                if (fist == null) break;
+                if (fsr != null)
+                {
+                    Color c = fsr.color;
+                    c.a = 1f - ft / 0.25f;
+                    fsr.color = c;
+                }
+                ft += Time.deltaTime;
+                yield return null;
+            }
+            if (fist != null) Destroy(fist);
         }
     }
 
@@ -454,6 +739,7 @@ public class PowerUpManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.6f);
         SoundManager.Instance.PlayMove();
+        board.CheckVictoryOnly();
     }
 
     IEnumerator SparkFade(Vector3 pos)
@@ -611,6 +897,7 @@ public class PowerUpManager : MonoBehaviour
                 StartCoroutine(FadeBurn(burn, sr, 3f));
             }
         }
+        board.CheckVictoryOnly();
     }
 
     IEnumerator FadeBurn(GameObject burn, SpriteRenderer sr, float duration)
@@ -629,6 +916,21 @@ public class PowerUpManager : MonoBehaviour
             yield return null;
         }
         if (burn != null) Destroy(burn);
+    }
+
+    void BurnGroundAt(Vector3 pos, Color burnColor)
+    {
+        GameObject burn = new GameObject("BurnGround");
+        burn.transform.SetParent(board.transform);
+        burn.transform.position = pos;
+        burn.transform.localScale = Vector3.one * board.cellSize * 0.98f;
+
+        SpriteRenderer sr = burn.AddComponent<SpriteRenderer>();
+        sr.sprite = GetCircleSprite();
+        sr.color = burnColor;
+        sr.sortingOrder = -1;
+
+        StartCoroutine(FadeBurn(burn, sr, 2.8f));
     }
 
     IEnumerator ExplosionBurst(Vector3 pos)
@@ -727,7 +1029,8 @@ public class PowerUpManager : MonoBehaviour
             GameObject vis = tc.pieceVisual;
             Vector3 killPos = board.CellToWorld(targetRow, targetCol);
             tc.ClearPiece();
-            StartCoroutine(FireDestroy(vis));
+            StartCoroutine(ElementHitDestroy(vis, "fire"));
+            BurnGroundAt(killPos, new Color(0.12f, 0.06f, 0.02f, 0.7f));
             if (CoinManager.Instance != null)
                 CoinManager.Instance.AwardKill(collectingTeam, killPos, killedType, true);
             if (board != null)
@@ -736,6 +1039,7 @@ public class PowerUpManager : MonoBehaviour
                 board.SpawnPowerKillSparks(killPos, "fire");
             }
         }
+        board.CheckVictoryOnly();
     }
 
     IEnumerator MageAndProjectile(Vector3 originPos, Vector3 targetPos)
@@ -751,18 +1055,29 @@ public class PowerUpManager : MonoBehaviour
         if (magePos == Vector3.zero) magePos = originPos;
 
         GameObject mage = new GameObject("Mage");
-        mage.transform.position = magePos;
         SpriteRenderer mageSr = mage.AddComponent<SpriteRenderer>();
-        mageSr.sortingOrder = 15;
+        mageSr.sortingOrder = 16;
 
         mageSr.sprite = magoIdleSprite ?? mageSprite;
-        if (magoIdleSprite == null) mage.transform.localScale = Vector3.one * 0.2f;
-        else mage.transform.localScale = Vector3.one * 0.35f;
+        if (magoIdleSprite == null)
+        {
+            mage.transform.localScale = Vector3.one * 0.2f;
+            mage.transform.position = magePos;
+        }
+        else
+        {
+            mage.transform.localScale = Vector3.one * 0.35f;
+            mage.transform.localScale = Vector3.one * 0.35f;
+            mage.transform.position = magePos;
+        }
+
+        GameObject circle = SpawnRitualCircle(magePos, GetColor(PowerUpType.Fireball));
+        StartCoroutine(FadeRitualCircle(circle, 0f, 0.85f, 0.25f));
 
         if (magoAttackSprite != null)
         {
             mageSr.sprite = magoAttackSprite;
-            mageSr.sortingOrder = 15;
+            mageSr.sortingOrder = 16;
         }
 
         SoundManager.Instance.PlayFireball();
@@ -790,6 +1105,9 @@ public class PowerUpManager : MonoBehaviour
             }
             if (mage != null) Destroy(mage);
         }
+
+        yield return FadeRitualCircle(circle, 0.85f, 0f, 0.3f);
+        if (circle != null) Destroy(circle);
     }
 
     Vector3 GetRandomEmptyCellWorldPos()
@@ -911,7 +1229,8 @@ public class PowerUpManager : MonoBehaviour
             GameObject vis = tc.pieceVisual;
             Vector3 killPos = board.CellToWorld(targetRow, targetCol);
             tc.ClearPiece();
-            StartCoroutine(LightningDestroy(vis));
+            StartCoroutine(ElementHitDestroy(vis, "lightning"));
+            BurnGroundAt(killPos, new Color(0.05f, 0.05f, 0.1f, 0.7f));
             if (CoinManager.Instance != null)
                 CoinManager.Instance.AwardKill(collectingTeam, killPos, killedType, true);
             if (board != null)
@@ -920,6 +1239,7 @@ public class PowerUpManager : MonoBehaviour
                 board.SpawnPowerKillSparks(killPos, "lightning");
             }
         }
+        board.CheckVictoryOnly();
     }
 
     IEnumerator MageLightning(Vector3 originPos, Vector3 targetPos)
@@ -930,17 +1250,27 @@ public class PowerUpManager : MonoBehaviour
         if (magePos == Vector3.zero) magePos = originPos;
 
         GameObject mage = new GameObject("LightningMage");
-        mage.transform.position = magePos;
         SpriteRenderer mageSr = mage.AddComponent<SpriteRenderer>();
-        mageSr.sortingOrder = 15;
+        mageSr.sortingOrder = 16;
         mageSr.sprite = magoIdleSprite ?? mageSprite;
-        if (magoIdleSprite == null) mage.transform.localScale = Vector3.one * 0.2f;
-        else mage.transform.localScale = Vector3.one * 0.35f;
+        if (magoIdleSprite == null)
+        {
+            mage.transform.localScale = Vector3.one * 0.2f;
+            mage.transform.position = magePos;
+        }
+        else
+        {
+            mage.transform.localScale = Vector3.one * 0.35f;
+            mage.transform.position = magePos;
+        }
+
+        GameObject circle = SpawnRitualCircle(magePos, GetColor(PowerUpType.Lightning));
+        StartCoroutine(FadeRitualCircle(circle, 0f, 0.85f, 0.25f));
 
         if (magoAttackSprite != null)
         {
             mageSr.sprite = magoAttackSprite;
-            mageSr.sortingOrder = 15;
+            mageSr.sortingOrder = 16;
         }
 
         SoundManager.Instance.PlayLightning();
@@ -968,6 +1298,9 @@ public class PowerUpManager : MonoBehaviour
             }
             if (mage != null) Destroy(mage);
         }
+
+        yield return FadeRitualCircle(circle, 0.85f, 0f, 0.3f);
+        if (circle != null) Destroy(circle);
     }
 
     IEnumerator ProceduralLightning(Vector3 from, Vector3 to)
@@ -1100,6 +1433,81 @@ public class PowerUpManager : MonoBehaviour
         if (visual != null) Destroy(visual);
     }
 
+    IEnumerator ElementHitDestroy(GameObject visual, string element)
+    {
+        if (visual == null) yield break;
+        SpriteRenderer sr = visual.GetComponent<SpriteRenderer>();
+        if (sr == null) { Destroy(visual); yield break; }
+
+        bool isFire = element == "fire";
+        Sprite[] frames = isFire ? fireHitFrames : lightningHitFrames;
+        if (frames == null || frames.Length == 0)
+        {
+            if (isFire) yield return FireDestroy(visual);
+            else yield return LightningDestroy(visual);
+            yield break;
+        }
+
+        if (isFire) SoundManager.Instance.PlayFlame();
+        else SoundManager.Instance.PlayElectricity();
+
+        Sprite origSprite = sr.sprite;
+        Vector3 origScale = visual.transform.localScale;
+        if (origSprite != null && frames[0] != null && origSprite.rect.width > 0 && frames[0].rect.width > 0)
+        {
+            float oldArea = origSprite.rect.width * origSprite.rect.height;
+            float newArea = frames[0].rect.width * frames[0].rect.height;
+            if (oldArea > 0 && newArea > 0)
+                origScale *= Mathf.Sqrt(oldArea / newArea);
+        }
+        origScale *= 1.15f;
+
+        visual.transform.localScale = origScale;
+        sr.sprite = frames[0];
+        sr.sortingOrder = 16;
+        sr.color = Color.white;
+
+        int frameIndex = 0;
+        float frameTimer = 0f;
+        float burn = 0f;
+        float burnDuration = 0.65f;
+        while (burn < burnDuration)
+        {
+            if (visual == null) yield break;
+            frameTimer += Time.deltaTime;
+            if (frameTimer >= 0.1f)
+            {
+                frameTimer = 0f;
+                frameIndex = (frameIndex + 1) % frames.Length;
+                sr.sprite = frames[frameIndex];
+            }
+            float pulse = 1f + Mathf.Sin(burn * 40f) * 0.04f;
+            visual.transform.localScale = origScale * pulse;
+            Color c = sr.color;
+            c.a = 0.6f + 0.4f * Mathf.Abs(Mathf.Sin(burn * 25f));
+            sr.color = c;
+            burn += Time.deltaTime;
+            yield return null;
+        }
+        if (visual == null) yield break;
+
+        float duration = isFire ? 0.35f : 0.2f;
+        float fade = 0f;
+        Color startColor = sr.color;
+        Color endColor = isFire ? new Color(1f, 0.2f, 0f, 0f) : new Color(1f, 0.9f, 0.1f, 0f);
+        Vector3 endScale = origScale * (isFire ? 0.3f : 0.1f);
+        while (fade < duration)
+        {
+            if (visual == null) yield break;
+            float p = fade / duration;
+            sr.color = Color.Lerp(startColor, endColor, p);
+            visual.transform.localScale = Vector3.Lerp(origScale, endScale, p);
+            fade += Time.deltaTime;
+            yield return null;
+        }
+        if (visual != null) Destroy(visual);
+    }
+
     IEnumerator MagicEffect(Team collectingTeam)
     {
         Team enemyTeam = collectingTeam == Team.Blue ? Team.Red : Team.Blue;
@@ -1119,15 +1527,22 @@ public class PowerUpManager : MonoBehaviour
         Vector3 targetPos = board.CellToWorld(target.r, target.c);
 
         SoundManager.Instance.PlayLightning();
-        SoundManager.Instance.PlayFireRayo();
 
         Color magicColor = GetColor(PowerUpType.MAGIC);
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 10; i++)
             StartCoroutine(SparkFadeColor(targetPos + (Vector3)Random.insideUnitCircle * 1.2f, magicColor));
 
-        CameraShake(0.1f, 0.3f);
+        GameObject circle = SpawnRitualCircle(targetPos, magicColor);
+        if (circle != null)
+            yield return FadeRitualCircle(circle, 0f, 0.85f, 0.3f);
+        else
+        {
+            CameraShake(0.1f, 0.3f);
+            yield return new WaitForSeconds(0.3f);
+        }
 
-        yield return new WaitForSeconds(0.3f);
+        SoundManager.Instance.PlayFireRayo();
+        CameraShake(0.08f, 0.2f);
 
         Cell tc = board.GetCell(target.r, target.c);
         if (tc != null && tc.IsOccupied && tc.pieceVisual != null)
@@ -1169,6 +1584,64 @@ public class PowerUpManager : MonoBehaviour
 
             for (int i = 0; i < 12; i++)
                 StartCoroutine(SparkFadeColor(targetPos + (Vector3)Random.insideUnitCircle * 1.5f, Color.white));
+        }
+
+        yield return FadeRitualCircle(circle, 0.85f, 0f, 0.3f);
+        if (circle != null) Destroy(circle);
+
+        StartCoroutine(SmokeBurst(targetPos, 6));
+        board.CheckVictoryOnly();
+    }
+
+    float GetCellWorldSize()
+    {
+        if (board == null || board.cols < 2) return 1f;
+        Vector3 a = board.CellToWorld(0, 0);
+        Vector3 b = board.CellToWorld(0, 1);
+        float d = Mathf.Abs(b.x - a.x);
+        if (d < 0.01f) d = Mathf.Abs(b.y - a.y);
+        return d > 0.01f ? d : 1f;
+    }
+
+    GameObject SpawnRitualCircle(Vector3 pos, Color tint)
+    {
+        if (ritualSprite == null) return null;
+        GameObject circle = new GameObject("RitualCircle");
+        circle.transform.position = pos;
+        SpriteRenderer sr = circle.AddComponent<SpriteRenderer>();
+        sr.sprite = ritualSprite;
+        sr.sortingOrder = 12;
+        Color c = tint;
+        c.a = 0f;
+        sr.color = c;
+        float cellSize = GetCellWorldSize();
+        float sprW = ritualSprite.bounds.size.x;
+        if (sprW > 0.001f)
+        {
+            float scale = cellSize * 1.15f / sprW;
+            circle.transform.localScale = Vector3.one * scale;
+        }
+        circle.transform.position = pos;
+        return circle;
+    }
+
+    IEnumerator FadeRitualCircle(GameObject circle, float fromA, float toA, float duration)
+    {
+        if (circle == null) yield break;
+        SpriteRenderer sr = circle.GetComponent<SpriteRenderer>();
+        float t = 0;
+        while (t < duration)
+        {
+            if (circle == null) yield break;
+            if (sr != null)
+            {
+                Color c = sr.color;
+                c.a = Mathf.Lerp(fromA, toA, t / duration);
+                sr.color = c;
+            }
+            circle.transform.Rotate(0, 0, 60f * Time.deltaTime);
+            t += Time.deltaTime;
+            yield return null;
         }
     }
 

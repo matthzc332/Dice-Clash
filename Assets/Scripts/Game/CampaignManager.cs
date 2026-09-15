@@ -23,6 +23,23 @@ public class CampaignManager : MonoBehaviour
         return PlayerPrefs.GetInt(KEY_PREFIX + levelId, 0) == 1;
     }
 
+    const string STARS_PREFIX = "Campaign_Stars_";
+
+    public void SaveStars(int levelId, int stars)
+    {
+        int prev = PlayerPrefs.GetInt(STARS_PREFIX + levelId, 0);
+        if (stars > prev)
+        {
+            PlayerPrefs.SetInt(STARS_PREFIX + levelId, stars);
+            PlayerPrefs.Save();
+        }
+    }
+
+    public int GetStars(int levelId)
+    {
+        return PlayerPrefs.GetInt(STARS_PREFIX + levelId, 0);
+    }
+
     public bool IsLevelUnlocked(int levelId)
     {
         if (levelId <= 1) return true;
@@ -45,7 +62,7 @@ public class CampaignManager : MonoBehaviour
         return IsLevelCompleted(prevId);
     }
 
-    public string CompleteLevel(int levelId)
+    public string CompleteLevel(int levelId, int stars = 1)
     {
         if (IsLevelCompleted(levelId)) return null;
 
@@ -58,7 +75,7 @@ public class CampaignManager : MonoBehaviour
             EconomyManager.Instance.AddGold(level.goldReward);
         }
 
-        InsigniaManager.GrantCampaignInsignia(levelId);
+        if (stars >= 3) InsigniaManager.GrantCampaignInsignia(levelId);
         RibbonManager.GrantRibbon(levelId);
         ChestManager.TryGrantChestAfterLevel(levelId);
 
@@ -77,6 +94,23 @@ public class CampaignManager : MonoBehaviour
         {
             if (!IsLevelCompleted(level.id) && IsLevelUnlocked(level.id))
                 return level.id;
+        }
+        return -1;
+    }
+
+    public int GetNextUncompletedCupLevel()
+    {
+        var data = CampaignData.Load();
+        if (data == null || data.cups == null) return -1;
+
+        foreach (var cup in data.cups)
+        {
+            if (cup == null || cup.levels == null) continue;
+            foreach (int lid in cup.levels)
+            {
+                if (!IsLevelCompleted(lid) && IsLevelUnlocked(lid))
+                    return lid;
+            }
         }
         return -1;
     }

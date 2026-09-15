@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour
         }
         TurnManager turn = FindAnyObjectByType<TurnManager>();
         if (turn == null) turn = CreateTurnManager();
+        turn.ResetMatchOver();
         BoardManager board = FindAnyObjectByType<BoardManager>();
         if (board == null) board = CreateBoardManager();
 
@@ -43,7 +44,8 @@ public class GameManager : MonoBehaviour
         else
         {
             CreateAIController();
-            gameObject.AddComponent<TestButtons>();
+            if (DebugShortcuts.DevBuild)
+                gameObject.AddComponent<TestButtons>();
             TimerManager.Instance.StartTimer(300f);
             TimerManager.Instance.OnTimerExpired += OnMatchTimerExpired;
             StartCoroutine(InitPowerUpsDelayed());
@@ -149,9 +151,7 @@ public class GameManager : MonoBehaviour
             puObj.AddComponent<PowerUpManager>();
         }
         yield return null;
-        PowerUpManager.Instance?.SpawnOnBoard();
-        yield return new WaitForSeconds(0.3f);
-        PowerUpManager.Instance?.SpawnOnBoard();
+        PowerUpManager.Instance?.StartAutoSpawn();
     }
 
     public int GetCurrentTurn()

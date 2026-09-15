@@ -101,6 +101,18 @@ public static class CombatManager
             defBonus += 1;
             defAbility = "Aura";
         }
+
+        if (attacker.type == PieceType.Pawn && defender.type == PieceType.Paladin)
+        {
+            atkBonus -= 3;
+            atkAbility = atkAbility == null ? "Fear" : atkAbility + " + Fear";
+        }
+
+        if (defender.type == PieceType.Pawn && attacker.type == PieceType.Paladin)
+        {
+            defBonus -= 3;
+            defAbility = defAbility == null ? "Fear" : defAbility + " + Fear";
+        }
     }
 
     static bool IsEnemyIsolated(PieceData defender, Cell defCell, BoardManager board)

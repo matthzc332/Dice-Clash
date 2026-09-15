@@ -91,7 +91,8 @@ public static class GameConfig
         var level = CampaignData.GetLevel(levelId);
         if (level == null) return;
         selectedLevel = levelId;
-        selectedSpecies = "Human";
+        if (string.IsNullOrEmpty(selectedSpecies))
+            selectedSpecies = "Human";
         selectedScenario = level.enemyRace;
         isTutorial = false;
         isCampaign = true;

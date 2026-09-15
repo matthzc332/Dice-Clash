@@ -1,3 +1,30 @@
+﻿## Fix: Nigromantes front/back move + powerups ticket free (086)
+
+> 2026-09-14 - El fix 085 removio el cap de escala de Nigromantes tambien para los movimientos BACK (no eran los sprites a ajustar) -> paladin/caballero move back se agrandaron. Ademas, entrar con ticket FREE (WithoutPowerups) seguia dando power-ups al azul por el override de modo expo.
+
+| #   | ID                    | Tarea                                                     | Estado      |
+| --- | --------------------- | --------------------------------------------------------- | ----------- |
+| 86  | 086-nigro-move-dir + ticket-free | Back move = formula original; WithoutPowerups bloquea recoleccion azul | done        |
+
+### Detalle 086
+
+- **Escala** - `BoardManager.cs` (AnimatedMove): la normalizacion sin cap ahora aplica SOLO al movimiento FRONT (`movingForward`), que es el que pidio el usuario (los nuevos sprites `PeonNecroMoveFront`, `caballerofrontnigro`, `PaladinMoveFrontNigro2`). El movimiento BACK vuelve a la formula original: no-pawn con `Mathf.Min(sizeRatio, 1.0f)` y pawn con `*0.9f` (restaura el tamano previo de PeonMoveBack/CaballeroMoveBack/PaladinMoveBack). Ninja conserva su escala fija (0.14,0.14,1).
+- **Ticket FREE** - `PowerUpManager.cs` (CheckCollectionForTeam): eliminado el override de modo expo `&& !ExpoConfig.Enabled` del guard `if (Team.Blue && WithoutPowerups && !isShadowPhase) continue;`. Ahora SIEMPRE (con o sin marcador ExpoBuild) en modo WithoutPowerups el jugador azul no recolecta/ejecuta power-ups; los enemigos si. Restaura comportamiento del spec.
+- **Validacion** - `dotnet build Assembly-CSharp.csproj` = 0 errores (1 warning pre-existente).
+## Fix: Nigromantes front Move scale (085)
+
+> 2026-09-14 - Piezas Nigromantes se vean chicas y pisaban a otros al moverse hacia delante. La compensaci�n por �rea de `AnimatedMove` ten�a un l�mite `Mathf.Min(sizeRatio,1.0f)` que imped�a agrandar los nuevos sprites front Move (frames pequenios vs idle). Se elimina el cap y el factor 0.9 del peon.
+
+| #   | ID                 | Tarea                                                     | Estado      |
+| --- | ------------------ | --------------------------------------------------------- | ----------- |
+| 85  | 085-nigro-move-scale | Escala de sprites front Move de Nigromantes = footprint idle | done        |
+
+### Detalle 085
+
+- **Contexto** - tras el wiring (084), Peon/Caballero/Paladin de Nigromantes usaban sus nuevos sprites front Move. El usuario reporto: se ven CHICOS durante el movimiento front y pisan los sprite de otras piezas.
+- **Causa raiz** - los 4 PNG `MoveFront` son tiras verticales de 4 frames; el frame 0 real es pequenio (PeonNecroMoveFront_0 77x92, caballerofrontnigro_0 94x130, PaladinMoveFrontNigro2_0 90x123) frente al idle back (247x351, 140x221, 130x208). La compensacion `sizeRatio = sqrt(idleArea/moveArea)` daba ~1.6x-3.5x (tenia que AGRANDAR), pero el cap `Mathf.Min(sizeRatio, 1.0f)` para no-pawn lo dejaba en 1.0 -> piezas renderizadas a ~0.6x0.8u vs idle 0.9x1.4u.
+- **Fix** - `BoardManager.cs` (AnimatedMove): eliminado el cap `sizeRatio = Mathf.Min(sizeRatio, 1.0f)` y el factor `*0.9f` del pawn. Ahora todo Nigromantes en front Move normaliza a footprint idle: Peon ~1.02x1.26u (idle 0.94x1.37), Knight ~0.97x1.32 (idle 0.91x1.41), Paladin ~1.08x1.37 (idle 1.00x1.48). Ninja conserva su escala fija (0.14,0.14,1) solicitada en 081.
+- **Validacion** - `dotnet build Assembly-CSharp.csproj` = 0 errores (1 warning pre-existente).
 # Worklog
 
 Registro de trabajo y backlog del proyecto.
@@ -611,7 +638,7 @@ Registro de trabajo y backlog del proyecto.
 - **Hit-stop** — `SoundManager.HitStop(0.05s)` at dice clash, `HitStop(0.06s)` at attacker/defender kills. Freezes `Time.timeScale` via `WaitForSecondsRealtime`. Prevents stacking with `isHitStopRunning` flag.
 - **Pitch random ±10%** — All procedural SFX in `GenerateTone`, `GenerateDescendingTone` randomize frequency. Chord voices ±5% per voice. Noise ±15% volume.
 - **Dramatic silence** — 0.15s `WaitForSecondsRealtime` pause after dice spin before result reveal.
-- **Knight jump animation** — `KnightJump` coroutine with parabolic arc, Salto1 in air + Salto2 landing, squash, `PlayHammer()` + `CombatShake`, dust particles. Triggered when Knight moves >1 cell. Scale 0.55x idle. Back sprite overrides: Human 0.10, Orc 0.33/0.24, Beastfolk 0.38.
+- **Knight jump animation** — `KnightJump` coroutine with parabolic arc, Salto1 in air + Salto2 landing, squash, `PlayHammer()` + `CombatShake`, dust particles. Triggered when Knight moves >1 cell. Jump scale per race via `GetJumpScale`: Human 0.60/0.5 front · 0.09/0.09 back, Orc 0.55/0.6 front · 0.33/0.34 back, Beastfolk 0.66/0.52 front · 0.41/0.34 back, Nigromantes 0.15/0.12. `AnimatedMove` skips the Move animation when `useKnightJump` so no coroutine overwrites the Salto sprites.
 - **Beastfolk back jump fix** — `SpritePrefix("Beastfolk")` maps to `"beast"`. `LoadLargestSprite()` picks largest sub-sprite from spriteMode 2 textures.
 - **Paladin light beam** — `PaladinLightBeam(visual)` procedural rect beam follows visual, fadeIn→hold with flicker→fadeOut, 6 holy sparks, `PlayHolyBeam()` sound. Triggered on every Paladin movement. Slide 1.3s.
 - **CampaignRewardUI** — Full-screen popup (sortingOrder 210) with sequential reveal of gold/insignia/ribbon/chest with white flash, scale pop, panel shake, sounds, coin bounce + particles, sparkle particles. OK button with `botonOK_0`.
@@ -646,4 +673,265 @@ Registro de trabajo y backlog del proyecto.
 - **Campaign UI más grande** — `CampaignUI.cs`: tarjetas de nivel 330×135 (antes 280×90), sprite de copa 245×259 (antes 110×140). Default `cardHeight = 135f`.
 - **Tutorial trophy repositioned** — `ExhibidorUI.cs`: copa tutorial movida a `(-161, 76)` (antes `(-303, 82)`), ya no tapada por Iron Crown. Nombre de corona tutorial en `(-10, -12)` (solo aplica a TUTORIAL, el resto queda en `(0, -12)`).
 - **Build v0003** — EXE compilado a `Builds/v0003/DiceClashTactics_v0003.exe`.
+
+## Feature: Campaign Map Paginado + Estrellas + Fuera Copa (059)
+
+> 2026-08-21 — Mapa de campaña horizontal paginado (4 trofeos), tarjetas panelCartaRed, estrellas por performance, copa del HUD eliminada.
+
+| #   | ID                 | Tarea                                                     | Spec | Estado |
+| --- | ------------------ | --------------------------------------------------------- | ---- | ------ |
+| 59  | 059-campaign-map   | Mapa campaña paginado, estrellas, fuera copa, monedas→bolso | [spec](docs/specs/059-campaign-map.md) | in-progress |
+
+
+## Feature: Tester Feedback Round 3 + Rey Cabezon
+
+> 2026-08-24 - Fixes del tester (OK duplicado sobre sprite, BATTLE OVER abajo, numeros grandes en dados, dialogo tutorial grande), flujo de cabeza del mapa de campania y Dismiss() del GameOverUI al abrir el mapa.
+
+| #   | ID                        | Tarea                                                        | Estado      |
+| --- | ------------------------- | ------------------------------------------------------------ | ----------- |
+| 60  | 060-tester-fixes-map-head | Tester round 3 + cabeza del mapa + Dismiss GameOverUI        | in-progress |
+| 61  | 061-rey-cabezon           | Jefe Rey Cabezon: niveles 23-26, 2x2, 5 HP, d20 fase 2       | cancelled   |
+| 62  | 062-reset-cheat           | Cheat reset total desde menu principal (para eventos)         | in-progress |
+| 63  | 063-tester-round4-ui      | Totales por equipo en dados, OK sprite, cards mapa, fondo Nigromantes, fonts tickets | in-progress |
+| 64  | 064-magic-icon-ritual     | Icono cambio para MAGIC + secuencia ritual del mago (circulo→mago→ataque→humo) | in-progress |
+| 65  | 065-shake-fist-sprite-fixes | Puño parabólico para Shake + LoadFullSprite (fix import Multiple de cambio/ritual) | in-progress |
+| 66  | 066-magic-icon-adjustments | Glow neutral (cambio solo en MAGIC), íconos 70% casilla, MAGIC sin mago sobre objetivo | in-progress |
+| 67  | 067-art-sound-fixes | Puño desde derecha, lock hand-drawn, estrellas por rendimiento+tiempo, música par, fondo Nigromantes, reward más grande | in-progress |
+| 68  | 068-candado-fondo-back-musica | Candado 80×80, fondo Nigromantes fix (meta Single), Back→menú, música campaña | in-progress |
+| 68b | 068-candado-fondo-back-musica | Fix iteración: lock transparente, música en menú campaña, CAMPAIGN button Y, REWARD font | done |
+| 68c | 068-candado-fondo-back-musica | Fix iteración 2: candado sin candado (solo panel oscuro), Knight jump backward scale dinámica | done |
+| 69  | 069-emoji-floor-fix | Emoji fallback Wolf/NewRace→Human, CollapseDestroyedCell no come turno | done |
+
+## Detalle 068b
+
+> 2026-08-25 — Iteración sobre 068.
+
+- **Música campaña** — `SoundManager.cs`: `PlayCampaignMenuMusic()` llama desde `CampaignMapUI.ShowInternal()`. `Close()` restaura `PlayMenuMusic()`. Campo dedicado `campaignMenuTrack`.
+- **CAMPAIGN button** — `MainMenuManager.cs`: Y de -510 a -470 (junto con chest e insignia).
+- **REWARD font** — `CampaignRewardUI.cs`: font 24→28, subtitle 16→18.
+- **Lock transparente** — `CampaignMapUI.cs`: card tint `Color.clear`, outline `Color.clear`. Solo candado dorado 80×80 visible.
+
+## Detalle 068c
+
+> 2026-08-25 — Feedback del tester: quitar candado, fix Knight jump backward.
+
+- **Candado eliminado** — `CampaignMapUI.cs`: Se eliminó `CreateLockIcon` call. Panel oscuro restaurado `(0.33, 0.33, 0.36, 0.82)`, outline `(0, 0, 0, 0.15)`.
+- **Knight jump backward** — `BoardManager.cs` `KnightJump()`: escalas hardcoded (Human 0.10, Orc 0.33/0.24, Beastfolk 0.38) reemplazadas por cálculo dinámico `idleScale * 0.55 * sqrt(frontArea/backArea)` que compensa sprites back más grandes manteniendo tamaño visual consistente.
+
+## Detalle 069
+
+> 2026-08-25 — Fixes: emoji para Wolf/NewRace, broken floor comiendo turno, fondo Nigromantes en CampaignMapPanel.
+
+- **Emoji fallback** — `BoardManager.cs` `CreateEmojiSprite()`: reestructurado para iterar por carpetas (species primero, luego Human). `emojiKey` se deriva de la carpeta actual, no de la especie original. Wolf→Beastfolk, NewRace→Human.
+- **Broken floor fix** — `ObstacleManager.cs` `CollapseDestroyedCell()`: eliminada llamada a `board.CheckVictoryAndEndTurn()` que ejecutaba `EndTurn()` y hacía que el enemigo jugara dos veces. Ahora solo verifica si alguien ganó para mostrar Scoreboard, sin cambiar turno.
+- **Nigromantes background CampaignMapPanel** — `CampaignMapUI.cs` `GetBackgroundSprite()`: agregado caso "Nigromantes" → `Sprites/Nigromantes/Background/Nigromantes`. También `GetCupSprite()` tiene caso explícito.
+- **Race list** — Niveles 1-4,6,9,12,14,16,19 = Human; 5,7,10,13,17,18 = Wolf; 8,11,15,21 = Orc; 20,22 = NewRace.
+
+## Detalle 070
+
+> 2026-08-27 — Fix tamaño salto caballero (por raza) + carrera de corrutinas + ninja en escenario Nigromantes.
+
+- **Salto caballero por raza** — `BoardManager.cs` `GetJumpScale(species, movingForward)` reemplaza el 0.9 fijo y los overrides viejos. Valores confirmados en Editor: Human 0.60/0.5 front · 0.09/0.09 back, Orc 0.55/0.6 front · 0.33/0.34 back, Beastfolk 0.66/0.52 front · 0.41/0.34 back, Nigromantes 0.15/0.12. Misma escala en salto1 (inicio) y salto2 (aterrizaje).
+- **Carrera de corrutinas (causa raíz del orco)** — `AnimatedMove` arrancaba `PlayAnimation` (Move) SIEMPRE antes de decidir salto/deslizar. Esa corrutina `AnimateSprites` vivía en paralelo pisando `sr.sprite` durante el salto del caballero. Ahora `useKnightJump` se calcula antes y el bloque Move queda dentro de `if (!useKnightJump)`.
+- **Ninja en escenario Nigromantes** — El ratio de escala de Nigromantes (compensaba sprites de movimiento más grandes) se aplicaba según `SpriteFolder(scenarioTheme)` (el escenario del nivel), por lo que estiraba al ninja humano (azul) cuando jugaba en nivel Nigromantes (5/22). Ahora condiciona con `SpriteFolder(ThemeForTeam(movingData.team)) == "Nigromantes"` para aplicar solo a piezas realmente nigromantes.
+
+## Feature: Tweaks de Escala + Hit Sprite Fuego/Rayo
+
+> 2026-08-28 — Ajustes de escala (salto back humano, ninja nigromante) y sprite quemado que reemplaza al PJ al impactar Fireball/Lightning.
+
+| #   | ID                 | Tarea                                                     | Estado      |
+| --- | ------------------ | --------------------------------------------------------- | ----------- |
+| 70  | 070-jump-scale     | Fix tamaño salto caballero por raza                       | done        |
+| 70b | 070-scale-tweaks   | Salto back humano 0.13 + ninja nigromante move 0.15/0.16  | done        |
+| 71  | 071-fire-lightning-hit | Sprite quemado reemplaza al PJ al impactar fuego/rayo | done        |
+| 71b | 071b-hit-tweaks    | Sonido antes, sprites +15%, intercalado 0.1s, suelo quemado | done   |
+| 72  | 072-goldpanel-sprite | GoldPanel HUD usa sprite `panelVictoria_0`            | done        |
+| 73  | 073-expo-build       | Marcador ExpoBuild.txt, ExpoConfig, DebugShortcuts (Ctrl+F/R), pacing powerups | done |
+| 74  | 074-expo-visual-fixes | Devoluciones visuales de Dani sobre EXE v0004 (trofeos, insignias, tickets, dados, oro, timer, banner) | done |
+| 74b | 074b-expo-visual-fixes-2 | Segunda ronda de ajustes visuales (negros en bordes, copas alineadas, ribbons popup legible, dado en tarjeta, sonido a la izquierda del oro) | done |
+| 74c | 074c-expo-visual-fixes-3 | Tercera ronda (tarjeta campaña fuera, GOLD/tickets más grandes, quitar DefIcon, sound toggle, dado alineado, atajo daily bonus Ctrl+D) | done |
+| 74d | 074d-expo-fixes-round4 | Powerup-kill victoria, DefDice, numeración campaña, badges nav, ribbons LevelName, peones animados, fix doble reward post-victoria | done |
+
+## Detalle 074c
+
+> 2026-08-31 — Tercera ronda de devoluciones visuales sobre EXE v0004 + atajo de daily bonus. Solo visual + un atajo de debug. Compilación Roslyn = 0 errores.
+
+- **CampaignMapUI cards (dentro de la tarjeta)** — El card real es 340×150 (horizontal); la 074b puso el número y el nombre en y=90 (FUERA, el card va de -75 a 75). Rediseñado dentro de los límites: número id `(98,30)` size (52,50), nombre de enemigo agrandado font 10→13 en `(-40,30)` size (220,50) MiddleCenter, datos `(HUMAN | E:N | +Pg)` en `(-50,-35)` size (200,24) (ya no choca con la insignia), insignia reducida (89,73)→(70,58) en `(125,-35)`, check movido `(152,30)` (antes (0,145) fuera).
+- **ModeSelectionUI GOLD + tickets** — `CreateGoldDisplay`: "GOLD: n" font 20→40 (doble) con outline negro (2,-2), rect de altura 0.1→0.2. Tickets `CreateTicketCard`: card 320×320→416×416 (×1.3) y contenido ×1.3 — title 14→18, subtitle 10→13, price 16→21, desc 9→12, botón Play (170,55)→(221,71). Los tickets en ±190 siguen sin solaparse (mitad 208 → -398..-18 y 18..398).
+- **BattleResultUI — iconos chicos eliminados** — AtkIcon y DefIcon retirados por completo (creación `MakeImage`, `LoadCardSprite` y campos `atkIconImage`/`defIconImage`). Antes solo se ocultaban con alpha 0. Cuando el atacante era rojo los iconos quedaban cruzados; ahora no se crean.
+- **TurnUI SoundToggle** — Reposicionado `(-276,-46)`→`(-288,-18)` (pivot 1,1), a la izquierda del panel de oro.
+- **CharacterCardUI dados alineados** — Bloques ATK/DEF con los dados en la misma línea horizontal: AtkDice `(80,0)`→`(66,2)`, DefDice `(80,0)`→`(80,-1)` (valores de ejemplo del ninja del usuario). Suffix en 124 con separación clara del dado. Ambos bloques (icon/prefix/dice/suffix) alineados horizontalmente.
+- **Atajo daily bonus (Ctrl+D)** — `DebugShortcuts` agrega `Ctrl+D` (gate `ExpoConfig.Enabled || Application.isEditor`, igual que Ctrl+F/Ctrl+R): llama `DailyBonusUI.ShowForDebug()`. `DailyBonusUI.ShowForDebug()` fuerza el popup — si `ClaimDailyBonus()` devuelve >0 muestra el monto real, si ya se reclamó hoy muestra 100 de prueba para probar el layout.
+
+## Detalle 074b
+
+> 2026-08-31 — Segunda ronda de devoluciones visuales sobre EXE v0004. Solo visual, 0 fallos funcionales. Compilación Roslyn = 0 errores.
+
+- **DailyBonusUI** — Outline de título/monto/streak de blanco → negro `Color.black` (borde en negro). Se revierten `panelBg.color` y `btnBg.color` (que seguían en `Color.white` tras el reemplazo global).
+- **ExhibidorUI nav** — Nav buttons re-espaciados con separación uniforme mayor (spacing 150): back 360, chests 210, trofeos 60, ribbons -90, badges -240. Separación chests/trofeos 150 (antes 120, "pegados").
+- **Badges (ExhibidorUI BuildBadgesView)** — Insignia (icon) más a la derecha: `anchoredPosition x 40→72`. Título (nombre de insignia) más abajo: anchors y `(0.35,0.85)`→`(0.3,0.78)`.
+- **Cups alineadas** — `BuildTrophiesView`: todas las copas a Y=72 con tamaño uniforme (85,108), espaciado 165: TUTORIAL(-330), IRON(-165), BLOOD(0), WILD(165), VOID(330). Antes IRON(-323)/BLOOD(5) desajustadas y VOID en y=74 size (96,125).
+- **Ribbon popup legible** — `ShowRibbonPopup`: fondo `contentBg` claro (fallback `(0.95,0.92,0.82)` en vez de oscuro), overlay 0.75→0.55 (no tapa tanto el título RIBBONS), content bajado a y=-80 (se genera debajo del ribbon, no encima). Textos legibles sobre fondo claro: LevelName `(0.2,0.16,0.08)`, CupName `(0.35,0.25,0.1)`, Date `(0.25,0.2,0.12)` (antes grises/marrones ilegibles). Título gold con outline negro.
+- **CampaignMapUI cards** — Nombre de enemigo al centro y número más a la derecha: id grande `(-122,28)`→`(118,90)`, level.name MiddleCenter `(-30,90)`, info centrada `(0,-30)`. Check de completado movido a `(0,145)` para no chocar con el número.
+- **TurnUI turn timer** — Outline del TurnTimerText (segundos de tu jugada) de blanco → negro, effectDistance (2,-2).
+- **EconomyManager HUD** — Bolsa 40px con Outline negro; goldText font 20→22 con outline negro (2,-2); panel de oro movido a x=-66 (size 200×52) para dejar espacio al sonido a su izquierda; textRt reposicionado.
+- **TurnUI SoundToggle** — Movido a la IZQUIERDA del panel de oro, alineado verticalmente con su centro `(-276,-46)` (pivot 1,1).
+- **CharacterCardUI layout dado** — Orden nuevo en bloques ATK/DEF: `[icono espada/escudo] "2" [dado 26px] "6+n"` con separación clara (icon 10, "2" 54, dado 80, suffix 116). Antes el dado (x=70) se superponía con el "2" (50-66).
+
+
+
+## Detalle 074
+
+> 2026-08-31 — Devoluciones visuales de Dani sobre el EXE expo v0004. Solo visual, 0 fallos funcionales. Compilación Roslyn = 0 errores.
+
+- **ExhibidorUI / InsigniaUI (trofeos e insignias)** — Descripción/subtítulo de insignias eliminado (por ahora sin tooltip). Nombre de insignia font 8→10/11, anchors compactados hacia arriba. Checkmark font 9→16/18 con outline verde oscuro `(0.05,0.45,0.05)`. Nav buttons re-centrados sin settings (back 315, chests 195, trofeos 75, ribbons -45, badges -165; spacing 120). Quitado botón Settings + `BuildSettingsView()` (TEST CHEST/TEST DAILY eliminados). Cups unificadas a Y=72, labels font 8 centrados, size (170,22) pos (0,-14). DailyBonusUI: outline blanco en título, monto y streak.
+- **CampaignMapUI (cards mapa)** — Textos de card reposicionados más adentro sin reducir fuente: level name `(8,40)`→`(-40,40)` size `(210,40)`→`(150,40)`; info `(-20,-30)`→`(-40,-30)` size `(250,30)`→`(170,24)`. Evita desborde por la derecha y solape con insignia.
+- **ModeSelectionUI (tickets)** — Textos del ticket re-distribuidos con espaciado parejo y título un poco más abajo (title 0.7-0.88, subtitle 0.56-0.7, price 0.42-0.56, desc 0.16-0.38). SIN cambio de colores de botón (no pedido). Oro del panel de selección: font 12→20 con outline blanco (igual estilo que partida).
+- **TurnUI (timer)** — TimerText font 34→24, color naranja `(1,0.65,0.15)` con outline blanco. TurnTimerText font 25→18 con outline blanco. SoundToggle (on/off) reposicionado junto al panel de oro (esquina sup-der, `(-14,-46)`); QuitButton bajado a `(-14,-120)`. Fix de indentación en Update (color timer fuera del else).
+- **BattleResultUI (dados)** — Nombres font 16→22 y en MAYÚSCULAS (`ToUpper`). Iconos chicos AtkIcon/DefIcon ocultos (color alpha 0 + raycast off; LoadCardSprite intacto). Números grandes font 64→48 (no se salen). BlueResult/RedResult centrados y en la misma línea Y `(-240,-190)`/`(240,-190)` (antes asimétricos -199/-187). AtkStat/DefStat y AtkAbility/DefAbility rects a 280 de ancho para que DEF/AURA no se salgan de la línea horizontal.
+- **CharacterCardUI (cartas)** — Dado icon 22→26px en bloques ATK y DEF (own/enemy), manteniendo centrado vertical con "2" y "6+n".
+- **EconomyManager (oro HUD)** — Panel 190×48→220×52. Bolsa 32→38px. goldText font 16→20 con outline blanco, textRt más ancho (140×30) y reposicionado. Sonido on/off queda a la derecha del oro (ver TurnUI).
+- **EnemyBanner** — font 14→16, texto full-stretch (ya centrado verticalmente).
+
+
+
+### Detalle 070
+
+> 2026-08-27 — (ya registrado arriba). Fila agregada para tracking.
+
+### Detalle 070b
+
+- **Salto back caballero humano** — `BoardManager.cs` `GetJumpScale`: Human back `(0.09, 0.09)` → `(0.19, 0.19)` → `(0.13, 0.13)` final (0.19 quedaba muy grande, confirmado en Editor). Ambos ejes, aplica a salto1 y salto2.
+- **Ninja nigromante en movimiento** — `BoardManager.cs` `AnimatedMove`: el ninja nigromante usa escala fija `(0.15, 0.16)` al moverse, reemplazando el ratio por área (el resto de piezas nigromantes conserva el ratio).
+
+### Detalle 071 / 071b
+
+- **Hit sprite fuego/rayo** — `PowerUpManager.cs` `ElementHitDestroy`: al impactar Fireball/Lightning el sprite del PJ se reemplaza por el quemado (`fuego1`+`fuego2` o `rayo1`+`rayo2`, frame 0 de cada archivo = 2 frames), tamaño normalizado por área para que ocupe su lugar, sortingOrder 16, color blanco.
+- **Ajustes (071b)** — sonido flame/electricity arranca al inicio del impacto (antes del swap); sprite +15% más grande (`origScale *= 1.15f`); intercalado 1-2-1-2 cada 0.1s; bombardero (burn) 0.65s con pulso de escala y alpha, luego fade+shrink y `Destroy`.
+- **Suelo quemado (071b)** — `BurnGroundAt(killPos, color)` deja una marca quemada en la casilla del impacto: círculo procedural `GetCircleSprite`, escala `cellSize * 0.98`, sortingOrder -1, hold 2.8s + fade 0.6s (reusa `FadeBurn`). Fuego `(0.12,0.06,0.02,0.7)`, electricidad `(0.05,0.05,0.1,0.7)`.
+- **Sonido truncado** — `SoundManager.cs`: `PlayFlame(duration=1.2)` / `PlayElectricity(duration=1.1)` usan AudioSource temporal (`PlayTempClip`) que se destruye a los `Mathf.Min(duration, clip.length)` vía `DestroyAfterDelay` — ya no se escucha el clip completo.
+
+### Detalle 072
+
+- **GoldPanel con sprite** — `EconomyManager.cs` `CreateGoldHUD`: el HUD de oro usa `Sprites/Menu/panelVictoria` (`panelVictoria_0`, 1280×220, LoadAll) como fondo (banner que estira bien al rect actual 190×48); fallback `panelCartaBlue` (`panelCartaBlue_0`) o color sólido. Eliminado el hijo `Border`. Helper `LoadPanelSprite()`.
+
+### Detalle 073
+
+- **ExpoConfig.cs** (nuevo) — `Resources.Load<TextAsset>("ExpoBuild") != null` detecta el build de expo (marcador opcional `Assets/Resources/ExpoBuild.txt`; si no está, el juego va completo con tutorial). `ApplyBootState()`: marca `TutorialPlayed`, completa `Campaign_Level_1/2` y sube el oro a mínimo `StartingGold=500`. Llamado en `MainMenuManager.Start`.
+- **DebugShortcuts.cs** (nuevo) — componente persistente (DontDestroyOnLoad, creado por `RuntimeInitializeOnLoadMethod`), activo solo con `ExpoConfig.Enabled || Application.isEditor`. **Ctrl+F**: oculta/muestra SOLO los botones de testeo — `TutorialButton`, `CampaignButton`, `ChestButton`, `InsigniaButton`, `SpeciesButton`, `ScenarioButton`, `QuitButton` de la partida (bajo `TurnCanvas`) y todo lo que esté bajo `TestCanvas` (WIN/LOSE/SCORE/LVL9/LVLS). El `QuitButton` de pantalla final (`GameOverCanvas`) NO es test. Los botones de juego (PlayButton, SoundToggle, SkipTurnButton, BackButton, flechas `Arrow_*`, TrophiesButton, RankedButton) nunca se tocan. El estado se reaplica tras cargar escena. **Ctrl+R**: `PlayerPrefs.DeleteAll()` → estado post-sombras (TutorialPlayed + niveles 1-2) → `PlayCampaign(primer nivel de cup 1, WithPowerups)` directo (fallback lvl 3), replicando la lógica de `ModeSelectionUI`.
+- **BackButton campaña arreglado** — `CampaignMapUI.cs`: el botón Back se creaba en `CreateHeader()` ANTES de `BuildPages()`, así que los pages (fondo opaco full-screen, `raycastTarget=true`) lo tapaban y quedaba invisible/inservible. Fix: referencia `backButtonRt` y `SetAsLastSibling()` al final de `BuildPanel()` → queda primero en el orden de render (arriba-izquierda, anchor `(0,1)` pos `(15,-10)`).
+- **Pacing powerups (ambos builds)** — `PowerUpManager` `StartAutoSpawn()` arranca `AutoSpawnTimer` como loop: espera hasta que haya ≤2 powerups esparcidos, delays 28-34s (t>240) / 20-26s (t>120) / 15-20s (final), `Mathf.Max(6f)`, ×0.75 en expo. Ya no se reinicia el timer desde `SpawnOnBoard`; `GameManager.InitPowerUpsDelayed` solo llama `StartAutoSpawn()` (sin los 2 spawns iniciales de 0.5s/0.8s).
+- **Rotación de tipos** — `SpawnOnBoard` elige tipo por cola rotatoria (`rotationQueue`): shuffle al vaciarse, descarta los ya esparcidos (`IsTypeSpawned`), fallback random → más variedad sin repetir de golpe.
+- **Overrides expo** — en campaña, expo ignora la restricción de powerups del nivel (usa `allTypes`); el bloqueo de recolección del azul en `WithoutPowerups` se salta en expo (línea ~449). En el build completo el comportamiento es el previo.
+
+## Detalle 074d
+
+> 2026-09-01 — Fix powerup-mata-último-enemigo, DefDice corregido, numeración campaña global, botón badges, LevelName del listón, peones animados y fix del doble reward tras ganar nivel. Compilación Roslyn = 0 errores.
+
+- **Fix powerup-mata-último-enemigo** — los powerups (Shake/Explosion/Fireball/Lightning/MAGIC) nunca verificaban la victoria, así que el juego quedaba atascado al matar al último enemigo con ellos (`CheckVictoryAndEndTurn` solo corría desde `EndTurn`). `BoardManager.cs`: nuevos `CheckVictoryOnly()` (misma lógica de winner, sin `EndTurn`) y `DelayedShowScoreboard(Team)` (0.3s) con guard `suppressVictoryCheck`. `PowerUpManager.cs`: `board.CheckVictoryOnly()` al final de `ShakeWithFist`, `ExplosionEffect`, `FireballEffect`, `LightningEffect` y `MagicEffect`.
+- **DefDice** — `CharacterCardUI.cs` `CreateCard`: `defDice` movido `(88,-1)`→`(69,0)` (26×26, medido por el usuario para que no se pise ni quede bajo los números). `AdjustEnemyCard()` re-posiciona `enemyCard/DefBlock/DefDice` a `(68,1)`.
+- **Numeración campaña (truncamiento "10"-"22")** — la fuente Press Start 2P ~30px/dígito a font 30 cabe ~52px de rect, así que dos dígitos se cortaban y solo se veía "1"/"2" (los niveles 1-9 ya salían). `CampaignMapUI.cs:260`: `(slot+1).ToString("D2")` → `level.id.ToString()` (número global sin padding; antes `D2` confundía 03-09 con "03/09") y rect del número `(52,50)`→`(70,50)`. Ahora se ven "3"..."22" completos.
+- **Botón badges alineado** — `ExhibidorUI.cs:102` quitado el size custom `(332.1,132.8)` y el scaleX 1.09 (quedaba más abajo que el resto); usa el default `(280,135)` igual que los otros nav buttons, y=-240 (espaciado 150 uniforme).
+- **LevelName debajo del listón** — `ShowRibbonPopup`: LevelName `(0,-60)`→`(0,-35)` (queda justo debajo del listón), CupName→`(0,-80)`, Date→`(0,-110)`.
+- **Peones animados al moverse** — `BoardManager.cs` (~1470) el flag `useMoveAnim` solo contemplaba Paladin/Knight, así que peones (y Beastfolk de espaldas) se movían rígidos. Añadido `PieceType.Pawn` (`PeonMoveBack` tiene 4 frames y ya anima). Ninja se deja fuera a propósito (usa `NinjaMoveCloud`).
+- **Fix doble reward tras ganar nivel (bug reportado por el usuario en nivel 20)** — tras el scoreboard/reward/GameOver/Next al mapa, sonaba de nuevo el contador, aparecía otro reward con los mismos premios y botones Next/Quit sobre el mapa, y el nivel quedaba con doble check. Causa raíz: el timer de turno de `TurnManager` (20s, `turnTimeRemaining`) seguía corriendo tras la victoria; `ScoreboardUI.Show()` solo paraba el timer de partida (`TimerManager.Stop()`). A los ~20s `TurnManager.Update`→`EndTurn()` (redAlive==0) → `StartCoroutine(CheckVictoryAndEndTurn())` → segundo `ScoreboardUI.Show()` (el guard `isShowing` se resetea en la línea 346 ANTES de que termine el reward, así que no bloqueaba) → pipeline duplicado + `CampaignManager.CompleteLevel` duplicado (doble check). Fix: en `ScoreboardUI.Show()`, punto único por el que pasan los 3 caminos de victoria (BoardManager, AIController, ObstacleManager), se llama `TurnManager.PauseTimer()` (`timerRunning = false`) → el timer ya no expira nunca después de la partida. Roslyn = 0 errores.
+- **Fix tablero visible 1s al volver al menú (074d)** — ganado el nivel, al pulsar BACK en el mapa de campaña se veía el tablero con las piezas restantes ~1s antes del menú. Primera hipótesis (`Hide()` destruía el mapa opaco antes del `LoadScene`) se descartó al reordenar `Close()` y seguir viéndose. Causa real: durante `LoadScene("MainMenuScene")` (~1s de carga) no queda NINGÚN camera activa → Unity conserva el último frame renderizado (el tablero con piezas) en pantalla hasta que entra la escena del menú. Fix: nuevo `SceneCover.cs` (helper estático) — `Show()` crea un overlay negro fullscreen `ScreenSpaceOverlay` (sortingOrder 999, `DontDestroyOnLoad`) que sigue renderizando durante la carga (los overlays no necesitan cámara) y tapa el frame viejo; `CampaignMapUI.Close()` llama `SceneCover.Show()` justo antes del `OnClose`/load; `MainMenuManager.Start` hace `SceneCover.Clear()` (empieza con el primer frame del menú ya cargado, sin negro pegado). `Close()` quedó reordenado (música → `OnClose` → `Hide()` → `Destroy(this)`). **Guard**: `CampaignMapUI.loadsSceneOnClose = true` solo en `GameOverUI.OpenCampaignMap` — `Close()` solo llama `SceneCover.Show()` con ese flag; si el mapa se abre desde el menú principal (`OnClose` solo anula la referencia, sin load) NO se crea el overlay para no dejar pantalla negra pegada (validado: 2 puntos de apertura, menú líneas 703/745 y post-victoria 619). Botón badges NAV confirmado por el usuario como el problemático.
+- **Nav buttons de trofeos uniformes (074d)** — las medidas que pasó el usuario (-697, -224, 286×145) no coinciden con código uniforme (-700, -240, 280×135); la causa es el SPRITE: los `panel total X` tienen aspectos distintos (badges 249×124=2.008, chests 244×109=2.239, ribbons 238×101=2.356, trofeos 234×109=2.147, back 221×103=2.146) y `CreateNavButton` usaba `img.preserveAspect = true`, así que cada botón dibujaba el sprite DENTRO del rect a tamaño distinto (badges quedaba más chico/alejado). Fix: eliminado `preserveAspect` en `ExhibidorUI.CreateNavButton` → todos los sprites estiran a 280×135 idénticos (distorsión ≤~13% en ribbons, imperceptible en paneles). Roslyn = 0 errores.
+- **Ribbons restaurado + badges stretch (074e)** — el fix global (quitar preserveAspect) hizo que el usuario viera RIBBONS "raro": su sprite aspecto 2.356 estirado a 135px de alto = +34% vertical. Análisis por código (System.Drawing, caja opaca por sprite): badges 2.008 casi llenaba el rect aun con preserveAspect (por eso "ni lo tocaste"), ribbons era el único con distorsión notable. Fix: `CreateNavButton(..., bool preserve = true)`; chests/trofeos/ribbons/back con preserveAspect (como antes), SOLO badges `preserve: false` → 280×135 full, igualando a los demás (su arte estira solo ~12%/9%, imperceptible). Roslyn = 0 errores.
+- **StartupVideo Gamanbit (074e)** — video de presentación entre el logo de Unity y el menú. Nuevo `StartupVideo.cs`: `Show()` (guard estático por sesión) crea GameObject DontDestroyOnLoad con canvas ScreenSpaceOverlay (sortingOrder 250), RawImage fullscreen + VideoPlayer (VideoRenderMode.RenderTexture, url `Application.streamingAssetsPath + "/Video/gamanbit.mp4"`), fondo negro, Button invisible fullscreen para fejar (skip), `loopPointReached`/`errorReceived` → fade-out 0.4s → destroy. Si el archivo no existe o la preparación no termina en 6s → fade-out sin video (el juego no se rompe). Conectado en `MainMenuManager.Start` (después de la música). Carpeta `Assets/StreamingAssets/Video/` creada — el usuario debe poner ahí `gamanbit.mp4`. Roslyn = 0 errores.
+- **StartupVideo fixes NRE + canvas (074e)** — el usuario probó con un `gamanbit.mp4` VACÍO (0 bytes) y saltó el NRE de WMF ("empty file") + `NullReferenceException` en `StartupVideo+<FadeOut>d__13.MoveNext()` línea 129. 3 bugs reales arreglados: (1) el canvas se creaba como objeto RAÍZ (no hijo del GO), así que `Destroy(gameObject)` NO lo destruía → la pantalla negra quedaba pegada para siempre sobre el menú; ahora el canvas es CHILD del root y el `Destroy` cascadea; (2) `errorReceived` + `Timeout` disparaban CO-RUTINAS `FadeOut()` dobles → `AddComponent<CanvasGroup>` podía devolver null en la segunda y `group.blocksRaycasts` NREaba; nuevo flag `fading` + null-guards (GetComponent+AddComponent) + corrutina ejecutable solo una vez; (3) el skip NO funcionaba porque el canvas del video no tenía `GraphicRaycaster` (los raycasts de UI requieren uno por canvas) → agregado. Añadido short-circuit `File.Exists` (no WebGL) para saltar directo si no hay archivo, y timeout de preparación 6s. Roslyn = 0 errores.
+- **Ícono del peón humano (074e)** — responder al usuario: SÍ, setea el icono en Project Settings → Player → Icon (Windows .ico, Android PNG, WebGL favicon). El usuario aclaró que se refería a `Sprites/Menu/menuHuman.PNG` (retrato del peón humano, 341×366 spriteMode 2, slice `_0` rect (6,5) 294×357, caja opaca 242×283 @ (35,49)). Generados vía System.Drawing (recorte caja opaca 242×283 + padding 7%): `Assets/Icons/app_icon.png` (512×512) y `Assets/Icons/app_icon.ico` (256×256, entrada PNG 95KB). Roslyn = 0 errores.
+- **Botones de testeo por build (074e)** — el usuario pidió: para subir WebGL/APK se sacan los botones que oculta Ctrl+F; para el build de PC se mantienen los atajos. Decisión: quitar TODOS los que oculta Ctrl+F (incluye TutorialButton y RankedButton — flujos reales pero el usuario eligió sacarlos; en WebGL/APK el jugador igual llega a campaña/ranked vía Play→ModeSelectionUI). Implementado con `DebugShortcuts.DevBuild` (editor || WindowsPlayer || LinuxPlayer || OSXPlayer): en WebGL/Android es false → `if (!DevBuild) return;` al inicio de cada creación (TestButtons en GameManager, TutorialButton/CampaignButton/ChestButton/InsigniaButton/RankedButton/BuildResetCheat en MainMenuManager, SpeciesButton/ScenarioButton/QuitButton en TurnUI) y los atajos de `DebugShortcuts.Update()` pasan de `ExpoConfig.Enabled || Application.isEditor` a `if (!DevBuild) return;`. RankedUnlockSequence ya tiene null-guard para botón ausente. Aprovechado para arreglar `isWeb` huérfano de TurnUI (`bool isWeb` eliminado por una edición previa dejó `SetActive(!isWeb)` roto) → `SetActive(Application.platform != RuntimePlatform.WebGLPlayer)`. Roslyn = 0 errores.
+- **Builds v0005/v0006/v0007 (074e)** — compilados por CLI en batchmode (Unity 6000.0.71f1, `-executeMethod BuildScript.BuildWindowsCLI`/`BuildAndroidCLI`/`BuildWebGLCLI`, exit 0): **Windows** → `Builds/v0005/DiceClashTactics_v0005.exe`; **Android** → `Builds/v0006_Android/DiceClashTactics_v0006.apk` (179 MB, debug keystore — sirve para sideload/itch, no Play Store; si hace falta firma propia, configurar keystore en Player Settings); **WebGL** → `Builds/v0007_WebGL/` (index.html + Build/*.br brotli, primera build IL2CPP lenta ~30 min, `gamanbit.mp4` empaquetado 45 KB). Estado: los 3 builds van SIN tutorial ahora (expo) porque `Assets/Resources/ExpoBuild.txt` sigue presente — tras la expo borrarlo para volver al tutorial. `Builds/.buildnumber` quedó en 8. Roslyn = 0 errores.
+
+## Feature: Optimización de Texturas + Fixes Art/UI (075–081)
+
+> 2026-09-04 → 2026-09-10 — Reducción del tamaño WebGL/APK, fixes de arte (pivots, sprites rotos, iconos), escala ninja, botones ranked.
+
+| #   | ID                        | Tarea                                                     | Estado |
+| --- | ------------------------- | --------------------------------------------------------- | ------ |
+| 75  | 075-optimizacion-texturas | Reducir .data.br WebGL (140 MB) y APK (179 MB)           | in-progress |
+| 76  | 076-powerup-ranked-fixes  | Iconos power-ups Single, efectos 2048 sin crunch, ranked button sprite | in-progress |
+| 77  | 077-iconos-robusto        | Fallback Load<Texture2D>+Sprite.Create en LoadIcon()      | in-progress |
+| 78  | 078-iconos-trompeta-ninja | Pivot real de sprites, trompeta reposo, NinjaMoveBack Single | in-progress |
+| 79  | 079-fix-pivots            | NormalizedPivot() en todos los offsets                     | in-progress |
+| 80  | 080-reporte-usuario       | Trompeta, ENEMY TURN, EnemyBanner NRE, punio 1, NinjaMoveBack 1 | in-progress |
+| 81  | 081-ninja-ranked-scale    | Escala ninja nigromante 0.14 + botones ranked separados    | in-progress |
+
+### Detalle 075
+
+- **Optimización de texturas** — 391 PNG en `Resources/` con `maxTextureSize: 2048` y `crunchedCompression: 0`; fondos 2816×1536 (~8 MB c/u). Nuevo `Assets/Editor/TextureOptimizer.cs` (`Optimize/Apply Texture Optimization`): `textureCompression=1` + `crunchedCompression=1` (LZMA), `maxTextureSize` por clase (fondos/UI 1024, piezas 512, decor 512, Win/Tutorial 1024), redimensión física a 1920×1080 de fondos gigantes, eliminados 12 PNG legacy de `Assets/Prefabs/Pieces/`. Audio (~21 MB) queda fuera (requiere ffmpeg). Meta `.data.br` ≤ 50 MB.
+
+### Detalle 076
+
+- **Iconos power-ups rotos** — los 5 íconos (`Shake`, `Explosion`, `Fireball`, `Lightning`, `cambio`) pasados a `spriteMode: 1` (Single). Efectos (`punio`, `ritual`, `fuego1/2`, `rayo1/2`, `mago*`, `trumpet`) a `maxTextureSize: 2048` + `crunchedCompression: 0` (075 los había degradado). `punio.png` a Single (slice > PNG). Escalas Nigromantes ajustadas. Botón RANKED usa `Sprites/Menu/ranked` (+`ranked_0`). Alineación ranked en GameOverUI.
+
+### Detalle 077
+
+- **LoadIcon() robusto** — fallback `Resources.Load<Texture2D>` + `Sprite.Create` (rect completo, pivot centro) cuando Load/LoadAll no devuelven sprite; los 5 metas `Icon/*` con `isReadable: 1`.
+
+### Detalle 078
+
+- **Pivots** — `Sprite.pivot` viene en píxeles; offset corregido con pivot real en `SpawnSpecificAt`. Trompeta reposo `(802,-380)`. `NinjaMoveBack.PNG` (slice 1163×750 > PNG) → Single + isReadable. Escala ninja nigromante moviéndose `(0.44,0.37)`→`(0.7,0.7)`.
+
+### Detalle 079
+
+- **NormalizedPivot(s)** (`pivot.x/rect.width`) + `IconLocalPos(s, sizeX, sizeY, scale)` en `PowerUpManager`; aplicado a `SpawnSpecificAt`, `SpawnOnBoard`, `AnimateSpawned`, `ShakeWithFist`, `MageAndProjectile`, `MageLightning`, `SpawnRitualCircle`, `TutorialManager`. Con pivot centrado el offset normalizado da (0,0).
+
+### Detalle 080
+
+- **Reporte usuario** — (1) Trompeta reposo `(802,-380)`→`(812,-380)`. (2) "ENEMY TURN" (lvl 22): `TurnManager.ShowEnemyTurnBanner` sin `FindFirstObjectByType<Canvas>`, sortingOrder 200→220, delay 2.5s→1.5s. (3) `EnemyBanner`: canvas propio si no hay (ScreenSpaceOverlay 219 + CanvasScaler 1920×1080). (4) Puño: `LoadBestSprite(basePath)` prueba `path` y `path + " 1"` (mayor área) → usa `punio 1` subido por el usuario. (5) Ninja nigromante: `LoadSprites` itera candidatos `{name}`, `{name} 1` por carpeta con mayor área → usa `NinjaMoveBack 1`.
+
+### Detalle 081
+
+- **Escala ninja nigromante** — `BoardManager.cs:1466` escala de movimiento `(0.7,0.7)`→`(0.14,0.14)` (solicitud del usuario).
+- **GameOverUI ranked botones** — victoria y derrota tenían botones encimados (~275px de solape) y sprites cruzados (derrota: sprite retry→acción menú, sprite quit→acción retry). Ahora: Retry (Retry_0) `x=-170`→`PlayRanked`, Menu `x=170`→`MainMenuScene`. Victoria: Menu usa `quitSprite` (antes flecha `nextSprite` engañosa). Derrota: Menu usa `quitSprite`. Gap 102px entre centros.
+
+## Feature: Feedback Usuario (082)
+
+> 2026-09-11 — Ronda de feedback del usuario tras probar la build: separación de botones de derrota, doble-tap para saltar el conteo, cartel RANKED una sola vez, Next en campaña completa abre el mapa. Verificación pendiente en Unity (el usuario testea mañana).
+
+| #   | ID                 | Tarea                                                     | Estado      |
+| --- | ------------------ | --------------------------------------------------------- | ----------- |
+| 82  | 082-feedback-user  | Botones derrota, doble-tap scoreboard, RANKED una vez, Next→mapa | in-progress |
+
+### Detalle 082
+
+- **Botones de derrota más separados (tocaban en los extremos)** — en la derrota no-ranked el Retry (260×90 a escala 1.7 → 442px visuales) y el Quit (120×42 a 1.7 → 204px) se tocaban EXACTO en x=54 (right edge del retry -167+221=54, left edge del quit 156-102=54). Movidos: Retry `x=-167`→`-280`, Quit `x=156`→`260`. Ranked: Retry `-170`→`-280`, Menu `170`→`280`. (`GameOverUI.cs:367-395`)
+- **Doble-tap en el conteo del scoreboard** — `ScoreboardUI.Update()`: dos toques/clics dentro de `DOUBLE_TAP_WINDOW` (0.45s, `Time.unscaledTime`) → `skipRequested = true` (mismo mecanismo que el botón SKIP >>, verifica touch+mouse). Al salir de la ventana `lastTapTime` vuelve a -1 para evitar acumular taps.
+- **Cartel "RANKED UNLOCKED!" una sola vez** — aparecía tras ganar CUALQUIER partida de campaña con la campaña al 100% (replays → `GetNextUncompletedCupLevel()` = -1 → rama CAMPAIGN COMPLETE → `RankedUnlockSequence`). Nuevo flag `PlayerPrefs.RankedUnlockPopupShown` (se marca y guarda antes de mostrarlo); el cartel solo se muestra la 1ª vez. (`GameOverUI.cs:299-308`)
+- **Next en campaña completa ya no sale al menú** — el botón flecha (`nextSprite`) hacía `LoadScene(MainMenuScene)` → "si toco next me saca a menu principal". Ahora `OpenCampaignMap(-1)` (mapa para rejugar niveles con estrellas y botón BACK→menú). Quit (quitSprite pequeño) sigue saliendo al menú. (`GameOverUI.cs:294-296`)
+- **Validación** — `dotnet build Assembly-CSharp.csproj` = 0 errores (1 warning pre-existente `ScoreboardUI.showCampaignRewards` sin usar).
+
+## Fix: Nigromantes front Move sprites (084)
+
+> 2026-09-14 — El usuario agregó sprites de movimiento FRONT para Nigromantes (`PeonNecroMoveFront`, `caballerofrontnigro`, `PaladinMoveFrontNigro2`). El código no los encontraba: `LoadSprites` sigue la convención `{Nombre}MoveFront` (ej. `CaballeroMoveFront`) y caía al fallback Human. Añadidos como candidatos por carpeta Nigromantes.
+
+| #   | ID                 | Tarea                                                     | Estado      |
+| --- | ------------------ | --------------------------------------------------------- | ----------- |
+| 84  | 084-nigro-move-front | Wiring de sprites front Move de Nigromantes en LoadSprites | done        |
+
+### Detalle 084
+
+- **Contexto** — al mover "front" (`toRow > fromRow`), una pieza roja Nigromantes cargaba `Sprites/Nigromantes/Pieces/{Nombre}MoveFront`, que NO existía para Peon/Caballero/Paladin → caía a `Sprites/Human/Pieces/{Nombre}MoveFront` (raza equivocada). El `NinjaMoveFront.PNG` ya existía y se cargaba bien (misma convención).
+- **Archivos nuevos** (`Sprites/Nigromantes/Pieces/`, import Multiple): `PeonNecroMoveFront.png` (1 slice 80×557), `caballerofrontnigro.png` (1 slice 222×731), `PaladinMoveFrontNigro2.png` (4 slices ~90×126 c/u → animable).
+- **Fix** — `BoardManager.LoadSprites()`: mapeo `nigroAlias` para `suffix=="Move" && front` (`Peon→PeonNecroMoveFront`, `Knight→caballerofrontnigro`, `Paladin→PaladinMoveFrontNigro2`) añadido como candidatos extra (con variante ` 1`) cuando `SpriteFolder(t) == "Nigromantes"`. El ciclo de temas ya probaba `primaryFolder` (Nigromantes cuando `scenarioTheme="NewRace"`), así que los encuentra antes del fallback Human. Si faltaran, el fallback Human sigue intacto.
+- **Comportamiento resultante** — Peon/Caballero/Ninja: 1 frame → sprite estático de movimiento (sin animación, `PlayAnimation` exige ≥3 frames); Paladin: 4 frames → animación de caminata. La compensación de escala por área de Nigromantes en `AnimatedMove` aplica igual (cálculo idle/move real de sus propios sprites).
+- **Validación** — `dotnet build Assembly-CSharp.csproj` = 0 errores.
+
+## Fix: Ninja Idle Scale (083)
+
+> 2026-09-14 — Bug de escala de la ninja cerrado. El diccionario `originalScales` era código muerto que podía dejar la base de la pose mal capturada; se elimina y `SetAttackPose` usa `GetIdleScale` como fuente de verdad única.
+
+| #   | ID                 | Tarea                                                     | Estado      |
+| --- | ------------------ | --------------------------------------------------------- | ----------- |
+| 83  | 083-ninja-idle-scale | Eliminar `originalScales` muerto, pose base vía `GetIdleScale` | done        |
+
+### Detalle 083
+
+- **Causa raíz ya eliminada** — el bug descrito en AGENTS.md (key `GameObject.GetInstanceID()` en `AnimatedMove` vs `SpriteRenderer.GetInstanceID()` en `ResetPieceSprite`) vivía en el código de sprites de ataque dentro de `AnimatedMove`, que fue REEMPLAZADO por el sistema de nube de pelea (057/058, commit 8efd1d0). Verificado por git history: el store se eliminó y quedó `SoundManager.Instance.PlaySwordClash()` en su lugar.
+- **`originalScales` era código muerto** — en el código actual se poblaba en `SetAttackPose` (key `sr.GetInstanceID()`) pero `ResetPieceSprite` NUNCA lo leía (solo `Remove`); la restauración de escala iba siempre por `GetIdleScale(type, pieceSpecies)`. El diccionario solo podía inyectar una base de pose incorrecta si la pieza no estaba en idle al seleccionarse (p.ej. ninja nigromante tras movimiento con escala `(0.14,0.14,1)`).
+- **Fix** — `BoardManager.cs`: eliminado el campo `originalScales`, el store/`Remove` y las lecturas. `SetAttackPose` ahora calcula `idleScale = GetIdleScale(data.type, poseSpecies)` como base de la pose (caso especial Orc Paladín usa `idleScale.z`). `originalPositions` queda intacto (restauración de la posición tras el yOffset de pose). Comportamiento idéntico cuando la pieza está en idle (caso normal); cierra el patrón frágil para siempre.
+- **Validación** — `dotnet build Assembly-CSharp.csproj` = 0 errores (1 warning pre-existente `ScoreboardUI.showCampaignRewards` sin usar).
+
 

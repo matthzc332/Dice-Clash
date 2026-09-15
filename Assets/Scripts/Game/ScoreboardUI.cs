@@ -28,6 +28,8 @@ public class ScoreboardUI : MonoBehaviour
     private bool isShowing;
     private bool skipRequested;
     private Coroutine scoreRoutine;
+    private float lastTapTime = -1f;
+    private const float DOUBLE_TAP_WINDOW = 0.45f;
     private Team? pendingWinner;
     private Team delayedWinner;
     private bool showCampaignRewards;
@@ -67,6 +69,28 @@ public class ScoreboardUI : MonoBehaviour
         return sprites.Length > 0 ? sprites[0] : null;
     }
 
+    void Update()
+    {
+        if (!isShowing || scoreRoutine == null) return;
+
+        bool tap = false;
+        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began) tap = true;
+        else if (Input.GetMouseButtonDown(0)) tap = true;
+        if (!tap) return;
+
+        if (Time.unscaledTime - lastTapTime <= DOUBLE_TAP_WINDOW)
+        {
+            skipRequested = true;
+            lastTapTime = -1f;
+            if (SoundManager.Instance != null)
+                SoundManager.Instance.PlaySelect();
+        }
+        else
+        {
+            lastTapTime = Time.unscaledTime;
+        }
+    }
+
     void CreateUI()
     {
         canvasObj = new GameObject("ScoreboardCanvas");
@@ -97,7 +121,7 @@ public class ScoreboardUI : MonoBehaviour
             "Sprites/Menu/Score/FinBatallaPanel", new Vector2(0, 400), new Vector2(900, 155));
 
         titleText = MakeLabel(finBatallaPanel.transform, "TitleText", "BATTLE OVER", 33, new Color(0.15f, 0.1f, 0.05f),
-            TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 0), new Vector2(700, 50));
+            TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -12), new Vector2(700, 50));
 
         // FinConteoBluePanel — blue score panel
         finConteoBlue = MakeImagePanel(canvasObj.transform, "FinConteoBluePanel",
@@ -192,6 +216,9 @@ public class ScoreboardUI : MonoBehaviour
         skipRequested = false;
         gameObject.SetActive(true);
         ClearIcons();
+
+        TurnManager turnMgr = FindFirstObjectByType<TurnManager>();
+        if (turnMgr != null) turnMgr.PauseTimer();
 
         if (TimerManager.Instance != null)
             TimerManager.Instance.Stop();
@@ -345,17 +372,28 @@ public class ScoreboardUI : MonoBehaviour
 
         isShowing = false;
         bool chestGranted = false;
-        if (winner == Team.Blue)
+        int earnedStars = 0;
+        if (winner == Team.Blue && !GameConfig.isAutoPlay && GameConfig.isCampaign && CampaignManager.Instance != null)
         {
-            if (!GameConfig.isAutoPlay && CoinManager.Instance != null)
-                CoinManager.Instance.RecordMatchWin();
-            if (!GameConfig.isAutoPlay && GameConfig.isCampaign && CampaignManager.Instance != null)
-            {
-                int emptyBefore = ChestManager.HasEmptySlot() ? 1 : 0;
-                cupCompletedRace = CampaignManager.Instance.CompleteLevel(GameConfig.selectedLevel);
-                int emptyAfter = ChestManager.HasEmptySlot() ? 1 : 0;
-                chestGranted = emptyBefore > emptyAfter;
-            }
+            bool wasCompleted = CampaignManager.Instance.IsLevelCompleted(GameConfig.selectedLevel);
+            BoardManager sb = FindFirstObjectByType<BoardManager>();
+            int blueAlive = sb != null ? sb.CountAlive(Team.Blue) : 0;
+            float alivePct = blueAlive / 7f;
+            float elapsed = TimerManager.Instance != null
+                ? TimerManager.Instance.totalTime - TimerManager.Instance.timeRemaining
+                : 0f;
+            earnedStars = 1;
+            if (alivePct >= 0.5f) earnedStars++;
+            if (TimerManager.Instance == null || elapsed <= 180f) earnedStars++;
+            CampaignManager.Instance.SaveStars(GameConfig.selectedLevel, earnedStars);
+
+            int emptyBefore = ChestManager.HasEmptySlot() ? 1 : 0;
+            cupCompletedRace = CampaignManager.Instance.CompleteLevel(GameConfig.selectedLevel, earnedStars);
+            int emptyAfter = ChestManager.HasEmptySlot() ? 1 : 0;
+            chestGranted = emptyBefore > emptyAfter;
+
+            if (wasCompleted && GameConfig.currentPowerupMode == PowerupMode.WithoutPowerups)
+                EconomyManager.Instance?.AddGold(5);
         }
 
         if (GameConfig.isAutoPlay)
@@ -377,10 +415,15 @@ public class ScoreboardUI : MonoBehaviour
 
             GameObject rewardObj = new GameObject("CampaignReward");
             CampaignRewardUI reward = rewardObj.AddComponent<CampaignRewardUI>();
-            reward.Show(GameConfig.selectedLevel, goldReward, chestGranted, cupCompletedRace);
+            reward.Show(GameConfig.selectedLevel, goldReward, chestGranted, cupCompletedRace, earnedStars);
         }
         else
         {
+            if (winner == Team.Blue && GameConfig.isRanked && !GameConfig.isAutoPlay)
+            {
+                int rewardGold = GameConfig.currentPowerupMode == PowerupMode.WithPowerups ? 15 : 10;
+                EconomyManager.Instance?.AddGold(rewardGold);
+            }
             GameOverUI.Instance.Show(winner);
             gameObject.SetActive(false);
         }

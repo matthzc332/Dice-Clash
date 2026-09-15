@@ -24,6 +24,9 @@ public class SoundManager : MonoBehaviour
     private int currentTrackIndex = 0;
     private float crossfadeDuration = 1.5f;
     private string[] gameplayTracks = { "medieval_horizons", "deuslower-fantasy-medieval-ambient-237371" };
+    private float[] gameplayTrackVolumes = { 0.45f, 0.85f };
+    private string campaignMenuTrack = "campaignTrackVolumes";
+    private float campaignMenuTrackVolume = 0.65f;
     private string[] menuTracks = { "After_the_Last_Round", "Three_Fingers_of_Ale", "Hearthside_at_Twilight" };
     private Coroutine menuQueueCoroutine;
 
@@ -194,6 +197,36 @@ public class SoundManager : MonoBehaviour
         StartCoroutine(RestoreSourceAfterDelay(clip.length / 0.75f));
     }
 
+    public void PlayFlame(float duration = 1.2f)
+    {
+        PlayTempClip("Sounds/Efectos/flame", duration);
+    }
+
+    public void PlayElectricity(float duration = 1.1f)
+    {
+        PlayTempClip("Sounds/Efectos/electricity", duration);
+    }
+
+    private void PlayTempClip(string path, float duration)
+    {
+        AudioClip clip = Resources.Load<AudioClip>(path);
+        if (clip == null || duration <= 0f) return;
+        GameObject go = new GameObject("TempSfx");
+        go.transform.SetParent(transform, false);
+        AudioSource tmp = go.AddComponent<AudioSource>();
+        tmp.spatialBlend = 0f;
+        tmp.clip = clip;
+        tmp.volume = 1f;
+        tmp.Play();
+        StartCoroutine(DestroyAfterDelay(go, Mathf.Min(duration, clip.length)));
+    }
+
+    private IEnumerator DestroyAfterDelay(GameObject go, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (go != null) Destroy(go);
+    }
+
     private IEnumerator RestoreSourceAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -267,7 +300,12 @@ public class SoundManager : MonoBehaviour
     {
         AudioClip clip = Resources.Load<AudioClip>("Sounds/Efectos/Trumpet");
         if (clip != null)
-            source.PlayOneShot(clip, 0.9f);
+        {
+            if (uiSource.isPlaying) uiSource.Stop();
+            uiSource.volume = 1f;
+            uiSource.PlayOneShot(clip, 1f);
+            yield return null;
+        }
         yield break;
     }
 
@@ -280,15 +318,23 @@ public class SoundManager : MonoBehaviour
 
     public void PlayGameplayMusic()
     {
-        string chosen = gameplayTracks[Random.Range(0, gameplayTracks.Length)];
-        AudioClip clip = Resources.Load<AudioClip>($"Sounds/Fondo/{chosen}");
-        if (clip != null)
-        {
-            musicSource.clip = clip;
-            musicSource.volume = chosen == "deuslower-fantasy-medieval-ambient-237371" ? 0.5f : 0.3f;
-            musicSource.loop = true;
-            musicSource.Play();
-        }
+        int idx = Random.Range(0, gameplayTracks.Length);
+        AudioClip clip = Resources.Load<AudioClip>($"Sounds/Fondo/{gameplayTracks[idx]}");
+        if (clip == null) return;
+        musicSource.clip = clip;
+        musicSource.volume = gameplayTrackVolumes[idx];
+        musicSource.loop = true;
+        musicSource.Play();
+    }
+
+    public void PlayCampaignMenuMusic()
+    {
+        AudioClip clip = Resources.Load<AudioClip>($"Sounds/Fondo/{campaignMenuTrack}");
+        if (clip == null) return;
+        musicSource.clip = clip;
+        musicSource.volume = campaignMenuTrackVolume;
+        musicSource.loop = true;
+        musicSource.Play();
     }
 
     public void PlayMenuMusic()

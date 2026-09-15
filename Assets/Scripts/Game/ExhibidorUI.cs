@@ -96,29 +96,30 @@ public class ExhibidorUI : MonoBehaviour
 
     void CreateLeftButtons()
     {
-        CreateNavButton("Sprites/Menu/botin ui/panel total chests", "panel total chests_0", new Vector2(-700, 260), () => ShowView("chests"));
-        CreateNavButton("Sprites/Menu/botin ui/panel total trofeos", "panel total trofeos_0", new Vector2(-700, 140), () => ShowView("trophies"));
-        CreateNavButton("Sprites/Menu/botin ui/panel total ribbons", "panel total ribbons_0", new Vector2(-700, 20), () => ShowView("ribbons"));
-        CreateNavButton("Sprites/Menu/botin ui/panel total badges", "panel total badges_0", new Vector2(-700, -100), () => ShowView("badges"));
-        CreateNavButton("Sprites/Menu/botin ui/panel total settings", "panel total settings_0", new Vector2(-700, -220), () => ShowView("settings"));
-        CreateNavButton("Sprites/Menu/botin ui/panel total back", "panel total back_0", new Vector2(-700, 370), Close);
+        CreateNavButton("Sprites/Menu/botin ui/panel total chests", "panel total chests_0", new Vector2(-700, 210), () => ShowView("chests"));
+        CreateNavButton("Sprites/Menu/botin ui/panel total trofeos", "panel total trofeos_0", new Vector2(-700, 60), () => ShowView("trophies"));
+        CreateNavButton("Sprites/Menu/botin ui/panel total ribbons", "panel total ribbons_0", new Vector2(-700, -90), () => ShowView("ribbons"));
+        CreateNavButton("Sprites/Menu/botin ui/panel total badges", "panel total badges_0", new Vector2(-700, -240), () => ShowView("badges"), preserve: false);
+        CreateNavButton("Sprites/Menu/botin ui/panel total back", "panel total back_0", new Vector2(-700, 360), Close);
     }
 
-    void CreateNavButton(string path, string spriteName, Vector2 pos, System.Action action)
+    void CreateNavButton(string path, string spriteName, Vector2 pos, System.Action action,
+        Vector2? size = null, float scaleX = 1f, bool preserve = true)
     {
-        GameObject btnObj = new GameObject("NavButton");
+        GameObject btnObj = new GameObject("NavButton", typeof(RectTransform));
         btnObj.transform.SetParent(rootPanel.transform, false);
 
-        RectTransform rt = btnObj.AddComponent<RectTransform>();
+        RectTransform rt = btnObj.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(280, 135);
+        rt.sizeDelta = size.HasValue ? size.Value : new Vector2(280, 135);
         rt.anchoredPosition = pos;
+        rt.localScale = new Vector3(scaleX, 1f, 1f);
 
         Image img = btnObj.AddComponent<Image>();
         img.sprite = LoadFirstSprite(path, spriteName);
-        img.preserveAspect = true;
+        img.preserveAspect = preserve;
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = img;
@@ -140,7 +141,6 @@ public class ExhibidorUI : MonoBehaviour
             case "chests": BuildChestsView(); break;
             case "trophies": BuildTrophiesView(); break;
             case "ribbons": BuildRibbonsView(); break;
-            case "settings": BuildSettingsView(); break;
         }
         CreateBlueFlagCover();
     }
@@ -362,15 +362,15 @@ public class ExhibidorUI : MonoBehaviour
         nameObj.transform.SetParent(cardObj.transform, false);
         Text nameText = nameObj.AddComponent<Text>();
         nameText.font = pressStart;
-        nameText.fontSize = 7;
+        nameText.fontSize = 10;
         nameText.alignment = earned ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter;
         nameText.text = earned ? "TUTORIAL" : "???";
         nameText.color = earned ? new Color(0.9f, 0.8f, 0.4f) : new Color(0.3f, 0.3f, 0.3f);
         RectTransform nRt = nameObj.GetComponent<RectTransform>();
         if (earned)
         {
-            nRt.anchorMin = new Vector2(0.34f, 0.5f);
-            nRt.anchorMax = new Vector2(0.95f, 0.9f);
+            nRt.anchorMin = new Vector2(0.34f, 0.55f);
+            nRt.anchorMax = new Vector2(0.95f, 0.98f);
         }
         else
         {
@@ -378,22 +378,6 @@ public class ExhibidorUI : MonoBehaviour
             nRt.anchorMax = new Vector2(1f, 0.7f);
         }
         nRt.sizeDelta = Vector2.zero;
-
-        if (earned)
-        {
-            GameObject descObj = new GameObject("Desc");
-            descObj.transform.SetParent(cardObj.transform, false);
-            Text descText = descObj.AddComponent<Text>();
-            descText.font = pressStart;
-            descText.fontSize = 5;
-            descText.alignment = TextAnchor.MiddleLeft;
-            descText.text = "Complete the Tutorial";
-            descText.color = new Color(0.6f, 0.55f, 0.45f);
-            RectTransform dRt = descObj.GetComponent<RectTransform>();
-            dRt.anchorMin = new Vector2(0.34f, 0.05f);
-            dRt.anchorMax = new Vector2(0.95f, 0.5f);
-            dRt.sizeDelta = Vector2.zero;
-        }
 
         GameObject rarityObj = new GameObject("Rarity");
         rarityObj.transform.SetParent(cardObj.transform, false);
@@ -416,10 +400,13 @@ public class ExhibidorUI : MonoBehaviour
             checkObj.transform.SetParent(cardObj.transform, false);
             Text checkText = checkObj.AddComponent<Text>();
             checkText.font = pressStart;
-            checkText.fontSize = 9;
+            checkText.fontSize = 16;
             checkText.alignment = TextAnchor.MiddleCenter;
             checkText.text = "\u2713";
             checkText.color = new Color(0.3f, 0.9f, 0.3f);
+            Outline checkOutline0 = checkObj.AddComponent<Outline>();
+            checkOutline0.effectColor = new Color(0.05f, 0.45f, 0.05f);
+            checkOutline0.effectDistance = new Vector2(1, -1);
             RectTransform checkRt = checkObj.GetComponent<RectTransform>();
             checkRt.anchorMin = new Vector2(0.82f, 0.72f);
             checkRt.anchorMax = new Vector2(1f, 1f);
@@ -478,7 +465,7 @@ public class ExhibidorUI : MonoBehaviour
         nameObj.transform.SetParent(cardObj.transform, false);
         Text nameText = nameObj.AddComponent<Text>();
         nameText.font = pressStart;
-        nameText.fontSize = 8;
+        nameText.fontSize = 11;
         nameText.alignment = collected ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter;
         nameText.text = collected ? ins.name.ToUpper() : "???";
         nameText.color = collected ? Color.black : new Color(0.3f, 0.3f, 0.3f);
@@ -491,8 +478,8 @@ public class ExhibidorUI : MonoBehaviour
         RectTransform nRt = nameObj.GetComponent<RectTransform>();
         if (collected)
         {
-            nRt.anchorMin = new Vector2(0.34f, 0.38f);
-            nRt.anchorMax = new Vector2(0.95f, 0.78f);
+            nRt.anchorMin = new Vector2(0.34f, 0.58f);
+            nRt.anchorMax = new Vector2(0.95f, 0.98f);
         }
         else
         {
@@ -500,25 +487,6 @@ public class ExhibidorUI : MonoBehaviour
             nRt.anchorMax = new Vector2(1f, 0.7f);
         }
         nRt.sizeDelta = Vector2.zero;
-
-        if (collected)
-        {
-            GameObject descObj = new GameObject("Desc");
-            descObj.transform.SetParent(cardObj.transform, false);
-            Text descText = descObj.AddComponent<Text>();
-            descText.font = pressStart;
-            descText.fontSize = 6;
-            descText.alignment = TextAnchor.MiddleLeft;
-            descText.text = ins.description;
-            descText.color = Color.black;
-            Outline descOutline = descObj.AddComponent<Outline>();
-            descOutline.effectColor = new Color(1f, 1f, 1f, 0.4f);
-            descOutline.effectDistance = new Vector2(1, -1);
-            RectTransform dRt = descObj.GetComponent<RectTransform>();
-            dRt.anchorMin = new Vector2(0.34f, 0.12f);
-            dRt.anchorMax = new Vector2(0.95f, 0.42f);
-            dRt.sizeDelta = Vector2.zero;
-        }
 
         GameObject rarityObj = new GameObject("Rarity");
         rarityObj.transform.SetParent(cardObj.transform, false);
@@ -545,10 +513,13 @@ public class ExhibidorUI : MonoBehaviour
             checkObj.transform.SetParent(cardObj.transform, false);
             Text checkText = checkObj.AddComponent<Text>();
             checkText.font = pressStart;
-            checkText.fontSize = 9;
+            checkText.fontSize = 16;
             checkText.alignment = TextAnchor.MiddleCenter;
             checkText.text = "\u2713";
             checkText.color = new Color(0.3f, 0.9f, 0.3f);
+            Outline checkOutline = checkObj.AddComponent<Outline>();
+            checkOutline.effectColor = new Color(0.05f, 0.45f, 0.05f);
+            checkOutline.effectDistance = new Vector2(1, -1);
             RectTransform checkRt = checkObj.GetComponent<RectTransform>();
             checkRt.anchorMin = new Vector2(0.82f, 0.72f);
             checkRt.anchorMax = new Vector2(1f, 1f);
@@ -964,7 +935,7 @@ public class ExhibidorUI : MonoBehaviour
             iconRt.anchorMax = new Vector2(0f, 0.9f);
             iconRt.pivot = new Vector2(0.5f, 0.5f);
             iconRt.sizeDelta = new Vector2(48, 48);
-            iconRt.anchoredPosition = new Vector2(40, 0);
+            iconRt.anchoredPosition = new Vector2(72, 0);
 
             GameObject nameObj = new GameObject("Name", typeof(RectTransform));
             nameObj.transform.SetParent(itemObj.transform, false);
@@ -975,8 +946,8 @@ public class ExhibidorUI : MonoBehaviour
             nameText.text = insignia.name.ToUpper();
             nameText.color = rarityColor;
             RectTransform nRt = nameObj.GetComponent<RectTransform>();
-            nRt.anchorMin = new Vector2(0.2f, 0.35f);
-            nRt.anchorMax = new Vector2(0.95f, 0.85f);
+            nRt.anchorMin = new Vector2(0.22f, 0.3f);
+            nRt.anchorMax = new Vector2(0.95f, 0.78f);
             nRt.sizeDelta = Vector2.zero;
 
             GameObject rarityObj = new GameObject("Rarity", typeof(RectTransform));
@@ -1053,7 +1024,7 @@ public class ExhibidorUI : MonoBehaviour
         Color winsColor = completedLevels >= totalLevels ? new Color(1f, 0.84f, 0f) : new Color(0.8f, 0.8f, 0.8f);
         CreateText(winsText, new Vector2(0, 210), 10, winsColor);
 
-        Vector2 tutPos = new Vector2(-161, 76);
+        Vector2 tutPos = new Vector2(-310, 68);
         Vector2 tutSize = new Vector2(68, 87);
         bool tutEarned = TutorialCollectibles.HasEarned();
         Sprite tutSprite = TutorialCollectibles.GetCupSprite();
@@ -1061,16 +1032,16 @@ public class ExhibidorUI : MonoBehaviour
 
         string[] cupNames = { "IRON CROWN", "BLOOD FANG", "WILD HEART", "VOID SEAL" };
         Vector2[] cupPositions = {
-            new Vector2(-323, 82),
-            new Vector2(5, 77),
+            new Vector2(-165, 72),
+            new Vector2(0, 72),
             new Vector2(165, 72),
-            new Vector2(330, 71)
+            new Vector2(330, 72)
         };
         Vector2[] cupSizes = {
             new Vector2(85, 108),
             new Vector2(85, 108),
             new Vector2(85, 108),
-            new Vector2(96, 125)
+            new Vector2(85, 108)
         };
 
         for (int i = 0; i < data.cups.Length; i++)
@@ -1239,18 +1210,19 @@ public class ExhibidorUI : MonoBehaviour
         popupRt.sizeDelta = Vector2.zero;
 
         Image overlay = popupObj.AddComponent<Image>();
-        overlay.color = new Color(0, 0, 0, 0.75f);
+        overlay.color = new Color(0, 0, 0, 0.55f);
 
         GameObject contentObj = new GameObject("Content", typeof(RectTransform));
         contentObj.transform.SetParent(popupObj.transform, false);
         Image contentBg = contentObj.AddComponent<Image>();
         Sprite panelSprite = LoadFirstSprite("Sprites/Menu/panelCartaBlue", "panelCartaBlue");
         if (panelSprite != null) { contentBg.sprite = panelSprite; contentBg.color = Color.white; }
-        else { contentBg.color = new Color(0.12f, 0.08f, 0.04f, 0.95f); }
+        else { contentBg.color = new Color(0.95f, 0.92f, 0.82f, 1f); }
         RectTransform contentRt = contentObj.GetComponent<RectTransform>();
         contentRt.anchorMin = new Vector2(0.5f, 0.5f);
         contentRt.anchorMax = new Vector2(0.5f, 0.5f);
         contentRt.sizeDelta = new Vector2(500, 350);
+        contentRt.anchoredPosition = new Vector2(0, -80);
 
         string title = isTutorial ? "TUTORIAL" : $"LEVEL {levelId}";
         string levelName = "";
@@ -1296,9 +1268,12 @@ public class ExhibidorUI : MonoBehaviour
         titleText.alignment = TextAnchor.MiddleCenter;
         titleText.text = title;
         titleText.color = new Color(1f, 0.85f, 0.3f);
+        Outline titleOutline = titleObj.AddComponent<Outline>();
+        titleOutline.effectColor = Color.black;
+        titleOutline.effectDistance = new Vector2(1, -1);
         RectTransform tRt = titleObj.GetComponent<RectTransform>();
-        tRt.anchorMin = new Vector2(0f, 0.8f);
-        tRt.anchorMax = new Vector2(1f, 0.95f);
+        tRt.anchorMin = new Vector2(0f, 0.74f);
+        tRt.anchorMax = new Vector2(1f, 0.9f);
         tRt.sizeDelta = Vector2.zero;
 
         if (!string.IsNullOrEmpty(levelName))
@@ -1310,11 +1285,13 @@ public class ExhibidorUI : MonoBehaviour
             nameText.fontSize = 10;
             nameText.alignment = TextAnchor.MiddleCenter;
             nameText.text = levelName;
-            nameText.color = new Color(0.8f, 0.8f, 0.8f);
+            nameText.color = new Color(0.2f, 0.16f, 0.08f);
             RectTransform nRt = nameObj.GetComponent<RectTransform>();
-            nRt.anchorMin = new Vector2(0.1f, 0.62f);
-            nRt.anchorMax = new Vector2(0.9f, 0.78f);
-            nRt.sizeDelta = Vector2.zero;
+            nRt.anchorMin = new Vector2(0.5f, 0.5f);
+            nRt.anchorMax = new Vector2(0.5f, 0.5f);
+            nRt.pivot = new Vector2(0.5f, 0.5f);
+            nRt.sizeDelta = new Vector2(250, 24);
+            nRt.anchoredPosition = new Vector2(0, -35);
         }
 
         if (!string.IsNullOrEmpty(cupName))
@@ -1326,11 +1303,13 @@ public class ExhibidorUI : MonoBehaviour
             cupText.fontSize = 9;
             cupText.alignment = TextAnchor.MiddleCenter;
             cupText.text = cupName;
-            cupText.color = new Color(0.6f, 0.5f, 0.3f);
+            cupText.color = new Color(0.35f, 0.25f, 0.1f);
             RectTransform cRt = cupObj.GetComponent<RectTransform>();
-            cRt.anchorMin = new Vector2(0.1f, 0.45f);
-            cRt.anchorMax = new Vector2(0.9f, 0.6f);
-            cRt.sizeDelta = Vector2.zero;
+            cRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cRt.pivot = new Vector2(0.5f, 0.5f);
+            cRt.sizeDelta = new Vector2(250, 20);
+            cRt.anchoredPosition = new Vector2(0, -80);
         }
 
         string dateKey = isTutorial ? "Ribbon_Tutorial_Date" : $"Ribbon_Level_{levelId}_Date";
@@ -1344,11 +1323,13 @@ public class ExhibidorUI : MonoBehaviour
             dateText.fontSize = 8;
             dateText.alignment = TextAnchor.MiddleCenter;
             dateText.text = $"Earned: {dateStr}";
-            dateText.color = new Color(0.5f, 0.5f, 0.5f);
+            dateText.color = new Color(0.25f, 0.2f, 0.12f);
             RectTransform dRt = dateObj.GetComponent<RectTransform>();
-            dRt.anchorMin = new Vector2(0.1f, 0.28f);
-            dRt.anchorMax = new Vector2(0.9f, 0.42f);
-            dRt.sizeDelta = Vector2.zero;
+            dRt.anchorMin = new Vector2(0.5f, 0.5f);
+            dRt.anchorMax = new Vector2(0.5f, 0.5f);
+            dRt.pivot = new Vector2(0.5f, 0.5f);
+            dRt.sizeDelta = new Vector2(250, 20);
+            dRt.anchoredPosition = new Vector2(0, -110);
         }
 
         GameObject closeBtnObj = new GameObject("OK", typeof(RectTransform));
@@ -1372,39 +1353,6 @@ public class ExhibidorUI : MonoBehaviour
         });
     }
 
-    void BuildSettingsView()
-    {
-        CreateViewTitle("SETTINGS");
-        CreateText("COMING SOON", new Vector2(0, 60), 16, new Color(0.6f, 0.55f, 0.45f));
-
-        GameObject testChestBtn = CreateButton("TEST CHEST", new Vector2(0, -20), new Vector2(200, 45), contentRoot.transform);
-        testChestBtn.GetComponent<Image>().color = new Color(0.3f, 0.2f, 0.45f, 0.9f);
-        Text tcLabel = testChestBtn.GetComponentInChildren<Text>();
-        if (tcLabel != null) { tcLabel.fontSize = 10; tcLabel.color = Color.white; }
-        testChestBtn.GetComponent<Button>().onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-            if (ChestManager.AddReadyChestForTest())
-            {
-                ClearContent();
-                ShowView("chests");
-            }
-        });
-
-        GameObject testDailyBtn = CreateButton("TEST DAILY", new Vector2(0, -80), new Vector2(200, 45), contentRoot.transform);
-        testDailyBtn.GetComponent<Image>().color = new Color(0.3f, 0.45f, 0.2f, 0.9f);
-        Text tdLabel = testDailyBtn.GetComponentInChildren<Text>();
-        if (tdLabel != null) { tdLabel.fontSize = 10; tdLabel.color = Color.white; }
-        testDailyBtn.GetComponent<Button>().onClick.AddListener(() =>
-        {
-            SoundManager.Instance.PlaySelect();
-            PlayerPrefs.DeleteKey("LastDailyBonus");
-            PlayerPrefs.Save();
-            if (DailyBonusUI.Instance != null)
-                DailyBonusUI.Instance.ShowIfAvailable();
-        });
-    }
-
     void CreateViewTitle(string title)
     {
         CreateText(title, new Vector2(0, 280), 20, new Color(0.9f, 0.75f, 0.3f));
@@ -1416,7 +1364,7 @@ public class ExhibidorUI : MonoBehaviour
             "Sprites/Menu/copaHuman",
             "Sprites/Menu/copaOrc",
             "Sprites/Menu/copaBeast",
-            "Sprites/Menu/copaMenu"
+            "Sprites/Menu/copaMenu-copy-0"
         };
         if (cupIndex < 0 || cupIndex >= paths.Length) return null;
         Sprite[] sprites = Resources.LoadAll<Sprite>(paths[cupIndex]);
@@ -1453,15 +1401,15 @@ public class ExhibidorUI : MonoBehaviour
         Text text = textObj.AddComponent<Text>();
         text.font = pressStart;
         text.text = cupName;
-        text.fontSize = 6;
+        text.fontSize = 8;
         text.alignment = TextAnchor.MiddleCenter;
         text.color = completed ? new Color(1f, 0.9f, 0.5f) : Color.gray;
         RectTransform textRt = textObj.GetComponent<RectTransform>();
         textRt.anchorMin = new Vector2(0.5f, 0f);
         textRt.anchorMax = new Vector2(0.5f, 0f);
         textRt.pivot = new Vector2(0.5f, 1f);
-        textRt.sizeDelta = new Vector2(160, 18);
-        textRt.anchoredPosition = new Vector2(cupName == "TUTORIAL" ? -10 : 0, -12);
+        textRt.sizeDelta = new Vector2(170, 22);
+        textRt.anchoredPosition = cupName == "TUTORIAL" ? new Vector2(-6, -20) : new Vector2(0, -14);
 
         return cupObj;
     }

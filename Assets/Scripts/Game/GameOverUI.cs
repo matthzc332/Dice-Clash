@@ -146,6 +146,17 @@ public class GameOverUI : MonoBehaviour
         particleObjs.Clear();
     }
 
+    public void Dismiss()
+    {
+        if (rankedSparkCoroutine != null) { StopCoroutine(rankedSparkCoroutine); rankedSparkCoroutine = null; }
+        ClearParticles();
+        ClearButtons();
+        if (particleCanvasObj != null) particleCanvasObj.SetActive(false);
+        Transform overlay = canvasObj.transform.Find("OverlayBg");
+        if (overlay != null) overlay.gameObject.SetActive(false);
+        SoundManager.Instance.StopMusic();
+    }
+
     GameObject CreateButton(string name, Sprite sprite, Vector2 pos, Vector2 size, Vector3 scale, UnityEngine.Events.UnityAction action)
     {
         GameObject btnObj = new GameObject(name);
@@ -178,6 +189,12 @@ public class GameOverUI : MonoBehaviour
         return System.Array.Find(sprites, s => s.name == name);
     }
 
+    Sprite LoadFirstSprite(string path)
+    {
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+        return sprites != null && sprites.Length > 0 ? sprites[0] : null;
+    }
+
     GameObject CreateParticleImage(string name, Vector2 pos, Vector2 size, Color color)
     {
         GameObject obj = new GameObject(name);
@@ -205,6 +222,7 @@ public class GameOverUI : MonoBehaviour
         if (statsCanvas != null) statsCanvas.SetActive(false);
 
         gameObject.SetActive(true);
+        if (particleCanvasObj != null) particleCanvasObj.SetActive(true);
         ClearParticles();
         rewardFlowRunning = false;
 
@@ -212,6 +230,7 @@ public class GameOverUI : MonoBehaviour
         Sprite[] winSprites = Resources.LoadAll<Sprite>($"Sprites/Win/{spriteName}");
         Sprite sprite = winSprites != null && winSprites.Length > 0 ? winSprites[0] : null;
         Transform bgObj = canvasObj.transform.Find("OverlayBg");
+        if (bgObj != null) bgObj.gameObject.SetActive(true);
         Transform winObj = bgObj.Find("WinImage");
         if (winObj != null)
         {
@@ -237,13 +256,13 @@ public class GameOverUI : MonoBehaviour
         {
             if (GameConfig.isCampaign)
             {
-                int nextLevel = CampaignManager.Instance != null ? CampaignManager.Instance.GetNextUncompletedLevel() : -1;
+                int nextLevel = CampaignManager.Instance != null ? CampaignManager.Instance.GetNextUncompletedCupLevel() : -1;
 
                 if (nextLevel > 0)
                 {
                     GameObject nextBtn = CreateButton("NextButton", nextSprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
                         () => {
-                            GameConfig.PlayCampaign(nextLevel);
+                            OpenCampaignMap(nextLevel);
                         });
                     activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(nextBtn, 0.03f)));
 
@@ -272,9 +291,22 @@ public class GameOverUI : MonoBehaviour
                     compRt.anchoredPosition = new Vector2(0, -280);
                     buttons.Add(completeObj);
 
-                    GameObject menuBtn = CreateButton("MenuButton", retrySprite, new Vector2(0, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                        () => SceneManager.LoadScene("MainMenuScene"));
-                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.03f)));
+                    GameObject mapBtn = CreateButton("MapButton", nextSprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                        () => OpenCampaignMap(-1));
+                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(mapBtn, 0.03f)));
+
+                    if (quitSprite != null)
+                    {
+                        CreateButton("QuitButton", quitSprite, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                            () => SceneManager.LoadScene("MainMenuScene"));
+                    }
+
+                    if (PlayerPrefs.GetInt("RankedUnlockPopupShown", 0) == 0)
+                    {
+                        PlayerPrefs.SetInt("RankedUnlockPopupShown", 1);
+                        PlayerPrefs.Save();
+                        StartCoroutine(RankedUnlockSequence(canvasObj.transform, font));
+                    }
                 }
             }
             else if (GameConfig.isTutorial)
@@ -312,77 +344,24 @@ public class GameOverUI : MonoBehaviour
                 rRt.anchoredPosition = new Vector2(0, -280);
                 buttons.Add(rewardObj);
 
-                GameObject retryBtnRanked = CreateButton("RetryButton", nextSprite, new Vector2(-280, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                GameObject retryBtnRanked = CreateButton("RetryButton", retrySprite, new Vector2(-170, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
                     () => GameConfig.PlayRanked(GameConfig.currentPowerupMode));
                 activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtnRanked, 0.03f)));
 
-                GameObject menuBtn = CreateButton("MenuButton", retrySprite, new Vector2(0, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                Sprite menuSpriteRanked = quitSprite != null ? quitSprite : nextSprite;
+                GameObject menuBtn = CreateButton("MenuButton", menuSpriteRanked, new Vector2(170, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
                     () => SceneManager.LoadScene("MainMenuScene"));
                 activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.03f)));
             }
             else
             {
-                bool cupFull = CoinManager.Instance != null && CoinManager.Instance.IsWorldUnlocked;
+                GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                    () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
+                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtn, 0.03f)));
 
-                if (cupFull)
-                {
-                    UnlockNextTrophy();
-
-                    GameObject nextBtn = CreateButton("NextButton", nextSprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                        () => {
-                            string cur = GameConfig.selectedScenario;
-                            if (cur == "Human") GameConfig.selectedScenario = "Orc";
-                            else if (cur == "Orc") GameConfig.selectedScenario = "Beastfolk";
-                            else GameConfig.selectedScenario = "Human";
-                            PlayerPrefs.Save();
-                            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-                        });
-                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(nextBtn, 0.03f)));
-                    GameObject retryBtnFull = CreateButton("RetryButton", retrySprite, new Vector2(156, -378), new Vector2(160, 56), new Vector3(1.7f, 1.7f, 1),
-                        () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
-                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtnFull, 0.03f)));
-                }
-                else
-                {
-                    Font font = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
-                    if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-                    Sprite dialogSprite = Resources.Load<Sprite>("Tutorial/dialogue");
-                    GameObject dialogObj = new GameObject("CupDialog");
-                    dialogObj.transform.SetParent(canvasObj.transform, false);
-                    Image dialogImg = dialogObj.AddComponent<Image>();
-                    if (dialogSprite != null)
-                    {
-                        dialogImg.sprite = dialogSprite;
-                        dialogImg.type = Image.Type.Sliced;
-                        dialogImg.color = new Color(1f, 0.97f, 0.88f, 0.92f);
-                    }
-                    RectTransform dialogRt = dialogObj.GetComponent<RectTransform>();
-                    dialogRt.anchorMin = new Vector2(0.5f, 0.5f);
-                    dialogRt.anchorMax = new Vector2(0.5f, 0.5f);
-                    dialogRt.pivot = new Vector2(0.5f, 0.5f);
-                    dialogRt.sizeDelta = new Vector2(667, 248);
-                    dialogRt.anchoredPosition = new Vector2(-534, -291);
-                    dialogObj.transform.localScale = new Vector3(0.83f, 0.83f, 0.83f);
-                    buttons.Add(dialogObj);
-
-                    GameObject textObj = new GameObject("CupDialogText");
-                    textObj.transform.SetParent(dialogObj.transform, false);
-                    Text msgText = textObj.AddComponent<Text>();
-                    msgText.font = font;
-                    msgText.fontSize = 16;
-                    msgText.alignment = TextAnchor.MiddleCenter;
-                    msgText.color = Color.black;
-                    msgText.text = "Win 2 matches to advance\nto the next world";
-                    RectTransform textRt = textObj.GetComponent<RectTransform>();
-                    textRt.anchorMin = Vector2.zero;
-                    textRt.anchorMax = Vector2.one;
-                    textRt.offsetMin = new Vector2(210, 12);
-                    textRt.offsetMax = new Vector2(-10, -128);
-
-                    GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(0, -374), new Vector2(260, 90), new Vector3(1.8f, 1.8f, 1),
-                        () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
-                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtn, 0.03f)));
-                }
+                GameObject menuBtn = CreateButton("MenuButton", nextSprite, new Vector2(0, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                    () => SceneManager.LoadScene("MainMenuScene"));
+                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.03f)));
             }
             activeCoroutines.Add(StartCoroutine(AnimateVictoryParticles()));
         }
@@ -390,28 +369,29 @@ public class GameOverUI : MonoBehaviour
         {
             if (GameConfig.isRanked)
             {
-                GameObject menuBtn = CreateButton("MenuButton", retrySprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                    () => SceneManager.LoadScene("MainMenuScene"));
-                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.04f)));
+                GameObject retryBtnRanked = CreateButton("RetryButton", retrySprite, new Vector2(-280, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                    () => GameConfig.PlayRanked(GameConfig.currentPowerupMode));
+                activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtnRanked, 0.04f)));
 
                 if (quitSprite != null)
                 {
-                    CreateButton("RetryButton", quitSprite, new Vector2(156, -378), new Vector2(160, 56), new Vector3(1.7f, 1.7f, 1),
-                        () => GameConfig.PlayRanked(GameConfig.currentPowerupMode));
+                    GameObject menuBtn = CreateButton("MenuButton", quitSprite, new Vector2(280, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                        () => SceneManager.LoadScene("MainMenuScene"));
+                    activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(menuBtn, 0.04f)));
                 }
             }
             else
             {
-                GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
+                GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(-280, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
                     () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
                 if (quitSprite != null)
                 {
-                    CreateButton("QuitButton", quitSprite, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                    CreateButton("QuitButton", quitSprite, new Vector2(260, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
                         () => SceneManager.LoadScene("MainMenuScene"));
                 }
                 else
                 {
-                    GameObject qb = CreateButton("QuitButton", null, new Vector2(156, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
+                    GameObject qb = CreateButton("QuitButton", null, new Vector2(260, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),
                         () => SceneManager.LoadScene("MainMenuScene"));
                     Image qi = qb.GetComponent<Image>();
                     qi.color = new Color(0.5f, 0.1f, 0.1f, 1f);
@@ -613,17 +593,6 @@ public class GameOverUI : MonoBehaviour
         }
     }
 
-    void UnlockNextTrophy()
-    {
-        string scenario = GameConfig.selectedScenario;
-        PlayerPrefs.SetInt("Trophy_" + scenario, 1);
-        if (scenario == "Human")
-            PlayerPrefs.SetInt("Unlocked_Orc", 1);
-        else if (scenario == "Orc")
-            PlayerPrefs.SetInt("Unlocked_Beastfolk", 1);
-        PlayerPrefs.Save();
-    }
-
     IEnumerator ShowGoblinThenProceed()
     {
         GameObject goblinObj = new GameObject("GoblinDialogue");
@@ -650,11 +619,29 @@ public class GameOverUI : MonoBehaviour
 
     void ShowCampaignModeSelection()
     {
+        Dismiss();
         Canvas gameOverCanvas = canvasObj != null ? canvasObj.GetComponent<Canvas>() : null;
         ModeSelectionUI modeUI = gameObject.AddComponent<ModeSelectionUI>();
         Canvas target = gameOverCanvas != null ? gameOverCanvas : GameObject.Find("TurnCanvas")?.GetComponent<Canvas>();
+        int nextLevel = CampaignManager.Instance != null ? CampaignManager.Instance.GetNextUncompletedCupLevel() : -1;
         if (target != null)
-            modeUI.ShowCampaign(target);
+            modeUI.ShowCampaign(target, nextLevel);
+    }
+
+    void OpenCampaignMap(int targetLevel)
+    {
+        Dismiss();
+        Canvas gameOverCanvas = canvasObj != null ? canvasObj.GetComponent<Canvas>() : null;
+        Canvas target = gameOverCanvas != null ? gameOverCanvas : GameObject.Find("TurnCanvas")?.GetComponent<Canvas>();
+        if (target == null)
+        {
+            GameConfig.PlayCampaign(targetLevel);
+            return;
+        }
+        CampaignMapUI mapUI = gameObject.AddComponent<CampaignMapUI>();
+        mapUI.loadsSceneOnClose = true;
+        mapUI.OnClose = () => SceneManager.LoadScene("MainMenuScene");
+        mapUI.ShowForNextLevel(target, targetLevel);
     }
 
     IEnumerator ShowRewardThenProceed()
@@ -684,13 +671,234 @@ public class GameOverUI : MonoBehaviour
 
     IEnumerator AnimateButtonPulse(GameObject btn, float intensity)
     {
+        if (btn == null) yield break;
         RectTransform rt = btn.GetComponent<RectTransform>();
+        if (rt == null) yield break;
         Vector3 orig = rt.localScale;
         while (true)
         {
+            if (btn == null || !btn) yield break;
+            rt = btn.GetComponent<RectTransform>();
+            if (rt == null) yield break;
             float pulse = 1f + Mathf.Sin(Time.time * 3.5f) * intensity;
             rt.localScale = orig * pulse;
             yield return null;
         }
+    }
+
+    IEnumerator RankedUnlockSequence(Transform parent, Font font)
+    {
+        yield return new WaitForSecondsRealtime(0.6f);
+
+        GameObject dimObj = new GameObject("RankedUnlockDim");
+        dimObj.transform.SetParent(parent, false);
+        Image dimImg = dimObj.AddComponent<Image>();
+        dimImg.color = new Color(0, 0, 0, 0);
+        dimImg.raycastTarget = false;
+        RectTransform dimRt = dimImg.GetComponent<RectTransform>();
+        dimRt.anchorMin = Vector2.zero;
+        dimRt.anchorMax = Vector2.one;
+        dimRt.offsetMin = Vector2.zero;
+        dimRt.offsetMax = Vector2.zero;
+        dimRt.SetAsFirstSibling();
+
+        float dimT = 0f;
+        while (dimT < 0.25f)
+        {
+            dimT += Time.unscaledDeltaTime;
+            dimImg.color = new Color(0, 0, 0, Mathf.Lerp(0f, 0.65f, dimT / 0.25f));
+            yield return null;
+        }
+        dimImg.color = new Color(0, 0, 0, 0.65f);
+
+        GameObject panelObj = new GameObject("RankedUnlockPanel");
+        panelObj.transform.SetParent(parent, false);
+        Image panelImg = panelObj.AddComponent<Image>();
+        Sprite panelSpr = LoadFirstSprite("Sprites/Menu/Score/FinVictoriaPanel");
+        if (panelSpr != null) { panelImg.sprite = panelSpr; panelImg.preserveAspect = false; }
+        else { panelImg.color = new Color(0.16f, 0.1f, 0.24f, 0.97f); }
+        RectTransform panelRt = panelImg.GetComponent<RectTransform>();
+        panelRt.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRt.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRt.sizeDelta = new Vector2(720, 420);
+        panelRt.anchoredPosition = new Vector2(0, 40);
+
+        GameObject titleObj = new GameObject("RankedTitle");
+        titleObj.transform.SetParent(panelObj.transform, false);
+        Text titleText = titleObj.AddComponent<Text>();
+        titleText.font = font;
+        titleText.text = "RANKED\nUNLOCKED!";
+        titleText.fontSize = 30;
+        titleText.alignment = TextAnchor.MiddleCenter;
+        titleText.color = new Color(1f, 0.84f, 0f);
+        Outline titleOl = titleObj.AddComponent<Outline>();
+        titleOl.effectColor = new Color(0.2f, 0.05f, 0f, 0.95f);
+        titleOl.effectDistance = new Vector2(2, -2);
+        RectTransform titleRt = titleText.GetComponent<RectTransform>();
+        titleRt.anchorMin = new Vector2(0.5f, 0.5f);
+        titleRt.anchorMax = new Vector2(0.5f, 0.5f);
+        titleRt.sizeDelta = new Vector2(620, 110);
+        titleRt.anchoredPosition = new Vector2(0, 120);
+
+        Sprite rankedSprite = LoadSprite("Sprites/Menu/ranked", "ranked_0");
+        if (rankedSprite == null)
+            rankedSprite = Resources.Load<Sprite>("Sprites/Menu/botonOpen_0");
+
+        GameObject rankedBtnObj = new GameObject("RankedUnlockBtn");
+        rankedBtnObj.transform.SetParent(panelObj.transform, false);
+        Image rankedImg = rankedBtnObj.AddComponent<Image>();
+        if (rankedSprite != null) { rankedImg.sprite = rankedSprite; rankedImg.preserveAspect = true; rankedImg.color = Color.white; }
+        else { rankedImg.color = new Color(0.6f, 0.2f, 0.8f); }
+        RectTransform rankedRt = rankedImg.GetComponent<RectTransform>();
+        rankedRt.anchorMin = new Vector2(0.5f, 0.5f);
+        rankedRt.anchorMax = new Vector2(0.5f, 0.5f);
+        rankedRt.sizeDelta = new Vector2(320, 90);
+        rankedRt.anchoredPosition = new Vector2(0, 10);
+
+        Text rankedLabel = null;
+        if (rankedSprite == null)
+        {
+            GameObject labelObj = new GameObject("Label");
+            labelObj.transform.SetParent(rankedBtnObj.transform, false);
+            rankedLabel = labelObj.AddComponent<Text>();
+            rankedLabel.font = font;
+            rankedLabel.text = "RANKED";
+            rankedLabel.fontSize = 20;
+            rankedLabel.alignment = TextAnchor.MiddleCenter;
+            rankedLabel.color = Color.white;
+            RectTransform lblRt = labelObj.GetComponent<RectTransform>();
+            lblRt.anchorMin = Vector2.zero;
+            lblRt.anchorMax = Vector2.one;
+            lblRt.sizeDelta = Vector2.zero;
+        }
+
+        Text descText = null;
+        GameObject descObj = new GameObject("RankedDesc");
+        descObj.transform.SetParent(panelObj.transform, false);
+        descText = descObj.AddComponent<Text>();
+        descText.font = font;
+        descText.text = "FIGHT RANDOM ARMIES!";
+        descText.fontSize = 13;
+        descText.alignment = TextAnchor.MiddleCenter;
+        descText.color = new Color(1f, 1f, 1f, 0.92f);
+        RectTransform descRt = descText.GetComponent<RectTransform>();
+        descRt.anchorMin = new Vector2(0.5f, 0.5f);
+        descRt.anchorMax = new Vector2(0.5f, 0.5f);
+        descRt.sizeDelta = new Vector2(620, 40);
+        descRt.anchoredPosition = new Vector2(0, -80);
+
+        CanvasGroup cg = panelObj.AddComponent<CanvasGroup>();
+        cg.alpha = 0f;
+        panelRt.localScale = Vector3.one * 0.2f;
+
+        SoundManager.Instance.PlayVictory();
+
+        float appearT = 0f;
+        while (appearT < 0.3f)
+        {
+            appearT += Time.unscaledDeltaTime;
+            float p = appearT / 0.3f;
+            cg.alpha = p;
+            panelRt.localScale = Vector3.one * Mathf.Lerp(0.2f, 1f, Mathf.SmoothStep(0f, 1f, p));
+            yield return null;
+        }
+        cg.alpha = 1f;
+
+        panelRt.localScale = Vector3.one * 1.08f;
+        yield return new WaitForSecondsRealtime(0.05f);
+        panelRt.localScale = Vector3.one * 0.96f;
+        yield return new WaitForSecondsRealtime(0.04f);
+        panelRt.localScale = Vector3.one * 1.04f;
+        yield return new WaitForSecondsRealtime(0.03f);
+        panelRt.localScale = Vector3.one;
+
+        if (rankedSprite != null)
+        {
+            rankedRt.localScale = Vector3.one * 1.4f;
+            yield return new WaitForSecondsRealtime(0.05f);
+            rankedRt.localScale = Vector3.one * 0.95f;
+            yield return new WaitForSecondsRealtime(0.04f);
+            rankedRt.localScale = Vector3.one * 1.05f;
+            yield return new WaitForSecondsRealtime(0.03f);
+            rankedRt.localScale = Vector3.one;
+        }
+
+        float burstDelay = 0f;
+        for (int i = 0; i < 4; i++)
+        {
+            yield return new WaitForSecondsRealtime(burstDelay);
+            SpawnUnlockSparks(parent, new Vector2(0, 40), i * 90f + 15f, 10);
+            burstDelay = 0.12f;
+        }
+
+        Button rankedBtn = rankedBtnObj.AddComponent<Button>();
+        rankedBtn.targetGraphic = rankedImg;
+        rankedBtn.onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlayButton();
+            StopCoroutine(rankedSparkCoroutine);
+            Destroy(dimObj);
+            Destroy(panelObj);
+            Dismiss();
+            ModeSelectionUI modeUI = gameObject.AddComponent<ModeSelectionUI>();
+            Canvas c = canvasObj != null ? canvasObj.GetComponent<Canvas>() : null;
+            if (c == null) c = GameObject.Find("TurnCanvas")?.GetComponent<Canvas>();
+            if (c != null) modeUI.Show(c);
+        });
+
+        StartCoroutine(AnimateButtonPulse(rankedBtnObj, 0.03f));
+
+        rankedSparkCoroutine = StartCoroutine(RankedSparksLoop(parent));
+    }
+
+    Coroutine rankedSparkCoroutine;
+
+    IEnumerator RankedSparksLoop(Transform parent)
+    {
+        while (true)
+        {
+            yield return new WaitForSecondsRealtime(0.6f);
+            SpawnUnlockSparks(parent, new Vector2(0, 40), Random.Range(0f, 360f), 3);
+        }
+    }
+
+    void SpawnUnlockSparks(Transform parent, Vector2 origin, float baseAngle, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            float angle = (baseAngle + (i / (float)count) * 360f) * Mathf.Deg2Rad;
+            Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            GameObject spark = new GameObject("UnlockSpark");
+            spark.transform.SetParent(parent, false);
+            Image sparkImg = spark.AddComponent<Image>();
+            sparkImg.color = new Color(0.85f, 0.6f, 1f, 1f);
+            sparkImg.raycastTarget = false;
+            RectTransform sparkRt = spark.GetComponent<RectTransform>();
+            sparkRt.anchorMin = new Vector2(0.5f, 0.5f);
+            sparkRt.anchorMax = new Vector2(0.5f, 0.5f);
+            sparkRt.sizeDelta = new Vector2(12, 12);
+            sparkRt.anchoredPosition = origin;
+            StartCoroutine(AnimateUnlockSpark(spark, origin, dir * Random.Range(90f, 200f)));
+        }
+    }
+
+    IEnumerator AnimateUnlockSpark(GameObject spark, Vector2 origin, Vector2 velocity)
+    {
+        RectTransform rt = spark.GetComponent<RectTransform>();
+        Image img = spark.GetComponent<Image>();
+        float life = 0.6f;
+        float t = 0f;
+        while (t < life)
+        {
+            if (spark == null) yield break;
+            t += Time.unscaledDeltaTime;
+            float p = t / life;
+            rt.anchoredPosition = origin + velocity * p;
+            if (img != null) img.color = new Color(0.8f, 0.4f, 1f, 1f - p);
+            float s = 1f + Mathf.Sin(p * Mathf.PI) * 0.5f;
+            spark.transform.localScale = Vector3.one * s;
+            yield return null;
+        }
+        if (spark != null) Destroy(spark);
     }
 }

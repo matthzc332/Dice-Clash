@@ -13,10 +13,14 @@ public class MainMenuManager : MonoBehaviour
     private Canvas menuCanvas;
     private float canvasW = 1920f;
     private CampaignUI campaignUI;
+    private CampaignMapUI campaignMapUI;
     private ChestUI chestUI;
     private InsigniaUI insigniaUI;
     private ExhibidorUI exhibidorUI;
     private ModeSelectionUI modeSelectionUI;
+    private int resetTaps;
+    private float resetFirstTapTime;
+    private GameObject resetPopup;
 
     static bool IsUnlocked(int index)
     {
@@ -33,6 +37,9 @@ public class MainMenuManager : MonoBehaviour
 
     void Start()
     {
+        Screen.orientation = ScreenOrientation.LandscapeLeft;
+        SceneCover.Clear();
+        ExpoConfig.ApplyBootState();
         SetupEventSystem();
         SetupCamera();
         CreateMenu();
@@ -43,6 +50,7 @@ public class MainMenuManager : MonoBehaviour
         if (TutorialProgress.HasPlayed())
             StartCoroutine(ShowDailyBonusDelayed());
         SoundManager.Instance.PlayMenuMusic();
+        StartupVideo.Show();
     }
 
     void StartPlayButtonAura(RectTransform playRt, Transform parent)
@@ -219,10 +227,143 @@ public class MainMenuManager : MonoBehaviour
         }
 
         CreateTutorialButton(canvasTransform, font);
+        BuildResetCheat(font);
+    }
+
+    void BuildResetCheat(Font font)
+    {
+        if (!DebugShortcuts.DevBuild) return;
+        GameObject cheatObj = new GameObject("ResetCheat", typeof(RectTransform));
+        cheatObj.transform.SetParent(canvasTransform, false);
+        Image cheatImg = cheatObj.AddComponent<Image>();
+        cheatImg.color = Color.clear;
+        RectTransform cheatRt = cheatObj.GetComponent<RectTransform>();
+        cheatRt.anchorMin = new Vector2(0.5f, 0.5f);
+        cheatRt.anchorMax = new Vector2(0.5f, 0.5f);
+        cheatRt.pivot = new Vector2(0.5f, 0.5f);
+        cheatRt.sizeDelta = new Vector2(90, 90);
+        cheatRt.anchoredPosition = new Vector2(895, -495);
+
+        Button cheatBtn = cheatObj.AddComponent<Button>();
+        cheatBtn.targetGraphic = cheatImg;
+        cheatBtn.onClick.AddListener(OnResetCheatTap);
+    }
+
+    void OnResetCheatTap()
+    {
+        if (resetPopup != null) return;
+        if (Time.unscaledTime - resetFirstTapTime > 3f) resetTaps = 0;
+        if (resetTaps == 0) resetFirstTapTime = Time.unscaledTime;
+        resetTaps++;
+        if (resetTaps >= 5)
+        {
+            resetTaps = 0;
+            ShowResetConfirm();
+        }
+    }
+
+    void ShowResetConfirm()
+    {
+        Font font = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
+
+        resetPopup = new GameObject("ResetConfirm", typeof(RectTransform));
+        resetPopup.transform.SetParent(canvasTransform, false);
+
+        GameObject dimObj = new GameObject("Dim", typeof(RectTransform));
+        dimObj.transform.SetParent(resetPopup.transform, false);
+        Image dimImg = dimObj.AddComponent<Image>();
+        dimImg.color = new Color(0f, 0f, 0f, 0.75f);
+        RectTransform dimRt = dimObj.GetComponent<RectTransform>();
+        dimRt.anchorMin = Vector2.zero;
+        dimRt.anchorMax = Vector2.one;
+        dimRt.sizeDelta = Vector2.zero;
+
+        GameObject panelObj = new GameObject("Panel", typeof(RectTransform));
+        panelObj.transform.SetParent(resetPopup.transform, false);
+        Image panelImg = panelObj.AddComponent<Image>();
+        panelImg.color = new Color(0.14f, 0.12f, 0.1f, 0.98f);
+        RectTransform panelRt = panelObj.GetComponent<RectTransform>();
+        panelRt.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRt.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRt.pivot = new Vector2(0.5f, 0.5f);
+        panelRt.sizeDelta = new Vector2(680, 340);
+
+        CreatePopupText(panelObj.transform, font, "RESET ALL PROGRESS?", 18, Color.white, new Vector2(0, 70));
+        CreatePopupText(panelObj.transform, font, "Campaign, gold, chests,\nbadges and tutorial flags\nwill be wiped.", 10,
+            new Color(0.75f, 0.72f, 0.68f), new Vector2(0, -10));
+
+        Button resetBtn = CreatePopupButton(panelObj.transform, font, "RESET", new Vector2(-130, -115),
+            new Color(0.55f, 0.18f, 0.15f));
+        resetBtn.onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlayButton();
+            resetPopup = null;
+            ProgressReset.WipeAll();
+        });
+
+        Button cancelBtn = CreatePopupButton(panelObj.transform, font, "CANCEL", new Vector2(130, -115),
+            new Color(0.3f, 0.3f, 0.33f));
+        cancelBtn.onClick.AddListener(() =>
+        {
+            SoundManager.Instance.PlayButton();
+            Destroy(resetPopup);
+            resetPopup = null;
+        });
+    }
+
+    Text CreatePopupText(Transform parent, Font font, string content, int size, Color color, Vector2 pos)
+    {
+        GameObject textObj = new GameObject("PopupText", typeof(RectTransform));
+        textObj.transform.SetParent(parent, false);
+        Text label = textObj.AddComponent<Text>();
+        label.font = font != null ? font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        label.fontSize = size;
+        label.alignment = TextAnchor.MiddleCenter;
+        label.text = content;
+        label.color = color;
+        RectTransform rt = textObj.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = new Vector2(620, 120);
+        rt.anchoredPosition = pos;
+        return label;
+    }
+
+    Button CreatePopupButton(Transform parent, Font font, string label, Vector2 pos, Color bg)
+    {
+        GameObject btnObj = new GameObject("PopupButton_" + label, typeof(RectTransform));
+        btnObj.transform.SetParent(parent, false);
+        Image img = btnObj.AddComponent<Image>();
+        img.color = bg;
+        RectTransform rt = btnObj.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = new Vector2(220, 60);
+        rt.anchoredPosition = pos;
+
+        GameObject textObj = new GameObject("Label", typeof(RectTransform));
+        textObj.transform.SetParent(btnObj.transform, false);
+        Text txt = textObj.AddComponent<Text>();
+        txt.font = font != null ? font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.fontSize = 14;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.text = label;
+        txt.color = Color.white;
+        RectTransform textRt = textObj.GetComponent<RectTransform>();
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.sizeDelta = Vector2.zero;
+
+        Button btn = btnObj.AddComponent<Button>();
+        btn.targetGraphic = img;
+        return btn;
     }
 
     void CreateTutorialButton(Transform parent, Font font)
     {
+        if (!DebugShortcuts.DevBuild) return;
         GameObject btnObj = new GameObject("TutorialButton", typeof(RectTransform));
         btnObj.transform.SetParent(parent, false);
         Image btnImg = btnObj.AddComponent<Image>();
@@ -342,6 +483,7 @@ public class MainMenuManager : MonoBehaviour
                 exhibidorUI.Close();
             }
         });
+        btnObj.AddComponent<HoverGrow>();
 
         int ribbonCount = RibbonManager.GetTotalRibbons();
         int cupCount = CampaignManager.Instance != null ? CampaignManager.Instance.GetCompletedCupCount() : 0;
@@ -366,9 +508,20 @@ public class MainMenuManager : MonoBehaviour
         GameObject btnObj = new GameObject("RankedButton", typeof(RectTransform));
         btnObj.transform.SetParent(canvasTransform, false);
         Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = unlocked
-            ? new Color(0.2f, 0.5f, 0.8f, 0.9f)
-            : new Color(0.35f, 0.35f, 0.35f, 0.7f);
+        Sprite rankedSprite = LoadFirstSprite("Sprites/Menu/ranked", "ranked_0");
+        if (rankedSprite != null)
+        {
+            btnImg.sprite = rankedSprite;
+            btnImg.preserveAspect = true;
+            btnImg.type = Image.Type.Sliced;
+            btnImg.color = unlocked ? Color.white : new Color(0.55f, 0.55f, 0.6f, 0.9f);
+        }
+        else
+        {
+            btnImg.color = unlocked
+                ? new Color(0.2f, 0.5f, 0.8f, 0.9f)
+                : new Color(0.35f, 0.35f, 0.35f, 0.7f);
+        }
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0.5f);
         btnRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -382,7 +535,7 @@ public class MainMenuManager : MonoBehaviour
         label.font = font;
         label.fontSize = 13;
         label.alignment = TextAnchor.MiddleCenter;
-        label.text = "RANKED";
+        label.text = "";
         label.color = unlocked ? new Color(0.8f, 0.95f, 1f) : new Color(0.55f, 0.55f, 0.55f);
         RectTransform textRt = textObj.GetComponent<RectTransform>();
         textRt.anchorMin = Vector2.zero;
@@ -559,19 +712,20 @@ public class MainMenuManager : MonoBehaviour
             return;
         }
 
-        if (campaignUI == null)
+        if (campaignMapUI == null)
         {
             if (menuCanvas != null)
             {
-                campaignUI = gameObject.AddComponent<CampaignUI>();
-                campaignUI.OnClose = () => { campaignUI = null; };
-                campaignUI.Show(menuCanvas);
+                campaignMapUI = gameObject.AddComponent<CampaignMapUI>();
+                campaignMapUI.OnClose = () => { campaignMapUI = null; };
+                campaignMapUI.Show(menuCanvas);
             }
         }
     }
 
     void CreateCampaignButton(Transform parent, Font f)
     {
+        if (!DebugShortcuts.DevBuild) return;
         GameObject btnObj = new GameObject("CampaignButton", typeof(RectTransform));
         btnObj.transform.SetParent(parent, false);
         Image btnImg = btnObj.AddComponent<Image>();
@@ -581,7 +735,7 @@ public class MainMenuManager : MonoBehaviour
         btnRt.anchorMax = new Vector2(0.5f, 0.5f);
         btnRt.pivot = new Vector2(0.5f, 0.5f);
         btnRt.sizeDelta = new Vector2(200, 50);
-        btnRt.anchoredPosition = new Vector2(-13, -510);
+        btnRt.anchoredPosition = new Vector2(-13, -470);
 
         GameObject textObj = new GameObject("Text", typeof(RectTransform));
         textObj.transform.SetParent(btnObj.transform, false);
@@ -601,20 +755,21 @@ public class MainMenuManager : MonoBehaviour
         btn.onClick.AddListener(() =>
         {
             SoundManager.Instance.PlaySelect();
-            if (campaignUI == null)
+            if (campaignMapUI == null)
             {
                 if (menuCanvas != null)
                 {
-                    campaignUI = gameObject.AddComponent<CampaignUI>();
-                    campaignUI.OnClose = () => { campaignUI = null; };
-                    campaignUI.Show(menuCanvas);
+                    campaignMapUI = gameObject.AddComponent<CampaignMapUI>();
+                    campaignMapUI.OnClose = () => { campaignMapUI = null; };
+                    campaignMapUI.Show(menuCanvas);
                 }
             }
             else
             {
-                campaignUI.Close();
+                campaignMapUI.Close();
             }
         });
+        btnObj.AddComponent<HoverGrow>();
 
         int completed = CampaignManager.Instance != null ? CampaignManager.Instance.GetCompletedCount() : 0;
         GameObject progressObj = new GameObject("Progress", typeof(RectTransform));
@@ -633,6 +788,7 @@ public class MainMenuManager : MonoBehaviour
 
     void CreateChestButton(Transform parent, Font f)
     {
+        if (!DebugShortcuts.DevBuild) return;
         GameObject btnObj = new GameObject("ChestButton", typeof(RectTransform));
         btnObj.transform.SetParent(parent, false);
         Image btnImg = btnObj.AddComponent<Image>();
@@ -642,7 +798,7 @@ public class MainMenuManager : MonoBehaviour
         btnRt.anchorMax = new Vector2(0.5f, 0.5f);
         btnRt.pivot = new Vector2(0.5f, 0.5f);
         btnRt.sizeDelta = new Vector2(170, 42);
-        btnRt.anchoredPosition = new Vector2(260, -510);
+        btnRt.anchoredPosition = new Vector2(260, -470);
 
         GameObject textObj = new GameObject("Text", typeof(RectTransform));
         textObj.transform.SetParent(btnObj.transform, false);
@@ -677,10 +833,12 @@ public class MainMenuManager : MonoBehaviour
                 chestUI = null;
             }
         });
+        btnObj.AddComponent<HoverGrow>();
     }
 
     void CreateInsigniaButton(Transform parent, Font f)
     {
+        if (!DebugShortcuts.DevBuild) return;
         GameObject btnObj = new GameObject("InsigniaButton", typeof(RectTransform));
         btnObj.transform.SetParent(parent, false);
         Image btnImg = btnObj.AddComponent<Image>();
@@ -690,7 +848,7 @@ public class MainMenuManager : MonoBehaviour
         btnRt.anchorMax = new Vector2(0.5f, 0.5f);
         btnRt.pivot = new Vector2(0.5f, 0.5f);
         btnRt.sizeDelta = new Vector2(170, 42);
-        btnRt.anchoredPosition = new Vector2(460, -510);
+        btnRt.anchoredPosition = new Vector2(460, -470);
 
         GameObject textObj = new GameObject("Text", typeof(RectTransform));
         textObj.transform.SetParent(btnObj.transform, false);
@@ -725,6 +883,7 @@ public class MainMenuManager : MonoBehaviour
                 insigniaUI = null;
             }
         });
+        btnObj.AddComponent<HoverGrow>();
     }
 
     IEnumerator ShowDailyBonusDelayed()

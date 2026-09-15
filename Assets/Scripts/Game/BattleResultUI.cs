@@ -37,12 +37,16 @@ public class BattleResultUI : MonoBehaviour
     private Image winnerFlagImage;
     private Text winnerNameText;
     private Image flashOverlay;
-    private Image atkIconImage, defIconImage;
     private Text atkStatText, defStatText;
+
     private Text blueResultText, redResultText;
 
+    private Text atkBigResultText, defBigResultText;
     private Color blueColor = new Color(0.4f, 0.6f, 1f);
     private Color redColor = new Color(1f, 0.4f, 0.4f);
+
+    private Image trumpetImage;
+    private Sprite trumpetSprite;
 
     void Awake()
     {
@@ -83,7 +87,7 @@ public class BattleResultUI : MonoBehaviour
         {
             for (int i = 0; i < 7; i++)
             {
-                if (cupSprites[i] != null)
+                if (cupSprites[i] != null && cupSprites[i].texture != null && cupSprites[i].texture.isReadable)
                     cupSprites[i] = Sprite.Create(cupSprites[i].texture, cupSprites[i].rect, new Vector2(0.5f, 0.5f), cupSprites[i].pixelsPerUnit);
             }
         }
@@ -93,6 +97,18 @@ public class BattleResultUI : MonoBehaviour
         panelVictoriaFlagSprite = LoadSpriteByName("Sprites/Menu/panelVictoria", "panelVictoria_1");
         blueFlagSprite = Resources.Load<Sprite>("Sprites/Decor/BlueFlag");
         redFlagSprite = Resources.Load<Sprite>("Sprites/Decor/RedFlag");
+
+        Sprite[] trumpets = Resources.LoadAll<Sprite>("Sprites/PowerUps/Efect/trumpet");
+        if (trumpets != null && trumpets.Length > 0)
+        {
+            float bestArea = 0f;
+            for (int i = 0; i < trumpets.Length; i++)
+            {
+                if (trumpets[i] == null) continue;
+                float area = trumpets[i].rect.width * trumpets[i].rect.height;
+                if (area > bestArea) { trumpetSprite = trumpets[i]; bestArea = area; }
+            }
+        }
     }
 
     void CreateUI()
@@ -132,10 +148,12 @@ public class BattleResultUI : MonoBehaviour
 
         // --- Attacker side (left half) ---
         atkSpriteImage = MakeImage(panelObj, "AtkSprite", new Vector2(-240, 227), new Vector2(200, 200));
-        atkNameText = MakeLabel(panelObj, "AtkName", "", 16, blueColor, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-240, 95), new Vector2(300, 24));
+        atkNameText = MakeLabel(panelObj, "AtkName", "", 22, blueColor, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-240, 95), new Vector2(300, 28));
 
-        atkIconImage = MakeImage(panelObj, "AtkIcon", new Vector2(-380, -80), new Vector2(32, 32));
+        atkBigResultText = MakeLabel(panelObj, "AtkBigResult", "", 48, new Color(1f, 1f, 1f, 0.45f), TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-395, -20), new Vector2(150, 110));
+        atkBigResultText.raycastTarget = false;
 
         atkDiceImage = MakeImage(panelObj, "AtkDice1", new Vector2(-275, -20), new Vector2(72, 72));
         atkDiceImage2 = MakeImage(panelObj, "AtkDice2", new Vector2(-205, -20), new Vector2(72, 72));
@@ -143,17 +161,19 @@ public class BattleResultUI : MonoBehaviour
         atkDiceImage2.rectTransform.sizeDelta = new Vector2(72, 72);
 
         atkStatText = MakeLabel(panelObj, "AtkStat", "ATK 2d6+1", 14, Color.white, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-240, -100), new Vector2(300, 22));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-240, -100), new Vector2(280, 22));
 
         atkAbilityText = MakeLabel(panelObj, "AtkAbility", "", 13, Color.yellow, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-240, -130), new Vector2(300, 20));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-240, -130), new Vector2(280, 20));
 
         // --- Defender side (right half) ---
         defSpriteImage = MakeImage(panelObj, "DefSprite", new Vector2(240, 227), new Vector2(200, 200));
-        defNameText = MakeLabel(panelObj, "DefName", "", 16, redColor, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(240, 95), new Vector2(300, 24));
+        defNameText = MakeLabel(panelObj, "DefName", "", 22, redColor, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(240, 95), new Vector2(300, 28));
 
-        defIconImage = MakeImage(panelObj, "DefIcon", new Vector2(380, -80), new Vector2(32, 32));
+        defBigResultText = MakeLabel(panelObj, "DefBigResult", "", 48, new Color(1f, 1f, 1f, 0.45f), TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(395, -20), new Vector2(150, 110));
+        defBigResultText.raycastTarget = false;
 
         defDiceImage = MakeImage(panelObj, "DefDice1", new Vector2(205, -20), new Vector2(72, 72));
         defDiceImage2 = MakeImage(panelObj, "DefDice2", new Vector2(275, -20), new Vector2(72, 72));
@@ -161,16 +181,16 @@ public class BattleResultUI : MonoBehaviour
         defDiceImage2.rectTransform.sizeDelta = new Vector2(72, 72);
 
         defStatText = MakeLabel(panelObj, "DefStat", "DEF 2d6+0", 14, Color.white, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(240, -100), new Vector2(300, 22));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(240, -100), new Vector2(280, 22));
 
         defAbilityText = MakeLabel(panelObj, "DefAbility", "", 13, Color.yellow, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(240, -130), new Vector2(300, 20));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(240, -130), new Vector2(280, 20));
 
         // --- Team result texts ---
         blueResultText = MakeLabel(panelObj, "BlueResult", "", 14, Color.white, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-251, -199), new Vector2(100, 22));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-240, -190), new Vector2(200, 22));
         redResultText = MakeLabel(panelObj, "RedResult", "", 14, Color.white, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(237, -187), new Vector2(100, 22));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(240, -190), new Vector2(200, 22));
 
         // --- Flash overlay ---
         GameObject flashObj = new GameObject("FlashOverlay");
@@ -215,6 +235,14 @@ public class BattleResultUI : MonoBehaviour
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 0), new Vector2(500, 36));
 
         victoriaObj.SetActive(false);
+
+        // --- Trumpet fanfare image (right side, hidden initially) ---
+        trumpetImage = MakeImage(canvasObj, "TrumpetImage", new Vector2(812, -380), new Vector2(420, 330));
+        if (trumpetSprite != null) trumpetImage.sprite = trumpetSprite;
+        trumpetImage.preserveAspect = true;
+        trumpetImage.raycastTarget = false;
+        trumpetImage.transform.localScale = new Vector3(-1f, 1f, 1f);
+        trumpetImage.gameObject.SetActive(false);
 
         gameObject.SetActive(false);
     }
@@ -307,13 +335,12 @@ public class BattleResultUI : MonoBehaviour
         PieceData redPiece = blueAttacks ? defender : attacker;
 
         LoadCardSprite(atkSpriteImage, bluePiece.type, bluePiece.team);
-        LoadCardSprite(atkIconImage, bluePiece.type, bluePiece.team);
-        atkNameText.text = $"{bluePiece.type}";
+        LoadCardSprite(atkSpriteImage, bluePiece.type, bluePiece.team);
+        atkNameText.text = $"{bluePiece.type}".ToUpper();
         atkNameText.color = blueColor;
 
         LoadCardSprite(defSpriteImage, redPiece.type, redPiece.team);
-        LoadCardSprite(defIconImage, redPiece.type, redPiece.team);
-        defNameText.text = $"{redPiece.type}";
+        defNameText.text = $"{redPiece.type}".ToUpper();
         defNameText.color = redColor;
 
         if (blueAttacks)
@@ -343,6 +370,10 @@ public class BattleResultUI : MonoBehaviour
 
         blueResultText.text = "";
         redResultText.text = "";
+        atkBigResultText.text = "";
+        defBigResultText.text = "";
+
+        if (trumpetImage != null) trumpetImage.gameObject.SetActive(false);
 
         StartCoroutine(AnimateEntry(outcome, attacker, defender));
     }
@@ -380,7 +411,32 @@ public class BattleResultUI : MonoBehaviour
         // Show victoria banner
         PieceData winner = atkWin ? attacker : defender;
         if (winner.team == Team.Blue)
+        {
             SoundManager.Instance.PlayTrumpet();
+            if (trumpetImage != null && trumpetSprite != null)
+            {
+                trumpetImage.gameObject.SetActive(true);
+                RectTransform trt = trumpetImage.GetComponent<RectTransform>();
+                Vector2 tStart = new Vector2(1600, -380);
+                Vector2 tEnd = trt.anchoredPosition;
+                trt.anchoredPosition = tStart;
+                trt.localScale = new Vector3(-0.6f, 0.6f, 1f);
+                float tt = 0;
+                float tDur = 0.25f;
+                while (tt < tDur)
+                {
+                    float tp = tt / tDur;
+                    trt.anchoredPosition = Vector2.Lerp(tStart, tEnd, tp);
+                    float s = Mathf.Lerp(0.6f, 1f, tp);
+                    trt.localScale = new Vector3(-s, s, 1f);
+                    tt += Time.deltaTime;
+                    yield return null;
+                }
+                trt.anchoredPosition = tEnd;
+                trt.localScale = new Vector3(-1f, 1f, 1f);
+                StartCoroutine(AnimateTrumpetBounce(trt));
+            }
+        }
         winnerNameText.text = $"WINNER: {winner.type}";
         winnerNameText.color = winner.team == Team.Blue ? Color.white : Color.black;
         winnerFlagImage.sprite = winner.team == Team.Blue ? blueFlagSprite : redFlagSprite;
@@ -427,6 +483,24 @@ public class BattleResultUI : MonoBehaviour
         }
 
         ClearUI();
+    }
+
+    IEnumerator AnimateTrumpetBounce(RectTransform rt)
+    {
+        if (rt == null) yield break;
+        float duration = 1.5f;
+        float t = 0;
+        while (t < duration)
+        {
+            if (rt == null) yield break;
+            float pulse = 1f + Mathf.Sin(t / duration * Mathf.PI * 2f) * 0.06f;
+            rt.localScale = new Vector3(-pulse, pulse, 1f);
+            t += Time.deltaTime;
+            yield return null;
+        }
+        if (rt != null) rt.localScale = new Vector3(-1f, 1f, 1f);
+        if (trumpetImage != null && !GameConfig.isAutoPlay)
+            trumpetImage.gameObject.SetActive(false);
     }
 
     IEnumerator PulseVictoria()
@@ -566,6 +640,9 @@ public class BattleResultUI : MonoBehaviour
 
     IEnumerator AnimateDiceClash(CombatOutcome outcome, PieceData attacker, PieceData defender)
     {
+        atkBigResultText.text = "";
+        defBigResultText.text = "";
+
         atkDiceImage.gameObject.SetActive(true);
         atkDiceImage2.gameObject.SetActive(true);
         defDiceImage.gameObject.SetActive(true);
@@ -645,6 +722,11 @@ public class BattleResultUI : MonoBehaviour
         defRt.localRotation = Quaternion.identity;
         defRt2.localRotation = Quaternion.identity;
 
+        int blueTotal = blueAttacks ? outcome.atkTotal : outcome.defTotal;
+        int redTotal = blueAttacks ? outcome.defTotal : outcome.atkTotal;
+        atkBigResultText.text = blueTotal.ToString();
+        defBigResultText.text = redTotal.ToString();
+
         // Return dice to original positions
         float returnDuration = 0.3f;
         float rt2 = 0;
@@ -664,17 +746,17 @@ public class BattleResultUI : MonoBehaviour
         bool atkWin = outcome.result == CombatResult.AttackerWins;
         if (blueAttacks)
         {
-            atkAbilityText.text = outcome.atkAbilityName != null ? $"> {outcome.atkAbilityName} +{outcome.atkBonus}" : "";
-            atkAbilityText.color = atkWin ? Color.yellow : Color.gray;
-            defAbilityText.text = outcome.defAbilityName != null ? $"> {outcome.defAbilityName} +{outcome.defBonus}" : "";
-            defAbilityText.color = !atkWin ? Color.yellow : Color.gray;
+            atkAbilityText.text = FormatAbility(outcome.atkAbilityName, outcome.atkBonus);
+            atkAbilityText.color = GetAbilityColor(outcome.atkBonus, atkWin);
+            defAbilityText.text = FormatAbility(outcome.defAbilityName, outcome.defBonus);
+            defAbilityText.color = GetAbilityColor(outcome.defBonus, !atkWin);
         }
         else
         {
-            atkAbilityText.text = outcome.defAbilityName != null ? $"> {outcome.defAbilityName} +{outcome.defBonus}" : "";
-            atkAbilityText.color = !atkWin ? Color.yellow : Color.gray;
-            defAbilityText.text = outcome.atkAbilityName != null ? $"> {outcome.atkAbilityName} +{outcome.atkBonus}" : "";
-            defAbilityText.color = atkWin ? Color.yellow : Color.gray;
+            atkAbilityText.text = FormatAbility(outcome.defAbilityName, outcome.defBonus);
+            atkAbilityText.color = GetAbilityColor(outcome.defBonus, !atkWin);
+            defAbilityText.text = FormatAbility(outcome.atkAbilityName, outcome.atkBonus);
+            defAbilityText.color = GetAbilityColor(outcome.atkBonus, atkWin);
         }
 
         // Show result text (blue left, red right)
@@ -688,6 +770,20 @@ public class BattleResultUI : MonoBehaviour
             blueResultText.text = $"DEF {outcome.defTotal}";
             redResultText.text = $"ATK {outcome.atkTotal}";
         }
+    }
+
+    string FormatAbility(string name, int bonus)
+    {
+        if (name == null) return "";
+        if (bonus > 0) return $"> {name} +{bonus}";
+        if (bonus < 0) return $"> {name} {bonus}";
+        return $"> {name}";
+    }
+
+    Color GetAbilityColor(int bonus, bool isWinner)
+    {
+        if (bonus < 0) return new Color(1f, 0.25f, 0.2f, 1f);
+        return isWinner ? Color.yellow : Color.gray;
     }
 
     IEnumerator ShakePanel(float duration, float intensity)

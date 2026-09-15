@@ -9,12 +9,12 @@ public class CampaignRewardUI : MonoBehaviour
     private GameObject canvasObj;
     private RectTransform panelRt;
 
-    public void Show(int levelId, int goldReward, bool chestGranted, string cupCompletedRace = null)
+    public void Show(int levelId, int goldReward, bool chestGranted, string cupCompletedRace = null, int stars = 0)
     {
-        StartCoroutine(Sequence(levelId, goldReward, chestGranted, cupCompletedRace));
+        StartCoroutine(Sequence(levelId, goldReward, chestGranted, cupCompletedRace, stars));
     }
 
-    IEnumerator Sequence(int levelId, int goldReward, bool chestGranted, string cupCompletedRace)
+    IEnumerator Sequence(int levelId, int goldReward, bool chestGranted, string cupCompletedRace, int stars)
     {
         CampaignLevel level = CampaignData.GetLevel(levelId);
         if (level == null) { Destroy(gameObject); yield break; }
@@ -53,10 +53,10 @@ public class CampaignRewardUI : MonoBehaviour
         panelRt = panel.GetComponent<RectTransform>();
         panelRt.anchorMin = new Vector2(0.5f, 0.5f);
         panelRt.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRt.sizeDelta = new Vector2(560, 580);
+        panelRt.sizeDelta = new Vector2(560, 740);
 
-        Text titleText = MakeText(panel.transform, "REWARD!", font, 22, Color.white, new Vector2(0, 175));
-        Text subtitleText = MakeText(panel.transform, level.name.ToUpper(), font, 14, new Color(0.8f, 0.8f, 0.5f), new Vector2(0, 135));
+        Text titleText = MakeText(panel.transform, "REWARD!", font, 28, Color.white, new Vector2(0, 285));
+        Text subtitleText = MakeText(panel.transform, level.name.ToUpper(), font, 18, new Color(0.8f, 0.8f, 0.5f), new Vector2(0, 245));
 
         yield return new WaitForSecondsRealtime(0.3f);
 
@@ -75,7 +75,13 @@ public class CampaignRewardUI : MonoBehaviour
         SoundManager.Instance.PlaySelect();
         yield return new WaitForSecondsRealtime(0.3f);
 
-        float y = 80f;
+        float y = 165f;
+
+        if (stars > 0)
+        {
+            yield return RevealStars(panel.transform, stars, font);
+            y -= 100f;
+        }
 
         if (goldReward > 0)
         {
@@ -86,7 +92,7 @@ public class CampaignRewardUI : MonoBehaviour
             StartCoroutine(AnimateCoinBounce(goldRow));
             StartCoroutine(SpawnCoinParticles(panel.transform, goldRow.GetComponent<RectTransform>().anchoredPosition));
             StartCoroutine(ShakePanel(0.06f, 0.2f));
-            y -= 65f;
+            y -= 78f;
             yield return new WaitForSecondsRealtime(0.4f);
         }
 
@@ -99,7 +105,7 @@ public class CampaignRewardUI : MonoBehaviour
             yield return RevealRow(insigniaRow, font);
             SoundManager.Instance.PlayVictory();
             StartCoroutine(ShakePanel(0.05f, 0.2f));
-            y -= 75f;
+            y -= 90f;
             yield return new WaitForSecondsRealtime(0.4f);
         }
 
@@ -110,7 +116,7 @@ public class CampaignRewardUI : MonoBehaviour
         yield return RevealRow(ribbonRow, font);
         SoundManager.Instance.PlaySelect();
         StartCoroutine(ShakePanel(0.05f, 0.2f));
-        y -= 60f;
+        y -= 72f;
         yield return new WaitForSecondsRealtime(0.4f);
 
         if (chestGranted)
@@ -136,30 +142,38 @@ public class CampaignRewardUI : MonoBehaviour
             yield return new WaitForSecondsRealtime(0.6f);
         }
 
-        Sprite okSprite = Resources.Load<Sprite>("Sprites/Menu/botonOK_0");
+        float okY = Mathf.Min(y - 35f, -230f);
+
+        Sprite okSprite = null;
+        Sprite[] okSprites = Resources.LoadAll<Sprite>("Sprites/Menu/botin ui/continue");
+        if (okSprites != null && okSprites.Length > 0)
+            okSprite = System.Array.Find(okSprites, s => s.name == "continue_0") ?? okSprites[0];
         GameObject okBtn = new GameObject("OKButton");
         okBtn.transform.SetParent(panel.transform, false);
         Image okBg = okBtn.AddComponent<Image>();
-        if (okSprite != null) { okBg.sprite = okSprite; okBg.color = Color.white; }
-        else okBg.color = new Color(0.25f, 0.45f, 0.75f);
+        if (okSprite != null) { okBg.sprite = okSprite; okBg.preserveAspect = true; okBg.color = Color.white; }
+        else
+        {
+            okBg.color = new Color(0.25f, 0.45f, 0.75f);
+
+            GameObject okLabel = new GameObject("Label");
+            okLabel.transform.SetParent(okBtn.transform, false);
+            Text okText = okLabel.AddComponent<Text>();
+            okText.font = font;
+            okText.text = "CONTINUE";
+            okText.fontSize = 14;
+            okText.alignment = TextAnchor.MiddleCenter;
+            okText.color = Color.white;
+            RectTransform okLblRt = okLabel.GetComponent<RectTransform>();
+            okLblRt.anchorMin = Vector2.zero;
+            okLblRt.anchorMax = Vector2.one;
+            okLblRt.sizeDelta = Vector2.zero;
+        }
         RectTransform okRt = okBtn.GetComponent<RectTransform>();
         okRt.anchorMin = new Vector2(0.5f, 0.5f);
         okRt.anchorMax = new Vector2(0.5f, 0.5f);
-        okRt.sizeDelta = new Vector2(220, 70);
-        okRt.anchoredPosition = new Vector2(0, -210);
-
-        GameObject okLabel = new GameObject("Label");
-        okLabel.transform.SetParent(okBtn.transform, false);
-        Text okText = okLabel.AddComponent<Text>();
-        okText.font = font;
-        okText.text = "OK";
-        okText.fontSize = 14;
-        okText.alignment = TextAnchor.MiddleCenter;
-        okText.color = Color.white;
-        RectTransform okLblRt = okLabel.GetComponent<RectTransform>();
-        okLblRt.anchorMin = Vector2.zero;
-        okLblRt.anchorMax = Vector2.one;
-        okLblRt.sizeDelta = Vector2.zero;
+        okRt.sizeDelta = new Vector2(360, 165);
+        okRt.anchoredPosition = new Vector2(0, okY);
 
         Button okButton = okBtn.AddComponent<Button>();
         okButton.targetGraphic = okBg;
@@ -169,6 +183,128 @@ public class CampaignRewardUI : MonoBehaviour
         StartCoroutine(ScalePop(okBtn.transform, 0.3f, 1f));
 
         StartCoroutine(AnimateSparkles(panel.transform, new Vector2(-200, 180), new Vector2(200, 200)));
+    }
+
+    IEnumerator RevealStars(Transform panelParent, int stars, Font font)
+    {
+        GameObject row = new GameObject("StarsRow");
+        row.transform.SetParent(panelParent, false);
+        RectTransform rowRt = row.AddComponent<RectTransform>();
+        rowRt.anchorMin = new Vector2(0.5f, 0.5f);
+        rowRt.anchorMax = new Vector2(0.5f, 0.5f);
+        rowRt.sizeDelta = new Vector2(470, 84);
+        rowRt.anchoredPosition = new Vector2(0, 165f);
+
+        Sprite starSprite = CreateStarSprite(64);
+
+        List<Image> starImages = new List<Image>();
+        for (int i = 0; i < 3; i++)
+        {
+            GameObject starObj = new GameObject($"Star{i}");
+            starObj.transform.SetParent(row.transform, false);
+            Image starImg = starObj.AddComponent<Image>();
+            starImg.sprite = starSprite;
+            starImg.preserveAspect = true;
+            starImg.raycastTarget = false;
+            starImg.color = new Color(0.35f, 0.35f, 0.4f, 0.85f);
+            RectTransform sRt = starObj.GetComponent<RectTransform>();
+            sRt.anchorMin = new Vector2(0.5f, 0.5f);
+            sRt.anchorMax = new Vector2(0.5f, 0.5f);
+            sRt.sizeDelta = new Vector2(74, 74);
+            sRt.anchoredPosition = new Vector2((i - 1) * 86f, 0);
+            starImages.Add(starImg);
+        }
+
+        row.transform.localScale = Vector3.zero;
+        float t = 0f;
+        while (t < 0.2f)
+        {
+            t += Time.unscaledDeltaTime;
+            row.transform.localScale = Vector3.one * Mathf.Lerp(0f, 1f, t / 0.2f);
+            yield return null;
+        }
+        row.transform.localScale = Vector3.one;
+
+        Color earnedGold = new Color(1f, 0.82f, 0.1f);
+        for (int i = 0; i < stars && i < 3; i++)
+        {
+            yield return new WaitForSecondsRealtime(0.25f);
+            if (starImages[i] == null) yield break;
+
+            starImages[i].color = new Color(2f, 2f, 2f, 1f);
+            Transform st = starImages[i].transform;
+
+            switch (i)
+            {
+                case 0: SoundManager.Instance.PlaySelect(); break;
+                case 1: SoundManager.Instance.PlayCoin(); break;
+                default: SoundManager.Instance.PlayVictory(); break;
+            }
+            StartCoroutine(ShakePanel(0.05f, 0.15f));
+            SpawnStarFlash(panelParent, st.localPosition);
+
+            float pt = 0f;
+            while (pt < 0.25f)
+            {
+                if (st == null) yield break;
+                pt += Time.unscaledDeltaTime;
+                float p = pt / 0.25f;
+                st.localScale = Vector3.one * (1f + Mathf.Sin(p * Mathf.PI) * 0.5f);
+                starImages[i].color = Color.Lerp(new Color(2f, 2f, 2f, 1f), earnedGold, p);
+                yield return null;
+            }
+            if (starImages[i] != null) starImages[i].color = earnedGold;
+        }
+
+        MakeText(row.transform, "PERFORMANCE", font, 8, new Color(0.6f, 0.6f, 0.6f), new Vector2(0, -45));
+    }
+
+    void SpawnStarFlash(Transform panelParent, Vector2 pos)
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            GameObject spark = new GameObject("StarSpark");
+            spark.transform.SetParent(panelParent, false);
+            Image img = spark.AddComponent<Image>();
+            img.color = new Color(1f, 0.9f, 0.4f, 0.95f);
+            img.raycastTarget = false;
+            RectTransform rt = spark.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            float sz = Random.Range(6f, 12f);
+            rt.sizeDelta = new Vector2(sz, sz);
+            rt.anchoredPosition = pos;
+
+            Vector2 dir = Random.insideUnitCircle.normalized * Random.Range(40f, 90f);
+            StartCoroutine(AnimateSingleSparkle(spark, 0.35f, dir));
+        }
+    }
+
+    Sprite CreateStarSprite(int size)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        float cx = (size - 1) / 2f, cy = (size - 1) / 2f;
+        float outer = size / 2f - 1f;
+        float inner = outer * 0.42f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x - cx, dy = y - cy;
+                float ang = Mathf.Atan2(dy, dx);
+                float r = Mathf.Sqrt(dx * dx + dy * dy);
+                float norm = Mathf.Repeat(ang + Mathf.PI / 2f, Mathf.PI * 2f / 5f);
+                float half = Mathf.PI / 5f;
+                float tri = norm / half;
+                if (tri > 1f) tri = 2f - tri;
+                float maxR = Mathf.Lerp(inner, outer, tri);
+                tex.SetPixel(x, y, r <= maxR ? Color.white : Color.clear);
+            }
+        }
+
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
     }
 
     IEnumerator RevealRow(GameObject row, Font font)
@@ -351,7 +487,7 @@ public class CampaignRewardUI : MonoBehaviour
         RectTransform rt = row.AddComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(400, 50);
+        rt.sizeDelta = new Vector2(470, 60);
         rt.anchoredPosition = new Vector2(0, y);
 
         Sprite coinSprite = Resources.Load<Sprite>("Sprites/Menu/moneda");
@@ -365,10 +501,10 @@ public class CampaignRewardUI : MonoBehaviour
             RectTransform coinRt = coinObj.GetComponent<RectTransform>();
             coinRt.anchorMin = new Vector2(0.3f, 0.5f);
             coinRt.anchorMax = new Vector2(0.3f, 0.5f);
-            coinRt.sizeDelta = new Vector2(40, 40);
+            coinRt.sizeDelta = new Vector2(54, 54);
         }
 
-        MakeText(row.transform, $"+{gold} GOLD", font, 16, new Color(1f, 0.85f, 0.2f), new Vector2(50, 0));
+        MakeText(row.transform, $"+{gold} GOLD", font, 20, new Color(1f, 0.85f, 0.2f), new Vector2(58, 0));
         return row;
     }
 
@@ -379,7 +515,7 @@ public class CampaignRewardUI : MonoBehaviour
         RectTransform rt = row.AddComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(400, 70);
+        rt.sizeDelta = new Vector2(470, 84);
         rt.anchoredPosition = new Vector2(0, y);
 
         Sprite icon = InsigniaSprites.Get(insignia);
@@ -393,12 +529,12 @@ public class CampaignRewardUI : MonoBehaviour
             RectTransform iconRt = iconObj.GetComponent<RectTransform>();
             iconRt.anchorMin = new Vector2(0.25f, 0.5f);
             iconRt.anchorMax = new Vector2(0.25f, 0.5f);
-            iconRt.sizeDelta = new Vector2(50, 50);
+            iconRt.sizeDelta = new Vector2(66, 66);
         }
 
         Color rarityColor = InsigniaSprites.GetRarityColor(insignia.rarity);
-        MakeText(row.transform, insignia.name.ToUpper(), font, 12, rarityColor, new Vector2(60, 10));
-        MakeText(row.transform, "INSIGNIA", font, 9, new Color(0.6f, 0.6f, 0.6f), new Vector2(60, -15));
+        MakeText(row.transform, insignia.name.ToUpper(), font, 15, rarityColor, new Vector2(70, 12));
+        MakeText(row.transform, "INSIGNIA", font, 11, new Color(0.6f, 0.6f, 0.6f), new Vector2(70, -18));
         return row;
     }
 
@@ -409,7 +545,7 @@ public class CampaignRewardUI : MonoBehaviour
         RectTransform rt = row.AddComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(400, 60);
+        rt.sizeDelta = new Vector2(470, 72);
         rt.anchoredPosition = new Vector2(0, y);
 
         if (ribbonSprite != null)
@@ -424,7 +560,7 @@ public class CampaignRewardUI : MonoBehaviour
             RectTransform ribbonRt = ribbonObj.GetComponent<RectTransform>();
             ribbonRt.anchorMin = new Vector2(0.28f, 0.5f);
             ribbonRt.anchorMax = new Vector2(0.28f, 0.5f);
-            ribbonRt.sizeDelta = new Vector2(40, 55);
+            ribbonRt.sizeDelta = new Vector2(52, 72);
         }
         else
         {
@@ -435,11 +571,11 @@ public class CampaignRewardUI : MonoBehaviour
             RectTransform ribbonRt = ribbonObj.GetComponent<RectTransform>();
             ribbonRt.anchorMin = new Vector2(0.28f, 0.5f);
             ribbonRt.anchorMax = new Vector2(0.28f, 0.5f);
-            ribbonRt.sizeDelta = new Vector2(30, 45);
+            ribbonRt.sizeDelta = new Vector2(38, 56);
         }
 
-        MakeText(row.transform, "RIBBON", font, 12, ribbonColor, new Vector2(60, 5));
-        MakeText(row.transform, "Earned!", font, 10, new Color(0.6f, 0.6f, 0.6f), new Vector2(60, -15));
+        MakeText(row.transform, "RIBBON", font, 15, ribbonColor, new Vector2(70, 8));
+        MakeText(row.transform, "Earned!", font, 12, new Color(0.6f, 0.6f, 0.6f), new Vector2(70, -18));
         return row;
     }
 
@@ -450,7 +586,7 @@ public class CampaignRewardUI : MonoBehaviour
         RectTransform rt = row.AddComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(400, 50);
+        rt.sizeDelta = new Vector2(470, 60);
         rt.anchoredPosition = new Vector2(0, y);
 
         Sprite chestSprite = Resources.Load<Sprite>("Sprites/Cofre");
@@ -464,10 +600,10 @@ public class CampaignRewardUI : MonoBehaviour
             RectTransform chestRt = chestObj.GetComponent<RectTransform>();
             chestRt.anchorMin = new Vector2(0.3f, 0.5f);
             chestRt.anchorMax = new Vector2(0.3f, 0.5f);
-            chestRt.sizeDelta = new Vector2(35, 35);
+            chestRt.sizeDelta = new Vector2(46, 46);
         }
 
-        MakeText(row.transform, "CHEST GRANTED!", font, 11, new Color(0.8f, 0.65f, 0.2f), new Vector2(50, 0));
+        MakeText(row.transform, "CHEST GRANTED!", font, 14, new Color(0.8f, 0.65f, 0.2f), new Vector2(58, 0));
         return row;
     }
 
@@ -478,19 +614,29 @@ public class CampaignRewardUI : MonoBehaviour
         RectTransform rt = row.AddComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(400, 80);
-        rt.anchoredPosition = new Vector2(0, y);
+        rt.sizeDelta = new Vector2(470, 96);
+        rt.anchoredPosition = new Vector2(100, y);
 
-        string cupPath = race switch
+        string resolved = BoardManager.SpriteFolder(race);
+        string cupPath = resolved switch
         {
             "Human" => "Sprites/Menu/copaHuman",
             "Orc" => "Sprites/Menu/copaOrc",
             "Beastfolk" => "Sprites/Menu/copaBeast",
-            "Nigromantes" => "Sprites/Menu/copaMenu",
-            _ => "Sprites/Menu/copaMenu"
+            "Nigromantes" => "Sprites/Menu/copaMenu-copy-0",
+            _ => "Sprites/Menu/copaMenu-copy-0"
         };
         Sprite cupSprite = Resources.Load<Sprite>(cupPath);
-        if (cupSprite == null) cupSprite = Resources.Load<Sprite>("Sprites/Menu/copaMenu");
+        if (cupSprite == null)
+        {
+            Sprite[] arr = Resources.LoadAll<Sprite>(cupPath);
+            if (arr != null && arr.Length > 0)
+            {
+                foreach (var sp in arr)
+                    if (sp.name.Contains("_0")) { cupSprite = sp; break; }
+                if (cupSprite == null) cupSprite = arr[0];
+            }
+        }
 
         GameObject cupObj = new GameObject("Cup");
         cupObj.transform.SetParent(row.transform, false);
@@ -499,14 +645,14 @@ public class CampaignRewardUI : MonoBehaviour
         cupImg.color = Color.white;
         cupImg.preserveAspect = true;
         RectTransform cupRt = cupObj.GetComponent<RectTransform>();
-        cupRt.anchorMin = new Vector2(0.28f, 0.5f);
-        cupRt.anchorMax = new Vector2(0.28f, 0.5f);
-        cupRt.sizeDelta = new Vector2(60, 60);
+        cupRt.anchorMin = new Vector2(0.15f, 0.5f);
+        cupRt.anchorMax = new Vector2(0.15f, 0.5f);
+        cupRt.sizeDelta = new Vector2(78, 78);
 
         string cupName = CampaignData.GetCup(
             CampaignData.GetLevel(GameConfig.selectedLevel)?.cup ?? 0)?.name ?? "CUP";
-        MakeText(row.transform, cupName.ToUpper() + " COMPLETED!", font, 13, new Color(1f, 0.85f, 0.2f), new Vector2(65, 10));
-        MakeText(row.transform, "Trophy Unlocked!", font, 10, new Color(0.8f, 0.8f, 0.8f), new Vector2(65, -15));
+        MakeText(row.transform, cupName.ToUpper() + " COMPLETED!", font, 16, new Color(1f, 0.85f, 0.2f), new Vector2(50, 10));
+        MakeText(row.transform, "Trophy Unlocked!", font, 12, new Color(0.8f, 0.8f, 0.8f), new Vector2(50, -18));
         return row;
     }
 
@@ -587,16 +733,19 @@ public class CampaignRewardUI : MonoBehaviour
         }
     }
 
-    IEnumerator AnimateSingleSparkle(GameObject obj, float dur)
+    IEnumerator AnimateSingleSparkle(GameObject obj, float dur, Vector2 dir = default)
     {
         if (obj == null) yield break;
         Image img = obj.GetComponent<Image>();
+        RectTransform rt = obj.GetComponent<RectTransform>();
+        Vector2 startPos = rt != null ? rt.anchoredPosition : Vector2.zero;
         float t = 0f;
         while (t < dur)
         {
             if (obj == null) yield break;
             t += Time.unscaledDeltaTime;
             float p = t / dur;
+            if (rt != null) rt.anchoredPosition = startPos + dir * p;
             if (img != null) img.color = new Color(1f, 0.95f, 0.5f, 0.9f * (1f - p));
             float s = 1f + 0.4f * Mathf.Sin(p * Mathf.PI);
             obj.transform.localScale = Vector3.one * s;
@@ -622,7 +771,7 @@ public class CampaignRewardUI : MonoBehaviour
         RectTransform rt = obj.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.5f);
         rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(380, size * 2);
+        rt.sizeDelta = new Vector2(450, size * 2);
         rt.anchoredPosition = pos;
         return text;
     }

@@ -107,7 +107,8 @@ public class TurnUI : MonoBehaviour
         BoardManager board = FindFirstObjectByType<BoardManager>();
         if (board != null)
         {
-            string themePath = $"Sprites/{board.scenarioTheme}/Decor/DiceTable";
+            string resolved = BoardManager.SpriteFolder(board.scenarioTheme);
+            string themePath = $"Sprites/{resolved}/Decor/DiceTable";
             diceTableSprite = Resources.Load<Sprite>(themePath);
         }
         if (diceTableSprite == null)
@@ -170,14 +171,17 @@ public class TurnUI : MonoBehaviour
         timerObj.transform.SetParent(infoPanel.transform);
         timerText = timerObj.AddComponent<Text>();
         timerText.font = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
-        timerText.fontSize = 34;
+        timerText.fontSize = 24;
         timerText.alignment = TextAnchor.MiddleCenter;
-        timerText.color = Color.white;
+        timerText.color = new Color(1f, 0.65f, 0.15f);
+        Outline timerOutline = timerObj.AddComponent<Outline>();
+        timerOutline.effectColor = Color.white;
+        timerOutline.effectDistance = new Vector2(1, -1);
         RectTransform timerRt = timerObj.GetComponent<RectTransform>();
         timerRt.anchorMin = new Vector2(0.5f, 0.5f);
         timerRt.anchorMax = new Vector2(0.5f, 0.5f);
         timerRt.pivot = new Vector2(0.5f, 0.5f);
-        timerRt.sizeDelta = new Vector2(240, 44);
+        timerRt.sizeDelta = new Vector2(200, 34);
         timerRt.anchoredPosition = new Vector2(0, -40);
         if (GameConfig.isTutorial) timerObj.SetActive(false);
 
@@ -185,21 +189,25 @@ public class TurnUI : MonoBehaviour
         turnTimerObj.transform.SetParent(infoPanel.transform);
         turnTimerText = turnTimerObj.AddComponent<Text>();
         turnTimerText.font = Resources.Load<Font>("Fonts/Press_Start_2P/PressStart2P-Regular");
-        turnTimerText.fontSize = 25;
+        turnTimerText.fontSize = 18;
         turnTimerText.alignment = TextAnchor.MiddleCenter;
         turnTimerText.color = Color.white;
+        Outline turnTimerOutline = turnTimerObj.AddComponent<Outline>();
+        turnTimerOutline.effectColor = Color.black;
+        turnTimerOutline.effectDistance = new Vector2(2, -2);
         RectTransform turnTimerRt = turnTimerObj.GetComponent<RectTransform>();
         turnTimerRt.anchorMin = new Vector2(0.5f, 0f);
         turnTimerRt.anchorMax = new Vector2(0.5f, 0f);
         turnTimerRt.pivot = new Vector2(0.5f, 0f);
-        turnTimerRt.sizeDelta = new Vector2(150, 34);
+        turnTimerRt.sizeDelta = new Vector2(120, 28);
         turnTimerRt.anchoredPosition = new Vector2(0, 24);
         if (GameConfig.isTutorial) turnTimerObj.SetActive(false);
 
         Sprite skipSprite = null;
         if (board != null)
         {
-            string skipPath = $"Sprites/{board.scenarioTheme}/Decor/SkipTurn";
+            string resolved2 = BoardManager.SpriteFolder(board.scenarioTheme);
+            string skipPath = $"Sprites/{resolved2}/Decor/SkipTurn";
             skipSprite = Resources.Load<Sprite>(skipPath);
         }
         if (skipSprite == null)
@@ -252,7 +260,7 @@ public class TurnUI : MonoBehaviour
             if (TimerManager.Instance.timeRemaining <= 60f)
                 timerText.color = Color.Lerp(Color.red, Color.white, Mathf.PingPong(Time.time * 2f, 1f));
             else
-        timerText.color = new Color(1f, 0.9f, 0.4f);
+                timerText.color = new Color(1f, 0.65f, 0.15f);
         }
 
         if (turnTimerText != null && turnManager != null)
@@ -286,8 +294,8 @@ public class TurnUI : MonoBehaviour
         rt.anchorMin = new Vector2(1f, 1f);
         rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot = new Vector2(1f, 1f);
-        rt.sizeDelta = new Vector2(44, 44);
-        rt.anchoredPosition = new Vector2(-10, -10);
+        rt.sizeDelta = new Vector2(52, 52);
+        rt.anchoredPosition = new Vector2(-288, -18);
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = soundIcon;
@@ -295,9 +303,9 @@ public class TurnUI : MonoBehaviour
         btn.onClick.AddListener(() => SoundManager.Instance.PlayButton());
     }
 
-    void CreateQuitButton(Transform parent)
+void CreateQuitButton(Transform parent)
     {
-        bool isWeb = Application.platform == RuntimePlatform.WebGLPlayer;
+        if (!DebugShortcuts.DevBuild) return;
         GameObject btnObj = new GameObject("QuitButton");
         btnObj.transform.SetParent(parent);
 
@@ -309,14 +317,14 @@ public class TurnUI : MonoBehaviour
         rt.anchorMax = new Vector2(1f, 1f);
         rt.pivot = new Vector2(1f, 1f);
         rt.sizeDelta = new Vector2(100, 36);
-        rt.anchoredPosition = new Vector2(-10, -60);
+        rt.anchoredPosition = new Vector2(-14, -120);
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImage;
         btn.onClick.AddListener(() => Application.Quit());
         btn.onClick.AddListener(() => SoundManager.Instance.PlayButton());
 
-        btnObj.SetActive(!isWeb);
+        btnObj.SetActive(Application.platform != RuntimePlatform.WebGLPlayer);
     }
 
     void ToggleSound()
@@ -329,6 +337,7 @@ public class TurnUI : MonoBehaviour
 
     void CreateScenarioButton(Transform parent)
     {
+        if (!DebugShortcuts.DevBuild) return;
         GameObject btnObj = new GameObject("ScenarioButton");
         btnObj.transform.SetParent(parent);
 
@@ -350,6 +359,7 @@ public class TurnUI : MonoBehaviour
 
     void CreateSpeciesButton(Transform parent)
     {
+        if (!DebugShortcuts.DevBuild) return;
         GameObject btnObj = new GameObject("SpeciesButton");
         btnObj.transform.SetParent(parent);
 

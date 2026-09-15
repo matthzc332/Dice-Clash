@@ -316,7 +316,15 @@ public class ObstacleManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.1f);
         if (board != null)
-            yield return board.CheckVictoryAndEndTurn();
+        {
+            bool blueAlive = board.CountAlive(Team.Blue) > 0;
+            bool redAlive = board.CountAlive(Team.Red) > 0;
+            if ((!blueAlive || !redAlive) && !board.suppressVictoryCheck)
+            {
+                yield return new WaitForSeconds(0.3f);
+                ScoreboardUI.Instance.Show();
+            }
+        }
     }
 
     public bool IsPieceGlued(int pieceId)

@@ -150,6 +150,19 @@ public class TutorialRewardUI : MonoBehaviour
         else
         {
             btnImg.color = new Color(0.55f, 0.4f, 0.15f, 0.95f);
+
+            GameObject btnTextObj = new GameObject("Text");
+            btnTextObj.transform.SetParent(btnObj.transform, false);
+            Text btnText = btnTextObj.AddComponent<Text>();
+            btnText.font = font;
+            btnText.text = "OK!";
+            btnText.fontSize = 14;
+            btnText.alignment = TextAnchor.MiddleCenter;
+            btnText.color = Color.white;
+            RectTransform btnTextRt = btnTextObj.GetComponent<RectTransform>();
+            btnTextRt.anchorMin = Vector2.zero;
+            btnTextRt.anchorMax = Vector2.one;
+            btnTextRt.sizeDelta = Vector2.zero;
         }
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0.5f);
@@ -157,19 +170,6 @@ public class TutorialRewardUI : MonoBehaviour
         btnRt.pivot = new Vector2(0.5f, 0.5f);
         btnRt.sizeDelta = new Vector2(200, 70);
         btnRt.anchoredPosition = new Vector2(0, -290);
-
-        GameObject btnTextObj = new GameObject("Text");
-        btnTextObj.transform.SetParent(btnObj.transform, false);
-        Text btnText = btnTextObj.AddComponent<Text>();
-        btnText.font = font;
-        btnText.text = "OK!";
-        btnText.fontSize = 14;
-        btnText.alignment = TextAnchor.MiddleCenter;
-        btnText.color = Color.white;
-        RectTransform btnTextRt = btnTextObj.GetComponent<RectTransform>();
-        btnTextRt.anchorMin = Vector2.zero;
-        btnTextRt.anchorMax = Vector2.one;
-        btnTextRt.sizeDelta = Vector2.zero;
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImg;

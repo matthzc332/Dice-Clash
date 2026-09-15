@@ -273,6 +273,13 @@
       "description": "The crown of a forgotten king",
       "rarity": "legendary",
       "source": "chest"
+    },
+    {
+      "id": "Isa",
+      "name": "Recuerdo de Isa",
+      "description": "Un recuerdo especial",
+      "rarity": "legendary",
+      "source": "special"
     }
   ]
 }

@@ -122,6 +122,19 @@ public class GoblinDialogue : MonoBehaviour
                 btnImg.color = new Color(0.3f, 0.5f, 0.2f, 0.9f);
             else
                 btnImg.color = new Color(0.3f, 0.5f, 0.2f, 0.9f);
+
+            GameObject btnTextObj = new GameObject("Text");
+            btnTextObj.transform.SetParent(btnObj.transform, false);
+            Text btnText = btnTextObj.AddComponent<Text>();
+            btnText.font = pressStart;
+            btnText.text = "OK!";
+            btnText.fontSize = 12;
+            btnText.alignment = TextAnchor.MiddleCenter;
+            btnText.color = Color.white;
+            RectTransform btnTextRt = btnTextObj.GetComponent<RectTransform>();
+            btnTextRt.anchorMin = Vector2.zero;
+            btnTextRt.anchorMax = Vector2.one;
+            btnTextRt.sizeDelta = Vector2.zero;
         }
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
         btnRt.anchorMin = new Vector2(0.5f, 0f);
@@ -129,19 +142,6 @@ public class GoblinDialogue : MonoBehaviour
         btnRt.pivot = new Vector2(0.5f, 0.5f);
         btnRt.sizeDelta = new Vector2(160, 55);
         btnRt.anchoredPosition = new Vector2(0, 28);
-
-        GameObject btnTextObj = new GameObject("Text");
-        btnTextObj.transform.SetParent(btnObj.transform, false);
-        Text btnText = btnTextObj.AddComponent<Text>();
-        btnText.font = pressStart;
-        btnText.text = "OK!";
-        btnText.fontSize = 12;
-        btnText.alignment = TextAnchor.MiddleCenter;
-        btnText.color = Color.white;
-        RectTransform btnTextRt = btnTextObj.GetComponent<RectTransform>();
-        btnTextRt.anchorMin = Vector2.zero;
-        btnTextRt.anchorMax = Vector2.one;
-        btnTextRt.sizeDelta = Vector2.zero;
 
         bool clicked = false;
         Button btn = btnObj.AddComponent<Button>();

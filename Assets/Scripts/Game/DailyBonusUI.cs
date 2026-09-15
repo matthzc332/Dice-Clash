@@ -26,6 +26,13 @@ public class DailyBonusUI : MonoBehaviour
             ShowPopup(amount);
     }
 
+    public void ShowForDebug()
+    {
+        if (EconomyManager.Instance == null) return;
+        int amount = EconomyManager.Instance.ClaimDailyBonus();
+        ShowPopup(amount > 0 ? amount : 100);
+    }
+
     void ShowPopup(int goldAmount)
     {
         if (popupObj != null) return;
@@ -82,6 +89,9 @@ public class DailyBonusUI : MonoBehaviour
         title.alignment = TextAnchor.MiddleCenter;
         title.color = new Color(1f, 0.85f, 0.2f);
         title.text = "DAILY BONUS";
+        Outline titleOutline = titleObj.AddComponent<Outline>();
+        titleOutline.effectColor = Color.black;
+        titleOutline.effectDistance = new Vector2(1, -1);
         RectTransform titleRt = titleObj.GetComponent<RectTransform>();
         titleRt.anchorMin = new Vector2(0.5f, 1);
         titleRt.anchorMax = new Vector2(0.5f, 1);
@@ -108,6 +118,9 @@ public class DailyBonusUI : MonoBehaviour
         amountText.alignment = TextAnchor.MiddleCenter;
         amountText.color = new Color(1f, 0.85f, 0.2f);
         amountText.text = $"+{goldAmount} GOLD";
+        Outline amountOutline = amountObj.AddComponent<Outline>();
+        amountOutline.effectColor = Color.black;
+        amountOutline.effectDistance = new Vector2(1, -1);
         RectTransform amountRt = amountObj.GetComponent<RectTransform>();
         amountRt.anchorMin = new Vector2(0.5f, 0.5f);
         amountRt.anchorMax = new Vector2(0.5f, 0.5f);
@@ -123,6 +136,9 @@ public class DailyBonusUI : MonoBehaviour
         streakText.color = new Color(0.7f, 0.7f, 0.7f);
         int streak = PlayerPrefs.GetInt("DailyStreak", 1);
         streakText.text = $"Day {streak} streak";
+        Outline streakOutline = streakObj.AddComponent<Outline>();
+        streakOutline.effectColor = Color.black;
+        streakOutline.effectDistance = new Vector2(1, -1);
         RectTransform streakRt = streakObj.GetComponent<RectTransform>();
         streakRt.anchorMin = new Vector2(0.5f, 0.5f);
         streakRt.anchorMax = new Vector2(0.5f, 0.5f);

@@ -8,7 +8,7 @@
       "powerups": [],
       "obstacles": [],
       "enemyCount": 4,
-      "goldReward": 10,
+      "goldReward": 20,
       "insigniaId": "camp_01"
     },
     {
@@ -19,7 +19,7 @@
       "powerups": ["Shake"],
       "obstacles": [],
       "enemyCount": 4,
-      "goldReward": 15,
+      "goldReward": 25,
       "insigniaId": "camp_02"
     },
     {
@@ -30,7 +30,7 @@
       "powerups": ["Fireball"],
       "obstacles": [],
       "enemyCount": 4,
-      "goldReward": 20,
+      "goldReward": 25,
       "insigniaId": "camp_03"
     },
     {

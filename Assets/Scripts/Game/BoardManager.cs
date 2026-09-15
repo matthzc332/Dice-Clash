@@ -42,7 +42,6 @@ public class BoardManager : MonoBehaviour
     private Dictionary<int, Coroutine> spriteAnims = new();
     private int lastScreenWidth;
     private int lastScreenHeight;
-    private Dictionary<int, Vector3> originalScales = new();
     private Dictionary<int, Vector3> originalPositions = new();
     private Dictionary<string, Sprite> poseCache = new();
     private Dictionary<string, Sprite[]> fightCloudCache = new();
@@ -193,11 +192,12 @@ public class BoardManager : MonoBehaviour
         renderer.sortingOrder = -2;
 
         Sprite[] piso1, piso2;
-        piso1 = Resources.LoadAll<Sprite>($"Sprites/{scenarioTheme}/Floor/{scenarioTheme}Piso1");
-        if (piso1.Length == 0) piso1 = Resources.LoadAll<Sprite>($"Sprites/{scenarioTheme}/Floor/piso1");
+        string floorFolder = SpriteFolder(scenarioTheme);
+        piso1 = Resources.LoadAll<Sprite>($"Sprites/{floorFolder}/Floor/{floorFolder}Piso1");
+        if (piso1.Length == 0) piso1 = Resources.LoadAll<Sprite>($"Sprites/{floorFolder}/Floor/piso1");
         if (piso1.Length == 0) piso1 = Resources.LoadAll<Sprite>("Sprites/Floor/piso1");
-        piso2 = Resources.LoadAll<Sprite>($"Sprites/{scenarioTheme}/Floor/{scenarioTheme}Piso2");
-        if (piso2.Length == 0) piso2 = Resources.LoadAll<Sprite>($"Sprites/{scenarioTheme}/Floor/piso2");
+        piso2 = Resources.LoadAll<Sprite>($"Sprites/{floorFolder}/Floor/{floorFolder}Piso2");
+        if (piso2.Length == 0) piso2 = Resources.LoadAll<Sprite>($"Sprites/{floorFolder}/Floor/piso2");
         if (piso2.Length == 0) piso2 = Resources.LoadAll<Sprite>("Sprites/Floor/piso2");
 
         Sprite piso1Sprite = piso1.Length > 0 ? piso1[0] : CreateSquareSprite(1f, new Color(0.9f, 0.9f, 0.9f, 0.5f));
@@ -212,7 +212,8 @@ public class BoardManager : MonoBehaviour
         float sprite1Size = piso1Sprite.rect.width / piso1Sprite.pixelsPerUnit;
         float sprite2Size = piso2Sprite.rect.width / piso2Sprite.pixelsPerUnit;
         float maxSpriteSize = Mathf.Max(sprite1Size, sprite2Size);
-        float floorScale = scenarioTheme == "Beastfolk" ? 1.3f : 0.9f;
+        bool isBeastFloor = floorFolder == "Beastfolk";
+        float floorScale = isBeastFloor ? 1.3f : 0.9f;
         float scale = (cellSize * floorScale) / maxSpriteSize;
         tileScale = scale;
 
@@ -224,7 +225,7 @@ public class BoardManager : MonoBehaviour
                 var tile = (r + c) % 2 == 0 ? tileLight : tileDark;
                 tilemap.SetTile(pos, tile);
                 tilemap.SetTransformMatrix(pos, Matrix4x4.Scale(Vector3.one * scale));
-                if (scenarioTheme == "Beastfolk")
+                if (isBeastFloor)
                 {
                     tilemap.SetTileFlags(pos, UnityEngine.Tilemaps.TileFlags.None);
                     if ((r + c) % 2 == 0)
@@ -276,7 +277,21 @@ public class BoardManager : MonoBehaviour
         if (isTutorial)
             bg = Resources.Load<Sprite>("Tutorial/fondoTuto");
         if (bg == null)
-            bg = Resources.Load<Sprite>($"Sprites/{scenarioTheme}/Background/{scenarioTheme}");
+        {
+            string themeFolder = SpriteFolder(scenarioTheme);
+            string bgPath = $"Sprites/{themeFolder}/Background/{themeFolder}";
+            Sprite[] bgAll = Resources.LoadAll<Sprite>(bgPath);
+            if (bgAll != null && bgAll.Length > 0)
+                bg = System.Array.Find(bgAll, s => s.name.StartsWith(themeFolder)) ?? bgAll[0];
+            if (bg == null)
+                bg = Resources.Load<Sprite>(bgPath);
+            if (bg == null)
+            {
+                Texture2D bgTex = Resources.Load<Texture2D>(bgPath);
+                if (bgTex != null)
+                    bg = Sprite.Create(bgTex, new Rect(0, 0, bgTex.width, bgTex.height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            }
+        }
         if (bg == null && scenarioTheme == "Orc") bg = Resources.Load<Sprite>("Sprites/Orc/Background/BackgroundOrco");
         if (bg == null) bg = Resources.Load<Sprite>("Sprites/Human/Background/Human");
         if (bg == null) return;
@@ -301,7 +316,10 @@ public class BoardManager : MonoBehaviour
     {
         if (isTutorial) return;
 
-        Sprite[] mgSprites = Resources.LoadAll<Sprite>("Sprites/Human/Background/fondo3");
+        string mgFolder = SpriteFolder(scenarioTheme);
+        Sprite[] mgSprites = Resources.LoadAll<Sprite>($"Sprites/{mgFolder}/Background/fondo3");
+        if (mgSprites == null || mgSprites.Length == 0)
+            mgSprites = Resources.LoadAll<Sprite>("Sprites/Human/Background/fondo3");
         Sprite mg = mgSprites != null && mgSprites.Length > 0 ? mgSprites[0] : null;
         if (mg == null) return;
 
@@ -509,9 +527,11 @@ public class BoardManager : MonoBehaviour
         }
 
         bool orc = scenarioTheme == "Orc";
-        bool beast = scenarioTheme == "Beastfolk";
+        bool beastDeco = scenarioTheme == "Beastfolk";
+        bool beastWolf = scenarioTheme == "Wolf";
+        bool beast = beastDeco || beastWolf;
 
-        float gs = orc || beast ? 1.5f : 0.4f;
+        float gs = orc ? 1.5f : (beast ? 1.0f : 0.4f);
 
         PlaceDeco("Gargola",  new Vector3(0.39f, 0.77f, 0),  gs, gs, -1, -1);
         if (orc || beast)
@@ -520,7 +540,7 @@ public class BoardManager : MonoBehaviour
             PlaceDeco("Barril",   new Vector3(4.47f, 0.37f, 0), 0.4f, 0.4f, -1);
         PlaceDeco("Gargola",  new Vector3(7.36f, 0.77f, 0),  gs, gs, -1, -1);
 
-        if (scenarioTheme == "Beastfolk")
+        if (beast)
             SpawnObstacles();
         else if (scenarioTheme == "Orc")
             SoundManager.Instance.PlayOrcAppear();
@@ -613,16 +633,17 @@ public class BoardManager : MonoBehaviour
     {
         Sprite sprite = null;
 
+        string decoFolder = SpriteFolder(scenarioTheme);
         string lookupName = spriteName;
         if (scenarioTheme != "Human" && spriteName == "Estatua")
-            lookupName = $"{scenarioTheme}Craneo";
+            lookupName = $"{decoFolder}Craneo";
 
-        string themePath = $"Sprites/{scenarioTheme}/Decor/{lookupName}";
+        string themePath = $"Sprites/{decoFolder}/Decor/{lookupName}";
         sprite = Resources.Load<Sprite>(themePath);
 
         if (sprite == null && scenarioTheme != "Human" && lookupName == spriteName)
         {
-            string prefixedPath = $"Sprites/{scenarioTheme}/Decor/{scenarioTheme}{spriteName}";
+            string prefixedPath = $"Sprites/{decoFolder}/Decor/{decoFolder}{spriteName}";
             sprite = Resources.Load<Sprite>(prefixedPath);
         }
 
@@ -661,6 +682,12 @@ public class BoardManager : MonoBehaviour
         GameObject visual = CreatePieceVisual(type, team, front, row);
         Vector3 pos = CellToWorld(row, col);
         if (row == rows - 1) pos.y += 0.25f;
+        string pieceSpecies = team == Team.Blue ? speciesTheme : scenarioTheme;
+        if (SpriteFolder(pieceSpecies) == "Nigromantes" && type == PieceType.Pawn)
+        {
+            SpriteRenderer visSr = visual.GetComponent<SpriteRenderer>();
+            pos.y += NigroPawnLift(visSr);
+        }
         visual.transform.position = pos;
         visual.transform.SetParent(transform);
         visual.name = $"{team}_{type}_{id}";
@@ -669,10 +696,22 @@ public class BoardManager : MonoBehaviour
         StartCoroutine(SpawnGlow(visual.transform.position));
     }
 
+    float NigroPawnLift(SpriteRenderer sr)
+    {
+        if (sr == null || sr.sprite == null) return 0f;
+        float halfH = 0.5f * sr.sprite.bounds.size.y * sr.transform.localScale.y;
+        return Mathf.Max(0f, halfH - 0.5f * cellSize);
+    }
+
     public Color GetPieceColor(Team team)
     {
         if (isShadowPhase && team == Team.Red) return new Color(0.2f, 0.2f, 0.25f);
-        if (team == Team.Red) return new Color(0.7f, 0.7f, 0.7f);
+        if (team == Team.Red)
+        {
+            string resolved = SpriteFolder(scenarioTheme);
+            if (resolved == "Nigromantes") return new Color(0.75f, 0.65f, 0.85f);
+            return new Color(0.7f, 0.7f, 0.7f);
+        }
         return Color.white;
     }
 
@@ -712,6 +751,8 @@ public class BoardManager : MonoBehaviour
         else sr.sprite = CreateSquareSprite(0.7f, Color.white);
         string pieceSpecies = team == Team.Blue ? speciesTheme : scenarioTheme;
         obj.transform.localScale = GetIdleScale(type, pieceSpecies);
+        if (team == Team.Blue && PremiumHalo.Active())
+            PremiumHalo.Attach(obj);
         return obj;
     }
 
@@ -741,17 +782,46 @@ public class BoardManager : MonoBehaviour
         string dir = front ? "Front" : "Back";
         string sub = front ? "" : "Back/";
         string primary = ThemeForTeam(team);
-        foreach (string t in new[] { primary, speciesTheme, scenarioTheme, "Human" })
+        string primaryFolder = SpriteFolder(primary);
+        string nigroAlias = null;
+        if (suffix == "Move" && front)
         {
-            string path = $"Sprites/{t}/Pieces/{sub}{name}{suffix}{dir}";
-            Sprite[] sprites = Resources.LoadAll<Sprite>(path);
-            if (sprites.Length > 0) return FilterSprites(sprites);
+            nigroAlias = type switch
+            {
+                PieceType.Pawn => "PeonNecroMoveFront",
+                PieceType.Knight => "caballerofrontnigro",
+                PieceType.Paladin => "PaladinMoveFrontNigro2",
+                _ => null
+            };
+        }
+        foreach (string t in new[] { primary, primaryFolder, speciesTheme, "Human" })
+        {
+            List<string> candidates = new List<string>
+            {
+                $"Sprites/{t}/Pieces/{sub}{name}{suffix}{dir}",
+                $"Sprites/{t}/Pieces/{sub}{name}{suffix}{dir} 1"
+            };
             if (suffix != "")
             {
-                path = $"Sprites/{t}/Pieces/{sub}{name}{dir}";
-                sprites = Resources.LoadAll<Sprite>(path);
-                if (sprites.Length > 0) return FilterSprites(sprites);
+                candidates.Add($"Sprites/{t}/Pieces/{sub}{name}{dir}");
+                candidates.Add($"Sprites/{t}/Pieces/{sub}{name}{dir} 1");
             }
+            if (nigroAlias != null && SpriteFolder(t) == "Nigromantes")
+            {
+                candidates.Add($"Sprites/{t}/Pieces/{sub}{nigroAlias}");
+                candidates.Add($"Sprites/{t}/Pieces/{sub}{nigroAlias} 1");
+            }
+            Sprite[] best = null;
+            float bestArea = -1f;
+            foreach (string path in candidates)
+            {
+                Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+                if (sprites.Length == 0) continue;
+                float area = 0f;
+                foreach (var s in sprites) area += s.rect.width * s.rect.height;
+                if (area > bestArea) { best = sprites; bestArea = area; }
+            }
+            if (best != null) return FilterSprites(best);
         }
         return null;
     }
@@ -1062,7 +1132,6 @@ public class BoardManager : MonoBehaviour
             sr.transform.position = origPos;
             originalPositions.Remove(id);
         }
-        originalScales.Remove(id);
         if (IsTutorialDummy(team))
         {
             Sprite dummySprite = GetTutorialDummySprite();
@@ -1081,6 +1150,7 @@ public class BoardManager : MonoBehaviour
 
     float GetPoseScale(PieceType type, string species = "Human")
     {
+        string resolved = SpriteFolder(species);
         float baseScale = type switch
         {
             PieceType.Pawn => 0.62f,
@@ -1089,16 +1159,28 @@ public class BoardManager : MonoBehaviour
             PieceType.Paladin => 0.65f,
             _ => 0.58f
         };
-        float multiplier = species == "Human" ? 1f : 0.9f;
+        float multiplier = resolved == "Human" ? 1f : 0.9f;
         return baseScale * multiplier;
     }
 
     Vector3 GetIdleScale(PieceType type, string species)
     {
+        string resolved = SpriteFolder(species);
+        if (resolved == "Nigromantes")
+        {
+            return type switch
+            {
+                PieceType.Pawn => new Vector3(0.34f, 0.34f, 1f),
+                PieceType.Ninja => new Vector3(0.36f, 0.30f, 1f),
+                PieceType.Knight => new Vector3(0.61f, 0.60f, 1f),
+                PieceType.Paladin => new Vector3(0.72f, 0.67f, 1f),
+                _ => Vector3.one
+            };
+        }
         if (type == PieceType.Pawn) return new Vector3(0.85f, 0.85f, 1f);
-        if (type == PieceType.Knight && species == "Beastfolk") return new Vector3(1.0f, 1.0f, 1f);
+        if (type == PieceType.Knight && resolved == "Beastfolk") return new Vector3(1.0f, 1.0f, 1f);
         if (type == PieceType.Knight) return new Vector3(1.15f, 1.15f, 1f);
-        if (type == PieceType.Paladin && species == "Beastfolk") return new Vector3(0.95f, 0.95f, 1f);
+        if (type == PieceType.Paladin && resolved == "Beastfolk") return new Vector3(0.95f, 0.95f, 1f);
         return Vector3.one;
     }
 
@@ -1108,7 +1190,7 @@ public class BoardManager : MonoBehaviour
     {
         string species = team == Team.Blue ? speciesTheme : scenarioTheme;
         if (species == "Beastfolk" || species == "Wolf") return "Beast";
-        if (species == "NewRace") return "Beast";
+        if (species == "NewRace") return "Human";
         return species;
     }
 
@@ -1226,12 +1308,13 @@ public class BoardManager : MonoBehaviour
         return frames;
     }
 
-    GameObject SpawnFightCloud(Vector3 position, Sprite[] cloudFrames)
+    GameObject SpawnFightCloud(Vector3 position, Sprite[] cloudFrames, Color tint)
     {
         GameObject cloud = new GameObject("FightCloud");
         cloud.transform.position = position;
         SpriteRenderer sr = cloud.AddComponent<SpriteRenderer>();
         sr.sprite = cloudFrames[0];
+        sr.color = tint;
         sr.sortingOrder = 15;
 
         float refSize = 251f;
@@ -1278,11 +1361,12 @@ public class BoardManager : MonoBehaviour
 
     Sprite LoadPoseSprite(string species, string className)
     {
-        string cacheKey = $"{species}_{className}";
+        string resolved = SpriteFolder(species);
+        string cacheKey = $"{resolved}_{className}";
         if (poseCache.TryGetValue(cacheKey, out Sprite cached))
             return cached;
 
-        string basePath = $"Sprites/{species}/Pieces/Pose{className}";
+        string basePath = $"Sprites/{resolved}/Pieces/Pose{className}";
 
         Sprite[] all = Resources.LoadAll<Sprite>(basePath);
         if (all != null && all.Length > 0)
@@ -1314,16 +1398,14 @@ public class BoardManager : MonoBehaviour
         Sprite poseSprite = LoadPoseSprite(poseSpecies, className);
         if (poseSprite == null) return;
         int id = sr.GetInstanceID();
-        if (!originalScales.ContainsKey(id))
-        {
-            originalScales[id] = sr.transform.localScale;
+        if (!originalPositions.ContainsKey(id))
             originalPositions[id] = sr.transform.position;
-        }
+        Vector3 idleScale = GetIdleScale(data.type, poseSpecies);
         float yOffset = GetPoseYOffset(data.type);
         if (poseSpecies == "Orc" && data.type == PieceType.Paladin)
-            sr.transform.localScale = new Vector3(0.267f, 0.267f, originalScales[id].z);
+            sr.transform.localScale = new Vector3(0.267f, 0.267f, idleScale.z);
         else
-            sr.transform.localScale = originalScales[id] * GetPoseScale(data.type, poseSpecies);
+            sr.transform.localScale = idleScale * GetPoseScale(data.type, poseSpecies);
         Vector3 basePos = originalPositions[id];
         sr.transform.position = new Vector3(basePos.x, basePos.y + yOffset, basePos.z);
         sr.sprite = poseSprite;
@@ -1366,8 +1448,9 @@ public class BoardManager : MonoBehaviour
 
     public Sprite GetSpeciesFrontIdleSprite(PieceType type, string species)
     {
+        string resolved = SpriteFolder(species);
         string name = PieceName(type);
-        string path = $"Sprites/{species}/Pieces/{name}IdleFront";
+        string path = $"Sprites/{resolved}/Pieces/{name}IdleFront";
         Sprite[] sprites = Resources.LoadAll<Sprite>(path);
         return sprites.Length > 0 ? sprites[0] : null;
     }
@@ -1390,8 +1473,69 @@ public class BoardManager : MonoBehaviour
         Vector3 fromPos = CellToWorld(fromRow, fromCol);
         Vector3 toPos = CellToWorld(toRow, toCol);
 
-        Sprite moveSprite = GetSprite(movingData.type, movingForward, "Move", movingData.team);
-        if (moveSprite != null && sr != null) sr.sprite = moveSprite;
+        if (SpriteFolder(movingData.species) == "Nigromantes" && movingData.type == PieceType.Pawn)
+        {
+            float lift = NigroPawnLift(sr);
+            if (lift > 0f)
+            {
+                fromPos.y += lift;
+                toPos.y += lift;
+            }
+        }
+
+        float knightDist = Mathf.Abs(toRow - fromRow) + Mathf.Abs(toCol - fromCol);
+        bool useKnightJump = movingData.type == PieceType.Knight && knightDist > 1 && !GameConfig.isAutoPlay;
+
+        Sprite[] moveSprites = null;
+        if (!useKnightJump)
+        {
+            moveSprites = LoadSprites(movingData.type, movingForward, "Move", movingData.team);
+            Sprite moveSprite = moveSprites != null && moveSprites.Length > 0 ? moveSprites[0] : null;
+            if (moveSprite != null && sr != null)
+            {
+                Sprite idleSprite = sr.sprite;
+                sr.sprite = moveSprite;
+                string movingResolved = SpriteFolder(ThemeForTeam(movingData.team));
+                if (movingResolved == "Nigromantes" && idleSprite != null && idleSprite.rect.width > 0 && idleSprite.rect.height > 0)
+                {
+                    if (movingData.type == PieceType.Ninja)
+                    {
+                        movingVisual.transform.localScale = new Vector3(0.16f, 0.16f, 1f);
+                    }
+                    else if (movingData.type == PieceType.Pawn && movingForward)
+                    {
+                        movingVisual.transform.localScale = new Vector3(1f, 1f, 1f);
+                    }
+                    else
+                    {
+                        float idleArea = idleSprite.rect.width * idleSprite.rect.height;
+                        float moveArea = moveSprite.rect.width * moveSprite.rect.height;
+                        if (moveArea > 0 && Mathf.Abs(idleArea / moveArea - 1f) > 0.1f)
+                        {
+                            float sizeRatio = Mathf.Sqrt(idleArea / moveArea);
+                            if (!movingForward)
+                            {
+                                if (movingData.type != PieceType.Pawn)
+                                    sizeRatio = Mathf.Min(sizeRatio, 1.0f);
+                                else
+                                    sizeRatio *= 0.9f;
+                            }
+                            Vector3 s = movingVisual.transform.localScale;
+                            movingVisual.transform.localScale = new Vector3(s.x * sizeRatio, s.y * sizeRatio, s.z);
+                        }
+                        if (!movingForward)
+                        {
+                            Vector3 s2 = movingVisual.transform.localScale;
+                            movingVisual.transform.localScale = new Vector3(s2.x * 0.94f, s2.y * 0.94f, s2.z);
+                        }
+                    }
+                }
+            }
+
+            bool useMoveAnim = (movingData.type == PieceType.Paladin || movingData.type == PieceType.Knight || movingData.type == PieceType.Pawn) && moveSprites != null && moveSprites.Length >= 3;
+            if (useMoveAnim && sr != null)
+                PlayAnimation(movingVisual, moveSprites, GameConfig.isAutoPlay ? 0.08f : 0.2f);
+        }
 
         if (movingData.type == PieceType.Ninja)
         {
@@ -1402,15 +1546,9 @@ public class BoardManager : MonoBehaviour
         {
             float palDur = GameConfig.isAutoPlay ? 0.08f : 1.3f;
             StartCoroutine(PaladinAura(movingVisual, fromPos, toPos, false));
-            StartCoroutine(PaladinLightBeam(movingVisual));
+            StartCoroutine(PaladinLightBeam(movingVisual, movingData.team));
             StartCoroutine(PaladinPasos(movingVisual, fromPos, toPos, palDur));
         }
-
-        if (to.IsOccupied && to.pieceData.HasValue && to.pieceData.Value.team != movingData.team)
-            StartCoroutine(SwordClashDelayed(0.45f));
-
-        float knightDist = Mathf.Abs(toRow - fromRow) + Mathf.Abs(toCol - fromCol);
-        bool useKnightJump = movingData.type == PieceType.Knight && knightDist > 1 && !GameConfig.isAutoPlay;
 
         if (useKnightJump)
         {
@@ -1443,7 +1581,9 @@ public class BoardManager : MonoBehaviour
             if (isTutorial || isShadowPhase) { atkSpecies = "Human"; defSpecies = "Human"; }
             Sprite[] fightCloudFrames = LoadFightCloud(atkSpecies, defSpecies);
             Vector3 cloudPos = toPos;
-            GameObject fightCloud = SpawnFightCloud(cloudPos, fightCloudFrames);
+            bool hasNigro = SpriteFolder(scenarioTheme) == "Nigromantes";
+            Color cloudTint = hasNigro ? new Color(0.6f, 0.5f, 0.8f, 1f) : Color.white;
+            GameObject fightCloud = SpawnFightCloud(cloudPos, fightCloudFrames, cloudTint);
 
             SoundManager.Instance.PlaySwordClash();
 
@@ -1591,33 +1731,65 @@ public class BoardManager : MonoBehaviour
         if (visual != null) visual.transform.position = toPos;
     }
 
+    public static string SpriteFolder(string theme)
+    {
+        if (theme == "Wolf" || theme == "Beastfolk") return "Beastfolk";
+        if (theme == "NewRace") return "Nigromantes";
+        return theme;
+    }
+
     string SpritePrefix(string theme)
     {
-        if (theme == "Beastfolk") return "beast";
+        if (theme == "Wolf" || theme == "Beastfolk") return "beast";
         return theme.ToLower();
     }
 
     Sprite LoadJumpSprite(string species, int index, bool front)
     {
-        string sub = front ? "" : "Back/";
+        string folder = SpriteFolder(species);
+        string folderTheme = SpriteFolder(scenarioTheme);
+        string[] themes = new[] { species, folder, folderTheme, speciesTheme, "Human" };
         string prefix = SpritePrefix(species);
+
+        string sub = front ? "" : "Back/";
         string name = $"{prefix}{(front ? "" : "Back")}Salto{index}";
-        string[] themes = new[] { species, speciesTheme, scenarioTheme, "Human" };
         foreach (string t in themes)
         {
             Sprite sp = LoadLargestSprite($"Sprites/{t}/Pieces/{sub}{name}");
             if (sp != null) return sp;
         }
-        if (!front)
+
+        string sub2 = front ? "Back/" : "";
+        string name2 = $"{prefix}{(front ? "Back" : "")}Salto{index}";
+        foreach (string t in themes)
         {
-            string frontName = $"{prefix}Salto{index}";
-            foreach (string t in themes)
-            {
-                Sprite sp = LoadLargestSprite($"Sprites/{t}/Pieces/{frontName}");
-                if (sp != null) return sp;
-            }
+            Sprite sp = LoadLargestSprite($"Sprites/{t}/Pieces/{sub2}{name2}");
+            if (sp != null) return sp;
         }
+
         return null;
+    }
+
+    Sprite LoadRobustSprite(string path)
+    {
+        Sprite[] arr = Resources.LoadAll<Sprite>(path);
+        if (arr != null && arr.Length > 0)
+        {
+            if (arr.Length == 1) return arr[0];
+            Sprite best = arr[0];
+            float bestArea = best.rect.width * best.rect.height;
+            for (int i = 1; i < arr.Length; i++)
+            {
+                float area = arr[i].rect.width * arr[i].rect.height;
+                if (area > bestArea) { best = arr[i]; bestArea = area; }
+            }
+            return best;
+        }
+        Texture2D tex = Resources.Load<Texture2D>(path);
+        if (tex != null)
+            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+        Sprite s = Resources.Load<Sprite>(path);
+        return s;
     }
 
     Sprite LoadLargestSprite(string path)
@@ -1635,6 +1807,32 @@ public class BoardManager : MonoBehaviour
         return best;
     }
 
+    Vector3 GetJumpScale(string species, bool movingForward)
+    {
+        string resolved = SpriteFolder(species);
+        switch (resolved)
+        {
+            case "Human":
+                return movingForward
+                    ? new Vector3(0.60f, 0.5f, 1f)
+                    : new Vector3(0.13f, 0.13f, 1f);
+            case "Orc":
+                return movingForward
+                    ? new Vector3(0.55f, 0.6f, 1f)
+                    : new Vector3(0.33f, 0.34f, 1f);
+            case "Beastfolk":
+                return movingForward
+                    ? new Vector3(0.66f, 0.52f, 1f)
+                    : new Vector3(0.41f, 0.34f, 1f);
+            case "Nigromantes":
+                return movingForward
+                    ? new Vector3(0.26f, 0.31f, 1f)
+                    : new Vector3(0.20f, 0.24f, 1f);
+            default:
+                return new Vector3(0.09f, 0.09f, 1f);
+        }
+    }
+
     IEnumerator KnightJump(GameObject visual, Vector3 fromPos, Vector3 toPos, float distance, Team team, bool movingForward)
     {
         if (visual == null) yield break;
@@ -1644,31 +1842,7 @@ public class BoardManager : MonoBehaviour
         Sprite salto1 = LoadJumpSprite(pieceSpecies, 1, movingForward);
         Sprite salto2 = LoadJumpSprite(pieceSpecies, 2, movingForward);
 
-        Vector3 idleScale = GetIdleScale(PieceType.Knight, pieceSpecies);
-        Vector3 baseScale;
-        Vector3 salto1Scale = idleScale * 0.55f;
-        Vector3 salto2Scale = idleScale * 0.55f;
-
-        if (!movingForward)
-        {
-            if (pieceSpecies == "Human")
-            {
-                salto1Scale = new Vector3(0.10f, 0.10f, 1f);
-                salto2Scale = new Vector3(0.10f, 0.10f, 1f);
-            }
-            else if (pieceSpecies == "Orc")
-            {
-                salto1Scale = new Vector3(0.33f, 0.30f, 1f);
-                salto2Scale = new Vector3(0.24f, 0.28f, 1f);
-            }
-            else if (pieceSpecies == "Beastfolk")
-            {
-                salto1Scale = new Vector3(0.38f, 0.38f, 1f);
-                salto2Scale = new Vector3(0.38f, 0.38f, 1f);
-            }
-        }
-
-        baseScale = movingForward ? idleScale * 0.55f : salto1Scale;
+        Vector3 baseScale = GetJumpScale(pieceSpecies, movingForward);
         visual.transform.localScale = baseScale;
         if (salto1 != null && sr != null) sr.sprite = salto1;
 
@@ -1693,7 +1867,6 @@ public class BoardManager : MonoBehaviour
 
         if (visual == null) yield break;
         visual.transform.position = toPos;
-        baseScale = movingForward ? idleScale * 0.55f : salto2Scale;
         visual.transform.localScale = baseScale;
 
         if (salto2 != null && sr != null) sr.sprite = salto2;
@@ -1715,9 +1888,6 @@ public class BoardManager : MonoBehaviour
         if (visual != null) visual.transform.localScale = baseScale;
 
         StartCoroutine(CombatShake(0.12f + distance * 0.04f));
-
-        if (visual != null)
-            visual.transform.localScale = idleScale;
 
         int dustCount = 4 + Mathf.FloorToInt(distance);
         for (int i = 0; i < dustCount; i++)
@@ -1972,8 +2142,9 @@ public class BoardManager : MonoBehaviour
 
     IEnumerator PaladinPasos(GameObject visual, Vector3 fromPos, Vector3 toPos, float duration)
     {
-        Sprite pasosSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/pasos");
-        if (pasosSprite == null) yield break;
+        Sprite[] pasosArr = Resources.LoadAll<Sprite>("Sprites/PowerUps/Efect/pasos");
+        if (pasosArr == null || pasosArr.Length == 0) yield break;
+        Sprite pasosSprite = pasosArr[0];
 
         float spawnInterval = 0.18f;
         float nextSpawn = 0;
@@ -2025,15 +2196,18 @@ public class BoardManager : MonoBehaviour
 
     IEnumerator NinjaMoveCloud(Vector3 fromPos)
     {
+        bool isNigro = SpriteFolder(scenarioTheme) == "Nigromantes";
+        float cloudScale = isNigro ? 0.15f : 0.07f;
+        Color cloudBase = isNigro ? new Color(0.4f, 0.2f, 0.6f, 0.7f) : new Color(1f, 1f, 1f, 0.6f);
         for (int i = 0; i < 5; i++)
         {
             GameObject cloud = new GameObject("NinjaCloud");
             cloud.transform.position = fromPos + (Vector3)Random.insideUnitCircle * 0.2f;
             SpriteRenderer sr = cloud.AddComponent<SpriteRenderer>();
             sr.sprite = cloudSprite != null ? cloudSprite : particleSprite;
-            sr.color = new Color(1f, 1f, 1f, 0.6f);
+            sr.color = cloudBase;
             sr.sortingOrder = 3;
-            cloud.transform.localScale = Vector3.one * 0.2f;
+            cloud.transform.localScale = Vector3.one * cloudScale;
 
             float dirX = Random.value > 0.5f ? 1f : -1f;
             float speed = Random.Range(0.6f, 1.2f);
@@ -2042,8 +2216,8 @@ public class BoardManager : MonoBehaviour
             while (t < duration)
             {
                 cloud.transform.position += new Vector3(dirX, 0f, 0f) * speed * Time.deltaTime;
-                sr.color = new Color(1f, 1f, 1f, 0.6f * (1f - t / duration));
-                cloud.transform.localScale = Vector3.one * 0.2f * (1f + t / duration * 0.3f);
+                sr.color = new Color(cloudBase.r, cloudBase.g, cloudBase.b, cloudBase.a * (1f - t / duration));
+                cloud.transform.localScale = Vector3.one * cloudScale * (1f + t / duration * 0.3f);
                 t += Time.deltaTime;
                 yield return null;
             }
@@ -2053,6 +2227,8 @@ public class BoardManager : MonoBehaviour
 
     IEnumerator PaladinAura(GameObject visual, Vector3 fromPos, Vector3 toPos, bool attacking)
     {
+        bool isNigro = SpriteFolder(scenarioTheme) == "Nigromantes";
+        Color auraColor = isNigro ? new Color(0.75f, 0.55f, 0.95f, 0.7f) : new Color(1f, 0.9f, 0.5f, 0.7f);
         int count = attacking ? 6 : 3;
         float life = attacking ? 0.5f : 0.3f;
         float size = attacking ? 1.2f : 0.8f;
@@ -2063,7 +2239,7 @@ public class BoardManager : MonoBehaviour
             aura.transform.position = fromPos + (Vector3)Random.insideUnitCircle * 0.3f;
             SpriteRenderer sr = aura.AddComponent<SpriteRenderer>();
             sr.sprite = particleSprite;
-            sr.color = new Color(1f, 0.9f, 0.5f, 0.7f);
+            sr.color = auraColor;
             sr.sortingOrder = 3;
 
             Vector2 dir = Random.insideUnitCircle.normalized;
@@ -2072,7 +2248,7 @@ public class BoardManager : MonoBehaviour
             while (t < life)
             {
                 aura.transform.position += (Vector3)dir * speed * Time.deltaTime;
-                sr.color = new Color(1f, 0.9f, 0.5f, 0.7f * (1f - t / life));
+                sr.color = new Color(auraColor.r, auraColor.g, auraColor.b, auraColor.a * (1f - t / life));
                 float s = 1f - t / life;
                 aura.transform.localScale = Vector3.one * s * size;
                 t += Time.deltaTime;
@@ -2082,23 +2258,28 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    IEnumerator PaladinLightBeam(GameObject visual)
+    IEnumerator PaladinLightBeam(GameObject visual, Team team)
     {
         if (visual == null) yield break;
         SoundManager.Instance.PlayHolyBeam();
         SoundManager.Instance.PlayChoir();
 
+        bool isNigro = team == Team.Red && SpriteFolder(scenarioTheme) == "Nigromantes";
+        Color beamColor = isNigro ? new Color(0.75f, 0.6f, 1f, 0.45f) : new Color(1f, 0.95f, 0.7f, 0.45f);
+        Color cloudColor = isNigro ? new Color(0.7f, 0.55f, 0.9f, 0.7f) : new Color(1f, 0.95f, 0.7f, 0.7f);
+
         GameObject beam = new GameObject("LightBeam");
         SpriteRenderer beamSr = beam.AddComponent<SpriteRenderer>();
-        beamSr.sprite = CreateRectSprite(0.45f, 4f, new Color(1f, 0.95f, 0.7f, 0.45f));
+        beamSr.sprite = CreateRectSprite(0.45f, 4f, beamColor);
         beamSr.sortingOrder = 2;
 
-        Sprite nubeSprite = Resources.Load<Sprite>("Sprites/PowerUps/Efect/Nube");
+        Sprite[] nubeArr = Resources.LoadAll<Sprite>("Sprites/PowerUps/Efect/Nube");
+        Sprite nubeSprite = nubeArr != null && nubeArr.Length > 0 ? nubeArr[0] : null;
         GameObject cloud = new GameObject("Nube");
         SpriteRenderer cloudSr = cloud.AddComponent<SpriteRenderer>();
         cloudSr.sprite = nubeSprite;
         cloudSr.sortingOrder = 4;
-        cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f);
+        cloudSr.color = cloudColor;
         cloud.transform.localScale = Vector3.one * 0.35f;
 
         float cloudY = 4.5f;
@@ -2116,9 +2297,9 @@ public class BoardManager : MonoBehaviour
             cloud.transform.position = pos + Vector3.up * cloudY;
             beam.transform.position = pos + Vector3.up * (cloudY - beamHalfH);
             float p = t / fadeIn;
-            beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * p);
+            beamSr.color = new Color(beamColor.r, beamColor.g, beamColor.b, beamColor.a * p);
             beam.transform.localScale = Vector3.one * (0.5f + p * 0.5f);
-            cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f * p);
+            cloudSr.color = new Color(cloudColor.r, cloudColor.g, cloudColor.b, cloudColor.a * p);
             t += Time.deltaTime;
             yield return null;
         }
@@ -2131,8 +2312,8 @@ public class BoardManager : MonoBehaviour
             cloud.transform.position = pos + Vector3.up * cloudY;
             beam.transform.position = pos + Vector3.up * (cloudY - beamHalfH);
             float flicker = 1f + Mathf.Sin(t * 30f) * 0.08f;
-            beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * flicker);
-            cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f * flicker);
+            beamSr.color = new Color(beamColor.r, beamColor.g, beamColor.b, beamColor.a * flicker);
+            cloudSr.color = new Color(cloudColor.r, cloudColor.g, cloudColor.b, cloudColor.a * flicker);
             t += Time.deltaTime;
             yield return null;
         }
@@ -2146,9 +2327,9 @@ public class BoardManager : MonoBehaviour
             cloud.transform.position = lastPos + Vector3.up * cloudY;
             beam.transform.position = lastPos + Vector3.up * (cloudY - beamHalfH);
             float p = 1f - t / fadeOut;
-            beamSr.color = new Color(1f, 0.95f, 0.7f, 0.45f * p);
+            beamSr.color = new Color(beamColor.r, beamColor.g, beamColor.b, beamColor.a * p);
             beam.transform.localScale = Vector3.one * (0.5f + p * 0.5f);
-            cloudSr.color = new Color(1f, 0.95f, 0.7f, 0.7f * p);
+            cloudSr.color = new Color(cloudColor.r, cloudColor.g, cloudColor.b, cloudColor.a * p);
             t += Time.deltaTime;
             yield return null;
         }
@@ -2162,7 +2343,7 @@ public class BoardManager : MonoBehaviour
             spark.transform.position = finalPos + new Vector3(Random.Range(-0.3f, 0.3f), Random.Range(-0.2f, 0.5f), 0);
             SpriteRenderer sparkSr = spark.AddComponent<SpriteRenderer>();
             sparkSr.sprite = particleSprite;
-            sparkSr.color = new Color(1f, 0.9f, 0.4f, 1f);
+            sparkSr.color = isNigro ? new Color(0.8f, 0.6f, 1f, 1f) : new Color(1f, 0.9f, 0.4f, 1f);
             sparkSr.sortingOrder = 3;
             Vector2 vel = new Vector2(Random.Range(-1f, 1f), Random.Range(1.5f, 3f));
             float life = Random.Range(0.3f, 0.6f);
@@ -2239,6 +2420,26 @@ public class BoardManager : MonoBehaviour
         {
             FindFirstObjectByType<TurnManager>().EndTurn();
         }
+    }
+
+    public void CheckVictoryOnly()
+    {
+        if (aiInProgress || suppressVictoryCheck) return;
+        Team? winner = CheckVictory();
+        if (!winner.HasValue)
+        {
+            if (CountAlive(Team.Blue) == 0) winner = Team.Red;
+            else if (CountAlive(Team.Red) == 0) winner = Team.Blue;
+        }
+        if (winner.HasValue)
+            StartCoroutine(DelayedShowScoreboard(winner.Value));
+    }
+
+    IEnumerator DelayedShowScoreboard(Team winner)
+    {
+        yield return new WaitForSeconds(0.3f);
+        if (suppressVictoryCheck) yield break;
+        ScoreboardUI.Instance.Show(winner);
     }
 
     Sprite CreateSquareSprite(float size, Color color)
@@ -2383,28 +2584,33 @@ public class BoardManager : MonoBehaviour
         sr.sortingOrder = 200;
         obj.transform.localScale = Vector3.one * 0.5f;
 
-        string folderPath = $"Sprites/{species}/Emoji";
-        Sprite[] loaded = Resources.LoadAll<Sprite>(folderPath);
-
-        string emojiKey = species switch
+        string[] tryFolders = { SpriteFolder(species), "Human" };
+        foreach (string folder in tryFolders)
         {
-            "Human" => "human",
-            "Orc" => "orc",
-            "Beastfolk" => "beast",
-            _ => species.ToLowerInvariant()
-        };
-        string[] emojiNames = happy
-            ? new[] { $"emote{emojiKey}happy_0" }
-            : new[] { $"emote{emojiKey}sad_0", $"emote{emojiKey}angry_0" };
-
-        foreach (string en in emojiNames)
-        {
-            Sprite found = System.Array.Find(loaded, s => s.name == en);
-            if (found != null)
+            string emojiKey = folder switch
             {
-                sr.sprite = found;
-                break;
+                "Human" => "human",
+                "Orc" => "orc",
+                "Beastfolk" => "beast",
+                _ => folder.ToLowerInvariant()
+            };
+            string[] emojiNames = happy
+                ? new[] { $"emote{emojiKey}happy_0" }
+                : new[] { $"emote{emojiKey}sad_0", $"emote{emojiKey}angry_0" };
+
+            string folderPath = $"Sprites/{folder}/Emoji";
+            Sprite[] loaded = Resources.LoadAll<Sprite>(folderPath);
+            if (loaded == null || loaded.Length == 0) continue;
+            foreach (string en in emojiNames)
+            {
+                Sprite found = System.Array.Find(loaded, s => s.name == en);
+                if (found != null)
+                {
+                    sr.sprite = found;
+                    break;
+                }
             }
+            if (sr.sprite != null) break;
         }
 
         if (sr.sprite == null)

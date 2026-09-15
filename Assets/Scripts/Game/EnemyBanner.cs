@@ -29,10 +29,25 @@ public class EnemyBanner : MonoBehaviour
                 if (s.name.StartsWith("enemyBanner")) { bannerSprite = s; break; }
 
         Canvas canvas = FindFirstObjectByType<Canvas>();
-        if (canvas == null) yield break;
+        GameObject rootObj;
+        if (canvas != null)
+        {
+            rootObj = canvas.gameObject;
+        }
+        else
+        {
+            rootObj = new GameObject("EnemyBannerCanvas");
+            Canvas c = rootObj.AddComponent<Canvas>();
+            c.renderMode = RenderMode.ScreenSpaceOverlay;
+            c.sortingOrder = 219;
+            CanvasScaler cs = rootObj.AddComponent<CanvasScaler>();
+            cs.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            cs.referenceResolution = new Vector2(1920, 1080);
+            cs.matchWidthOrHeight = 0.5f;
+        }
 
         GameObject bannerObj = new GameObject("EnemyBanner");
-        bannerObj.transform.SetParent(canvas.transform, false);
+        bannerObj.transform.SetParent(rootObj.transform, false);
 
         RectTransform bannerRt = bannerObj.AddComponent<RectTransform>();
         bannerRt.anchorMin = new Vector2(0.5f, 0.5f);
@@ -58,7 +73,7 @@ public class EnemyBanner : MonoBehaviour
         Text text = textObj.AddComponent<Text>();
         text.font = pressStart;
         text.text = name.ToUpper();
-        text.fontSize = 14;
+        text.fontSize = 16;
         text.alignment = TextAnchor.MiddleCenter;
         text.color = Color.white;
         RectTransform textRt = textObj.GetComponent<RectTransform>();
