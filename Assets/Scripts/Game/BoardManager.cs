@@ -1530,6 +1530,23 @@ public class BoardManager : MonoBehaviour
                         }
                     }
                 }
+                if (movingResolved != "Nigromantes" && movingData.type == PieceType.Ninja)
+                {
+                    if (idleSprite != null && moveSprite != null && idleSprite.rect.width > 0 && idleSprite.rect.height > 0 && moveSprite.rect.width > 0 && moveSprite.rect.height > 0)
+                    {
+                        Vector2 idleSize = idleSprite.bounds.size;
+                        Vector2 moveSize = moveSprite.bounds.size;
+                        float idleArea = idleSize.x * idleSize.y;
+                        float moveArea = moveSize.x * moveSize.y;
+                        if (moveArea > idleArea)
+                        {
+                            float sizeRatio = Mathf.Sqrt(idleArea / moveArea) * 1.35f;
+                            if (sizeRatio >= 1.35f) sizeRatio = 1.35f;
+                            Vector3 s = movingVisual.transform.localScale;
+                            movingVisual.transform.localScale = new Vector3(s.x * sizeRatio, s.y * sizeRatio, s.z);
+                        }
+                    }
+                }
             }
 
             bool useMoveAnim = (movingData.type == PieceType.Paladin || movingData.type == PieceType.Knight || movingData.type == PieceType.Pawn) && moveSprites != null && moveSprites.Length >= 3;
@@ -2594,16 +2611,19 @@ public class BoardManager : MonoBehaviour
                 "Beastfolk" => "beast",
                 _ => folder.ToLowerInvariant()
             };
-            string[] emojiNames = happy
-                ? new[] { $"emote{emojiKey}happy_0" }
-                : new[] { $"emote{emojiKey}sad_0", $"emote{emojiKey}angry_0" };
 
             string folderPath = $"Sprites/{folder}/Emoji";
             Sprite[] loaded = Resources.LoadAll<Sprite>(folderPath);
             if (loaded == null || loaded.Length == 0) continue;
-            foreach (string en in emojiNames)
+            foreach (string emotion in happy ? new[] { "happy" } : new[] { "sad", "angry" })
             {
-                Sprite found = System.Array.Find(loaded, s => s.name == en);
+                string[] candidates = { $"emote{emojiKey}{emotion}_0", $"{emotion}_0", emotion };
+                Sprite found = null;
+                foreach (string en in candidates)
+                {
+                    found = System.Array.Find(loaded, s => s.name == en);
+                    if (found != null) break;
+                }
                 if (found != null)
                 {
                     sr.sprite = found;

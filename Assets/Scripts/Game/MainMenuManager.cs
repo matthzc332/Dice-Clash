@@ -202,6 +202,8 @@ public class MainMenuManager : MonoBehaviour
 
         Sprite[] playSprites = Resources.LoadAll<Sprite>("Sprites/Menu/botonPlay");
         Sprite playSprite = System.Array.Find(playSprites, s => s.name == "botonplay2_0");
+        if (playSprite == null) playSprite = System.Array.Find(playSprites, s => s.name == "botonPlay_0");
+        if (playSprite == null && playSprites.Length > 0) playSprite = playSprites[0];
         if (playSprite != null)
         {
             GameObject playObj = new GameObject("PlayButton", typeof(RectTransform));

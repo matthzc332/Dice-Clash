@@ -171,6 +171,56 @@ public class TextureOptimizer
         Debug.Log($"TextureOptimizer done: {updated} textures updated of {all.Length} total.");
     }
 
+    public static void RevertToDefaultsCLI()
+    {
+        string root = Path.Combine(Application.dataPath, "Resources");
+        if (!Directory.Exists(root)) return;
+
+        List<string> files = new List<string>();
+        files.AddRange(Directory.GetFiles(root, "*.png", SearchOption.AllDirectories));
+        files.AddRange(Directory.GetFiles(root, "*.PNG", SearchOption.AllDirectories));
+
+        string[] platforms = { "Standalone", "WebGL", "Android", "iPhone" };
+        int updated = 0;
+
+        foreach (string full in files)
+        {
+            string path = FullToAsset(full);
+            if (path == null) continue;
+
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) continue;
+
+            bool changed = false;
+            if (importer.maxTextureSize != 2048) { importer.maxTextureSize = 2048; changed = true; }
+            if (importer.crunchedCompression) { importer.crunchedCompression = false; changed = true; }
+            if (importer.textureCompression != TextureImporterCompression.Compressed)
+            {
+                importer.textureCompression = TextureImporterCompression.Compressed;
+                changed = true;
+            }
+
+            foreach (string platform in platforms)
+            {
+                TextureImporterPlatformSettings ps = importer.GetPlatformTextureSettings(platform);
+                if (ps == null || !ps.overridden) continue;
+                ps.overridden = false;
+                importer.SetPlatformTextureSettings(ps);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                updated++;
+            }
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log($"TextureOptimizer revert done: {updated} textures reverted of {files.Count} total.");
+    }
+
     static int PickMaxSize(string assetPath)
     {
         if (assetPath.Contains("/Floor/")) return 256;
