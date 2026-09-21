@@ -448,8 +448,33 @@ public class PowerUpManager : MonoBehaviour
 
             spawnedPowerUps.Add(pu);
             StartCoroutine(AnimateSpawned(pu, color));
+            StartCoroutine(ExpirePowerUp(pu));
             break;
         }
+    }
+
+    IEnumerator ExpirePowerUp(ActivePowerUp pu)
+    {
+        yield return new WaitForSeconds(30f);
+        if (pu.container == null) yield break;
+
+        float fade = 0f;
+        float fadeDuration = 0.35f;
+        while (fade < fadeDuration)
+        {
+            if (pu.container == null) yield break;
+            fade += Time.deltaTime;
+            float k = 1f - Mathf.Clamp01(fade / fadeDuration);
+            if (pu.icon != null)
+            {
+                SpriteRenderer sr = pu.icon.GetComponent<SpriteRenderer>();
+                if (sr != null) sr.color = new Color(1f, 1f, 1f, k);
+            }
+            yield return null;
+        }
+
+        spawnedPowerUps.Remove(pu);
+        if (pu.container != null) Destroy(pu.container);
     }
 
     PowerUpType PickRotatedType(PowerUpType[] types, System.Collections.Generic.List<PowerUpType> available)

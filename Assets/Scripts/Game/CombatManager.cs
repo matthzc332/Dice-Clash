@@ -45,11 +45,20 @@ public static class CombatManager
             out int atkBonus, out int defBonus,
             out string atkAbility, out string defAbility);
 
+        bool lightAura = board != null && board.shadowLightAuraActive && attacker.team == Team.Blue;
+        if (lightAura)
+        {
+            atkBonus += 8;
+            atkAbility = atkAbility == null ? "Light Aura" : atkAbility + " + Light Aura";
+        }
+
         int atkTotal = atkRoll + 1 + atkBonus;
         int defTotal = defRoll + defender.defBonus + defBonus;
 
         bool attackerWins = atkTotal > defTotal;
         if (GameConfig.isTutorial && defender.team == Team.Red && (board == null || !board.isShadowPhase))
+            attackerWins = true;
+        if (lightAura)
             attackerWins = true;
         CombatResult combatResult = attackerWins ? CombatResult.AttackerWins : CombatResult.DefenderWins;
 

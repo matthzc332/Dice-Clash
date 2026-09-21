@@ -90,15 +90,23 @@ public class TurnManager : MonoBehaviour
 
     void ShowEnemyTurnBanner()
     {
-        if (GameConfig.isTutorial || GameConfig.isAutoPlay) return;
+        if (GameConfig.isAutoPlay) return;
         if (matchOver) return;
+        if (GameConfig.isTutorial && !IsTutorialShadowPhase()) return;
         StartCoroutine(EnemyTurnBannerCoroutine());
+    }
+
+    bool IsTutorialShadowPhase()
+    {
+        BoardManager bm = FindFirstObjectByType<BoardManager>();
+        return bm != null && bm.isTutorial && bm.isShadowPhase;
     }
 
     IEnumerator EnemyTurnBannerCoroutine()
     {
         yield return new WaitForSecondsRealtime(1.5f);
-        if (GameConfig.isTutorial || GameConfig.isAutoPlay) yield break;
+        if (GameConfig.isAutoPlay) yield break;
+        if (GameConfig.isTutorial && !IsTutorialShadowPhase()) yield break;
         if (matchOver) yield break;
         SoundManager.Instance?.PlaySelect();
 

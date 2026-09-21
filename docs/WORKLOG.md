@@ -1,4 +1,33 @@
-﻿## Fix: Nigromantes front/back move + powerups ticket free (086)
+﻿## Fix: power-ups caían en los últimos minutos (097)
+
+> 2026-09-16 - Reporte de Dani en APK v0032: tras un rato no aparecían más power-ups. Causa raíz: deadlock en `AutoSpawnTimer` (espera a que haya ≤2 en tablero) pero los power-ups no tenían vida útil y se acumulaban 2 sin recoger hacia el final, bloqueando el spawn para siempre. Fix: vida útil de 30s con fade + destroy.
+
+| #   | ID                    | Tarea                                                      | Estado      |
+| --- | --------------------- | ---------------------------------------------------------- | ----------- |
+| 97  | 097-powerup-expiry    | ExpirePowerUp: vida útil 30s para liberar slots del spawn  | done        |
+
+### Detalle 097
+
+- **Causa raiz** - `PowerUpManager.AutoSpawnTimer` hace `while (CountSpawned() >= 2) yield return new WaitForSeconds(1f)` (cap de 2 power-ups simultáneos). Los power-ups persistían hasta que una pieza pisaba la casilla. Hacia el final quedan pocas piezas → se acumulan 2 sin recoger → el loop bloquea y ya no spawnea ninguno.
+- **Fix** - nuevo `ExpirePowerUp(pu)`: espera 30s de vida útil, fade del icono 0.35s, `spawnedPowerUps.Remove(pu)` + `Destroy(container)`. El slot se libera solo y el ciclo sigue toda la partida. Solo se lanza desde `SpawnOnBoard` (auto-spawn); `SpawnSpecificAt`/placeholders del tutorial intactos.
+- **Validacion** - `dotnet build Assembly-CSharp.csproj` = 0 errores (1 warning pre-existente).
+## Fix: UI celular + builds v0031/v0032 (096)
+
+> 2026-09-16 - Reporte de pruebas en APK: boton de sonido y skip turn movidos de lugar, trompeta alejada de la orilla. Se normaliza el escalado de canvas (matchWidthOrHeight=0.5) y se re-anclan elementos al borde derecho para pantallas no-16:9. Builds v0031 (EXE) y v0032 (APK) enviados a Dani y al grupo para testeo.
+
+| #   | ID                    | Tarea                                                      | Estado      |
+| --- | --------------------- | ---------------------------------------------------------- | ----------- |
+| 96  | 096-ui-celular-builds | matchWidthOrHeight=0.5 en gold HUD + re-anclaje SkipTurn/trompeta + rebuild | done        |
+
+### Detalle 096
+
+- **Causa raiz** - el canvas del HUD de oro (`EconomyManager`) no seteaba `matchWidthOrHeight` (default 0) mientras todos los demas usan 0.5, y SkipTurn/trompeta usaban anchor centro/izquierda con posiciones absolutas que se corren en pantallas que no son 16:9.
+- **Fix** - `EconomyManager.cs`: `cs.matchWidthOrHeight = 0.5f;`. `TurnUI.cs`: SkipTurnButton re-anclado a borde derecho (anchor/pivot (1,0.5), pos (-10,-217)). `BattleResultUI.cs`: nueva helper `MakeImageRight` (anchor borde derecho) y trompeta re-anclada. Tras reporte de "no aparece la trompeta", pivot pasado de (1,0.5) a (0.5,0.5) con pos (-220,-380): `Image.preserveAspect` con pivot no-centrado puede desplazar la imagen fuera del rect en Unity.
+- **Rebuild** - EXE `Builds/v0031/DiceClashTactics_v0031.exe` (369.57 MB) y APK `Builds/v0032_Android/DiceClashTactics_v0032.apk` (96.75 MB). Marcador `ExpoBuild.txt` borrado durante el build (juego completo) y restaurado al final.
+- **Gotcha CLI** - `Start-Process` con `-ArgumentList` rompe la ruta del proyecto por el espacio en "Dice Clash Tactics" -> hay que pasar el path con comillas embebidas (`'"C:\....\Dice Clash Tactics"'`), si no falla con `Couldn't set project path to: ...Tactics/C:/Users/...` y exit code 1.
+- **Pendiente** - peso WebGL (`.data.br`) no alcanza el target <= 50 MB para CrazyGames. Plan a definir: recompresion de audio (ffmpeg), streaming de Assets, etc.
+- **Validacion** - `dotnet build Assembly-CSharp.csproj` = 0 errores (1 warning pre-existente).
+## Fix: Nigromantes front/back move + powerups ticket free (086)
 
 > 2026-09-14 - El fix 085 removio el cap de escala de Nigromantes tambien para los movimientos BACK (no eran los sprites a ajustar) -> paladin/caballero move back se agrandaron. Ademas, entrar con ticket FREE (WithoutPowerups) seguia dando power-ups al azul por el override de modo expo.
 

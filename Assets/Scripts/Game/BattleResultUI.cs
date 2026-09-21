@@ -237,7 +237,7 @@ public class BattleResultUI : MonoBehaviour
         victoriaObj.SetActive(false);
 
         // --- Trumpet fanfare image (right side, hidden initially) ---
-        trumpetImage = MakeImage(canvasObj, "TrumpetImage", new Vector2(812, -380), new Vector2(420, 330));
+        trumpetImage = MakeImageRight(canvasObj, "TrumpetImage", new Vector2(-220, -380), new Vector2(420, 330));
         if (trumpetSprite != null) trumpetImage.sprite = trumpetSprite;
         trumpetImage.preserveAspect = true;
         trumpetImage.raycastTarget = false;
@@ -245,6 +245,21 @@ public class BattleResultUI : MonoBehaviour
         trumpetImage.gameObject.SetActive(false);
 
         gameObject.SetActive(false);
+    }
+
+    Image MakeImageRight(GameObject parent, string name, Vector2 pos, Vector2 size)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent.transform);
+        Image img = obj.AddComponent<Image>();
+        img.preserveAspect = true;
+        RectTransform rt = obj.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(1f, 0.5f);
+        rt.anchorMax = new Vector2(1f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = size;
+        rt.anchoredPosition = pos;
+        return img;
     }
 
     Image MakeImage(GameObject parent, string name, Vector2 pos, Vector2 size)
@@ -417,7 +432,7 @@ public class BattleResultUI : MonoBehaviour
             {
                 trumpetImage.gameObject.SetActive(true);
                 RectTransform trt = trumpetImage.GetComponent<RectTransform>();
-                Vector2 tStart = new Vector2(1600, -380);
+                Vector2 tStart = new Vector2(300, -380);
                 Vector2 tEnd = trt.anchoredPosition;
                 trt.anchoredPosition = tStart;
                 trt.localScale = new Vector3(-0.6f, 0.6f, 1f);

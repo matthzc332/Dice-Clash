@@ -134,6 +134,7 @@ public class EconomyManager : MonoBehaviour
         CanvasScaler cs = canvasObj.AddComponent<CanvasScaler>();
         cs.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         cs.referenceResolution = new Vector2(1920, 1080);
+        cs.matchWidthOrHeight = 0.5f;
 
         GameObject panelObj = new GameObject("GoldPanel");
         panelObj.transform.SetParent(canvasObj.transform, false);

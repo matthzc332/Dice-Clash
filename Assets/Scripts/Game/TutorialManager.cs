@@ -48,6 +48,9 @@ public class TutorialManager : MonoBehaviour
     private Vector3 bigScale = new Vector3(1.85f, 1.85f, 1f);
     private RectTransform textRt;
     private bool shadowMidMessageShown;
+    private LightAuraBanner auraBanner;
+    private int blueStartCount;
+    private bool lightAuraBannerShown;
 
     void Start()
     {
@@ -74,6 +77,8 @@ public class TutorialManager : MonoBehaviour
             }
 
         turnManager.OnTurnChanged += OnTurnChanged;
+        GameObject auraBannerObj = new GameObject("LightAuraBanner");
+        auraBanner = auraBannerObj.AddComponent<LightAuraBanner>();
         CreateOverlay();
         StartCoroutine(WelcomeCoroutine());
     }
@@ -141,35 +146,6 @@ public class TutorialManager : MonoBehaviour
         textRt.anchorMax = Vector2.one;
         textRt.offsetMin = new Vector2(210, 12);
         textRt.offsetMax = new Vector2(-10, -128);
-
-        GameObject skipObj = new GameObject("SkipButton");
-        skipObj.transform.SetParent(overlayObj.transform, false);
-        Image skipImg = skipObj.AddComponent<Image>();
-        skipImg.color = new Color(0.6f, 0.2f, 0.2f, 0.9f);
-        RectTransform skipRt = skipObj.GetComponent<RectTransform>();
-        skipRt.anchorMin = new Vector2(1, 1);
-        skipRt.anchorMax = new Vector2(1, 1);
-        skipRt.pivot = new Vector2(1, 1);
-        skipRt.sizeDelta = new Vector2(120, 40);
-        skipRt.anchoredPosition = new Vector2(-20, -20);
-
-        GameObject skipTextObj = new GameObject("SkipLabel");
-        skipTextObj.transform.SetParent(skipObj.transform, false);
-        Text skipLabel = skipTextObj.AddComponent<Text>();
-        skipLabel.font = dialogFont;
-        skipLabel.fontSize = 14;
-        skipLabel.alignment = TextAnchor.MiddleCenter;
-        skipLabel.text = "SKIP";
-        skipLabel.color = Color.white;
-        RectTransform skipLabelRt = skipTextObj.GetComponent<RectTransform>();
-        skipLabelRt.anchorMin = Vector2.zero;
-        skipLabelRt.anchorMax = Vector2.one;
-        skipLabelRt.sizeDelta = Vector2.zero;
-
-        Button skipButton = skipObj.AddComponent<Button>();
-        skipButton.targetGraphic = skipImg;
-        skipButton.onClick.AddListener(OnSkipClicked);
-        skipButton.onClick.AddListener(() => SoundManager.Instance.PlayButton());
 
         CreatePowerUpSquares();
     }
@@ -721,6 +697,16 @@ public class TutorialManager : MonoBehaviour
         lastShadowCount = spawned;
         shadowSpawned = true;
         shadowMidMessageShown = false;
+        lightAuraBannerShown = false;
+        board.shadowLightAuraActive = false;
+        blueStartCount = 0;
+        for (int r = 0; r < board.rows; r++)
+            for (int c = 0; c < board.cols; c++)
+            {
+                Cell cell = board.GetCell(r, c);
+                if (cell != null && cell.IsOccupied && cell.pieceData?.team == Team.Blue)
+                    blueStartCount++;
+            }
     }
 
     void CheckShadowPowerUpCollection()
@@ -733,13 +719,24 @@ public class TutorialManager : MonoBehaviour
         if (!shadowSpawned) return;
 
         int alive = 0;
+        int blueAlive = 0;
         for (int r = 0; r < board.rows; r++)
             for (int c = 0; c < board.cols; c++)
             {
                 Cell cell = board.GetCell(r, c);
-                if (cell.IsOccupied && cell.pieceData?.team == Team.Red)
+                if (cell != null && cell.IsOccupied && cell.pieceData?.team == Team.Red)
                     alive++;
+                else if (cell != null && cell.IsOccupied && cell.pieceData?.team == Team.Blue)
+                    blueAlive++;
             }
+
+        bool auraOn = (alive * 2 < blueAlive) || (blueAlive * 2 < blueStartCount);
+        board.shadowLightAuraActive = auraOn;
+        if (auraOn && !lightAuraBannerShown)
+        {
+            lightAuraBannerShown = true;
+            if (auraBanner != null) auraBanner.Show("LIGHT AURA +8");
+        }
 
         if (alive < lastShadowCount && alive == 1 && !shadowMidMessageShown)
         {
@@ -807,15 +804,8 @@ public class TutorialManager : MonoBehaviour
         }
         if (board != null)
             board.isShadowPhase = false;
-    }
-
-    void OnSkipClicked()
-    {
-        CleanupShadowPhase();
-        GameConfig.isTutorial = false;
-        TutorialProgress.MarkPlayed();
-        DestroyOverlay();
-        GameConfig.Play("Human");
+        if (board != null)
+            board.shadowLightAuraActive = false;
     }
 
     void DestroyOverlay()

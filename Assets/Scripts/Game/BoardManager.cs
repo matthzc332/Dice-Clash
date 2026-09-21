@@ -16,6 +16,7 @@ public class BoardManager : MonoBehaviour
     public string scenarioTheme = "Human";
     public bool isTutorial;
     public bool isShadowPhase;
+    public bool shadowLightAuraActive;
 
     private bool initialized = false;
 

@@ -223,11 +223,11 @@ public class TurnUI : MonoBehaviour
             skipBtnImage.color = new Color(0.4f, 0.3f, 0.15f, 0.85f);
 
         RectTransform btnRt = btnObj.GetComponent<RectTransform>();
-        btnRt.anchorMin = new Vector2(0f, 1f);
-        btnRt.anchorMax = new Vector2(0f, 1f);
-        btnRt.pivot = new Vector2(0f, 1f);
+        btnRt.anchorMin = new Vector2(1f, 0.5f);
+        btnRt.anchorMax = new Vector2(1f, 0.5f);
+        btnRt.pivot = new Vector2(1f, 0.5f);
         btnRt.sizeDelta = new Vector2(600, 235);
-        btnRt.anchoredPosition = new Vector2(1555, -640);
+        btnRt.anchoredPosition = new Vector2(-10, -217);
         btnRt.localScale = Vector3.one;
 
         endTurnButton = btnObj.AddComponent<Button>();
