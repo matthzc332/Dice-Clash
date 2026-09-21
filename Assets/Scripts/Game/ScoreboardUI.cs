@@ -539,12 +539,26 @@ public class ScoreboardUI : MonoBehaviour
         secRt.anchoredPosition = orig;
     }
 
+    void FitVictoriaBanner(GameObject banner)
+    {
+        Image img = banner.GetComponent<Image>();
+        float w = 500f;
+        float h = 60f;
+        if (img != null && img.sprite != null && img.sprite.rect.height > 0f)
+            h = w * img.sprite.rect.height / img.sprite.rect.width;
+        float y = -440f + h * 0.5f;
+        float bottom = y - h * 0.5f;
+        if (bottom < -510f) y += -510f - bottom;
+        banner.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, y);
+    }
+
     IEnumerator VictoryBanner()
     {
         if (bannerObj != null) Destroy(bannerObj);
 
         bannerObj = MakeImagePanel(canvasObj.transform, "FinVictoriaPanel",
             "Sprites/Menu/Score/FinVictoriaPanel", new Vector2(0, -440), new Vector2(500, 60));
+        FitVictoriaBanner(bannerObj);
 
         Text bannerText = MakeLabel(bannerObj.transform, "BannerText", "BLUE WINS!", 28,
             new Color(0.3f, 0.7f, 1f), TextAnchor.MiddleCenter,
@@ -566,6 +580,8 @@ public class ScoreboardUI : MonoBehaviour
 
         bannerObj = MakeImagePanel(canvasObj.transform, "FinVictoriaPanel",
             "Sprites/Menu/Score/FinVictoriaPanel", new Vector2(0, -440), new Vector2(500, 60));
+        FitVictoriaBanner(bannerObj);
+        float smokeY = bannerObj.GetComponent<RectTransform>().anchoredPosition.y;
 
         Text bannerText = MakeLabel(bannerObj.transform, "BannerText", "DEFEAT!", 28,
             new Color(1f, 0.3f, 0.3f), TextAnchor.MiddleCenter,
@@ -586,7 +602,7 @@ public class ScoreboardUI : MonoBehaviour
                 puffRt.anchorMax = new Vector2(0.5f, 0.5f);
                 puffRt.pivot = new Vector2(0.5f, 0.5f);
                 puffRt.sizeDelta = new Vector2(Random.Range(30, 60), Random.Range(30, 60));
-                puffRt.anchoredPosition = new Vector2(Random.Range(-200, 200), -440);
+                puffRt.anchoredPosition = new Vector2(Random.Range(-200, 200), smokeY);
                 Vector2 vel = new Vector2(Random.Range(-40f, 40f), Random.Range(60f, 120f));
                 StartCoroutine(AnimateSmokePuff(smokePuff, vel, 1.5f));
             }

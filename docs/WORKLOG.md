@@ -1,4 +1,19 @@
-﻿## Fix: power-ups caían en los últimos minutos (097)
+﻿## SDK Gamanbit métricas (098)
+
+> 2026-09-21 - Integrado el SDK de telemetría de Gamanbit (paquete `GamanbitSDK.unitypackage` de Hernán). Sesión + heartbeat + flush + cache de eventos en PlayerPrefs. Game id provisional `dice-clash-tactics` (una línea para cambiarlo).
+
+| #   | ID                    | Tarea                                                      | Estado      |
+| --- | --------------------- | ---------------------------------------------------------- | ----------- |
+| 98  | 098-gamanbit-sdk      | GamanbitAnalytics.cs + GamanbitBootstrap.cs + hooks FTUE/core-loop/retry/crash | done        |
+
+### Detalle 098
+
+- **SDK** - `Assets/Scripts/Analytics/GamanbitAnalytics.cs` (namespace `Gamanbit`, singleton, `DontDestroyOnLoad`, sesión + heartbeat 30s + flush 10s + persistencia de eventos en `PlayerPrefs`). Se agregó `Configure(url, id, flush)` que además fuerza `isEventMode=false` — con `true` haría `PlayerPrefs.DeleteAll()` en Start y borraría oro/campaña CADA arranque.
+- **Bootstrap** - `Assets/Scripts/Analytics/GamanbitBootstrap.cs`: `Boot()` crea y configura el GO (API `https://api.gamanbit.com/sdk/games`, gameId `dice-clash-tactics`); `StartSessionOnce()` diferida 1 frame (una sola vez por sesión); crash log con throttle vía `Application.logMessageReceived` (solo `LogType.Exception`, 1 por sesión).
+- **Hooks** - `MainMenuManager.Start`: Boot + `StartAnalyticsSessionDelayed`. `EconomyManager.AddGold`: `TrackCoreLoopHook` (el SDK lo limita a 1/sesión). `TutorialManager`: `tutorial_start` y `tutorial_shadows`. `GameOverUI`: `tutorial_complete` y `TrackRetry` (con contador `retry_count` en los 4 botones retry).
+- **Pendiente** - Cuando Hernán pase el game id real de este juego, cambiar `GamanbitBootstrap.GameId` (1 línea). Doc en `docs/Gamanbit_Implementation_For_Agents.md`.
+- **Validacion** - `dotnet build Assembly-CSharp.csproj` = 0 errores (1 warning pre-existente).
+## Fix: power-ups caían en los últimos minutos (097)
 
 > 2026-09-16 - Reporte de Dani en APK v0032: tras un rato no aparecían más power-ups. Causa raíz: deadlock en `AutoSpawnTimer` (espera a que haya ≤2 en tablero) pero los power-ups no tenían vida útil y se acumulaban 2 sin recoger hacia el final, bloqueando el spawn para siempre. Fix: vida útil de 30s con fade + destroy.
 

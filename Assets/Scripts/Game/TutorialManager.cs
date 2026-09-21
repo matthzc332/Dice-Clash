@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Gamanbit;
 
 public class TutorialManager : MonoBehaviour
 {
@@ -469,6 +470,7 @@ public class TutorialManager : MonoBehaviour
     IEnumerator WelcomeCoroutine()
     {
         currentStep = Step.Welcome;
+        GamanbitAnalytics.Instance?.TrackFtueStep("tutorial_start", Time.timeSinceLevelLoad);
 
         if (panelRt != null)
         {
@@ -621,6 +623,7 @@ public class TutorialManager : MonoBehaviour
     IEnumerator ShadowPhaseTransition()
     {
         currentStep = Step.ShadowPhase;
+        GamanbitAnalytics.Instance?.TrackFtueStep("tutorial_shadows", Time.timeSinceLevelLoad);
         shadowSpawned = false;
         shadowPowerUpSpawned = false;
         SetInstruction("Preparing new enemies...");

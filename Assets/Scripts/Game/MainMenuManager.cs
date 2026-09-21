@@ -50,7 +50,15 @@ public class MainMenuManager : MonoBehaviour
         if (TutorialProgress.HasPlayed())
             StartCoroutine(ShowDailyBonusDelayed());
         SoundManager.Instance.PlayMenuMusic();
+        GamanbitBootstrap.Boot();
+        StartCoroutine(StartAnalyticsSessionDelayed());
         StartupVideo.Show();
+    }
+
+    IEnumerator StartAnalyticsSessionDelayed()
+    {
+        yield return null;
+        GamanbitBootstrap.StartSessionOnce();
     }
 
     void StartPlayButtonAura(RectTransform playRt, Transform parent)

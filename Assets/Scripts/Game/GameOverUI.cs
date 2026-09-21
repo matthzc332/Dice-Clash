@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using Gamanbit;
 
 public class GameOverUI : MonoBehaviour
 {
@@ -212,6 +213,14 @@ public class GameOverUI : MonoBehaviour
         return obj;
     }
 
+    void TrackRetry()
+    {
+        string mode = GameConfig.isCampaign ? "campaign" : (GameConfig.isRanked ? "ranked" : "level");
+        GamanbitAnalytics.Instance?.TrackRetryEvent($"retry_{mode}", PlayerPrefs.GetInt("retry_count", 0) + 1);
+        PlayerPrefs.SetInt("retry_count", PlayerPrefs.GetInt("retry_count", 0) + 1);
+        PlayerPrefs.Save();
+    }
+
     public void Show(Team winner)
     {
         GameObject turnCanvas = GameObject.Find("TurnCanvas");
@@ -311,6 +320,7 @@ public class GameOverUI : MonoBehaviour
             }
             else if (GameConfig.isTutorial)
             {
+                GamanbitAnalytics.Instance?.TrackFtueStep("tutorial_complete", Time.timeSinceLevelLoad);
                 GameObject nextBtn = CreateButton("NextButton", nextSprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
                     () => {
                         if (!rewardFlowRunning)
@@ -345,7 +355,7 @@ public class GameOverUI : MonoBehaviour
                 buttons.Add(rewardObj);
 
                 GameObject retryBtnRanked = CreateButton("RetryButton", retrySprite, new Vector2(-170, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                    () => GameConfig.PlayRanked(GameConfig.currentPowerupMode));
+                    () => { TrackRetry(); GameConfig.PlayRanked(GameConfig.currentPowerupMode); });
                 activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtnRanked, 0.03f)));
 
                 Sprite menuSpriteRanked = quitSprite != null ? quitSprite : nextSprite;
@@ -356,7 +366,7 @@ public class GameOverUI : MonoBehaviour
             else
             {
                 GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(-167, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                    () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
+                    () => { TrackRetry(); SceneManager.LoadScene(SceneManager.GetActiveScene().name); });
                 activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtn, 0.03f)));
 
                 GameObject menuBtn = CreateButton("MenuButton", nextSprite, new Vector2(0, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
@@ -370,7 +380,7 @@ public class GameOverUI : MonoBehaviour
             if (GameConfig.isRanked)
             {
                 GameObject retryBtnRanked = CreateButton("RetryButton", retrySprite, new Vector2(-280, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                    () => GameConfig.PlayRanked(GameConfig.currentPowerupMode));
+                    () => { TrackRetry(); GameConfig.PlayRanked(GameConfig.currentPowerupMode); });
                 activeCoroutines.Add(StartCoroutine(AnimateButtonPulse(retryBtnRanked, 0.04f)));
 
                 if (quitSprite != null)
@@ -383,7 +393,7 @@ public class GameOverUI : MonoBehaviour
             else
             {
                 GameObject retryBtn = CreateButton("RetryButton", retrySprite, new Vector2(-280, -374), new Vector2(260, 90), new Vector3(1.7f, 1.6f, 1),
-                    () => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
+                    () => { TrackRetry(); SceneManager.LoadScene(SceneManager.GetActiveScene().name); });
                 if (quitSprite != null)
                 {
                     CreateButton("QuitButton", quitSprite, new Vector2(260, -378), new Vector2(120, 42), new Vector3(1.7f, 1.7f, 1),

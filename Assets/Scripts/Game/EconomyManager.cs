@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
+using Gamanbit;
 
 public class EconomyManager : MonoBehaviour
 {
@@ -59,6 +60,7 @@ public class EconomyManager : MonoBehaviour
         countUpRoutine = StartCoroutine(CountUpGold(from, totalGold));
         StartCoroutine(ShowFloatingGold(amount));
         StartCoroutine(AddGoldFX(amount));
+        GamanbitAnalytics.Instance?.TrackCoreLoopHook(Time.timeSinceLevelLoad);
     }
 
     public void AddGoldFromWorld(int amount, Vector3 worldPos)
