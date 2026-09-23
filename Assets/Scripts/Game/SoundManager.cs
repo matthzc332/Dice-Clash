@@ -23,8 +23,8 @@ public class SoundManager : MonoBehaviour
     private AudioClip selectClip, moveClip, diceClip, hitClip, blockClip, victoryClip, defeatClip;
     private int currentTrackIndex = 0;
     private float crossfadeDuration = 1.5f;
-    private string[] gameplayTracks = { "medieval_horizons", "deuslower-fantasy-medieval-ambient-237371" };
-    private float[] gameplayTrackVolumes = { 0.45f, 0.85f };
+    private string[] gameplayTracks = { "medieval_horizons" };
+    private float[] gameplayTrackVolumes = { 0.45f };
     private string campaignMenuTrack = "campaignTrackVolumes";
     private float campaignMenuTrackVolume = 0.65f;
     private string[] menuTracks = { "After_the_Last_Round", "Three_Fingers_of_Ale", "Hearthside_at_Twilight" };

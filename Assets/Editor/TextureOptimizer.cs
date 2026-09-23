@@ -21,7 +21,9 @@ public class TextureOptimizer
     public static void OptimizeAudioCLI()
     {
         string root = Path.Combine(Application.dataPath, "Resources");
-        string[] mp3 = Directory.GetFiles(root, "*.mp3", SearchOption.AllDirectories);
+        List<string> clips = new List<string>();
+        clips.AddRange(Directory.GetFiles(root, "*.mp3", SearchOption.AllDirectories));
+        clips.AddRange(Directory.GetFiles(root, "*.ogg", SearchOption.AllDirectories));
 
         string[] heavyMusic =
         {
@@ -31,7 +33,7 @@ public class TextureOptimizer
         };
 
         int updated = 0;
-        foreach (string full in mp3)
+        foreach (string full in clips)
         {
             string path = FullToAsset(full);
             if (path == null) continue;
@@ -92,10 +94,12 @@ public class TextureOptimizer
         string[] all = Directory.GetFiles(root, "*.png", SearchOption.AllDirectories);
         string[] allUc = Directory.GetFiles(root, "*.PNG", SearchOption.AllDirectories);
         string[] mp3 = Directory.GetFiles(root, "*.mp3", SearchOption.AllDirectories);
+        string[] ogg = Directory.GetFiles(root, "*.ogg", SearchOption.AllDirectories);
         List<string> files = new List<string>();
         files.AddRange(all);
         files.AddRange(allUc);
         files.AddRange(mp3);
+        files.AddRange(ogg);
 
         foreach (string full in files)
         {

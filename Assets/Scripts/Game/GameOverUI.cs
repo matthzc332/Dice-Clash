@@ -223,6 +223,10 @@ public class GameOverUI : MonoBehaviour
 
     public void Show(Team winner)
     {
+        CrazySDKIntegration.GameplayStop();
+        if (winner == Team.Blue)
+            CrazySDKIntegration.HappyTime();
+
         GameObject turnCanvas = GameObject.Find("TurnCanvas");
         GameObject diceCanvas = GameObject.Find("DiceCanvas");
         GameObject statsCanvas = GameObject.Find("StatsCanvas");

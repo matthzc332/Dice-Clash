@@ -64,6 +64,8 @@ public class GameManager : MonoBehaviour
             SoundManager.Instance.PlayGameplayMusic();
         else
             AudioListener.volume = 0f;
+
+        CrazySDKIntegration.GameplayStart();
     }
 
     void SetupEventSystem()

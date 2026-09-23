@@ -51,6 +51,7 @@ public class MainMenuManager : MonoBehaviour
             StartCoroutine(ShowDailyBonusDelayed());
         SoundManager.Instance.PlayMenuMusic();
         GamanbitBootstrap.Boot();
+        CrazySDKIntegration.Boot();
         StartCoroutine(StartAnalyticsSessionDelayed());
         StartupVideo.Show();
     }
