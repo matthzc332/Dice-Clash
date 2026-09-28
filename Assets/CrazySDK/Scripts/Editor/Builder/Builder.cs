@@ -85,7 +85,11 @@ namespace CrazyGames
                     );
                     if (selectedVariant == BuildVariant.Release)
                     {
-                        var astcDataFileName = DoASTCBuild(buildOptions, report);
+                        string astcDataFileName = null;
+                        if (additionalOptions.supportsMobile)
+                        {
+                            astcDataFileName = DoASTCBuild(buildOptions, report);
+                        }
                         LimitedMemoryFiles limitedMemoryFiles = null;
                         if (additionalOptions.supportsMobile)
                         {
