@@ -43,13 +43,23 @@ public class TextureOptimizer
             if (importer == null) continue;
 
             float targetQuality = 0.35f;
-            foreach (string h in heavyMusic)
-                if (name == h) { targetQuality = 0.3f; break; }
+            bool mono = false;
+            if (path.Contains("/Sounds/Fondo/"))
+            {
+                targetQuality = 0.22f;
+                mono = true;
+            }
+            else
+            {
+                foreach (string h in heavyMusic)
+                    if (name == h) { targetQuality = 0.22f; mono = true; break; }
+            }
 
             AudioImporterSampleSettings settings = importer.defaultSampleSettings;
             settings.compressionFormat = AudioCompressionFormat.Vorbis;
             settings.quality = targetQuality;
             importer.defaultSampleSettings = settings;
+            importer.forceToMono = mono;
 
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
             updated++;
@@ -122,7 +132,7 @@ public class TextureOptimizer
             return;
         }
 
-        string[] platforms = { "Standalone", "Web", "Android", "iPhone" };
+        string[] platforms = { "Standalone", "WebGL", "Android", "iPhone" };
 
         string[] all = Directory.GetFiles(root, "*.png", SearchOption.AllDirectories);
 
@@ -143,6 +153,11 @@ public class TextureOptimizer
             if (importer.maxTextureSize != maxSize)
             {
                 importer.maxTextureSize = maxSize;
+                needsFix = true;
+            }
+            if (maxSize >= 1024 && importer.compressionQuality != 100)
+            {
+                importer.compressionQuality = 100;
                 needsFix = true;
             }
 
@@ -227,6 +242,8 @@ public class TextureOptimizer
 
     static int PickMaxSize(string assetPath)
     {
+        string file = System.IO.Path.GetFileName(assetPath).ToLowerInvariant();
+
         if (assetPath.Contains("/Floor/")) return 256;
         if (assetPath.Contains("/Liston/")) return 256;
         if (assetPath.Contains("/FightCloud")) return 256;
@@ -234,19 +251,33 @@ public class TextureOptimizer
         if (assetPath.Contains("/pasos")) return 256;
         if (assetPath.Contains("/muneco")) return 256;
         if (assetPath.Contains("/Insignias/")) return 256;
-        if (assetPath.Contains("/Background/")) return 512;
-        if (assetPath.Contains("/Win/")) return 512;
-        if (assetPath.Contains("/Tutorial/")) return 512;
+        if (assetPath.Contains("/Relleno_Insignias/")) return 256;
+        if (assetPath.EndsWith("/Tutorial/copaTuto.png")) return 256;
+        if (IsSmallSprite(assetPath, file)) return 512;
+        if (assetPath.EndsWith("/Menu/Menu.png")) return 1024;
+        if (assetPath.Contains("/Background/")) return 1024;
+        if (assetPath.Contains("/Win/")) return 1024;
+        if (assetPath.Contains("/Tutorial/")) return 1024;
+        if (assetPath.Contains("/Score/")) return 1024;
+        if (assetPath.Contains("/Menu/")) return 512;
         if (assetPath.Contains("/Dice/")) return 512;
         if (assetPath.Contains("/Emoji/")) return 512;
+        if (assetPath.Contains("/Efect/")) return 1024;
         if (assetPath.Contains("/PowerUps/")) return 512;
-        if (assetPath.Contains("/Menu/")) return 512;
         if (assetPath.Contains("/Pieces/")) return 512;
         if (assetPath.Contains("/Decor/")) return 512;
-        if (assetPath.Contains("/Efect/")) return 512;
         if (assetPath.Contains("/Estantes/")) return 512;
         if (assetPath.Contains("/Card/")) return 512;
         return 256;
+    }
+
+    static bool IsSmallSprite(string assetPath, string file)
+    {
+        if (file.StartsWith("nube")) return true;
+        if (assetPath.Contains("/Efect/")
+            && (file.StartsWith("trumpet") || file.StartsWith("punio")
+                || file.StartsWith("mago") || file.StartsWith("ritual"))) return true;
+        return false;
     }
 
     static string FullToAsset(string fullPath)

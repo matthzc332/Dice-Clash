@@ -6,6 +6,18 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
+public class BuildReportCapture : IPostprocessBuildWithReport
+{
+    public int callbackOrder => 1;
+
+    public static BuildReport lastReport;
+
+    public void OnPostprocessBuild(BuildReport report)
+    {
+        lastReport = report;
+    }
+}
+
 public class BuildScript
 {
     static string[] scenes = { "Assets/Scenes/MainMenuScene.unity", "Assets/Scenes/SampleScene.unity" };
@@ -145,5 +157,81 @@ public class BuildScript
     public static void BuildWebGLCLI()
     {
         BuildWebGL();
+    }
+
+    public static void BuildReleaseCGCLI()
+    {
+        BuildReportCapture.lastReport = null;
+        new CrazyGames.Builder().DoReleaseBuild(new CrazyGames.AdditionalBuildOptions());
+        WriteCGSummary(BuildReportCapture.lastReport);
+    }
+
+    public static void WriteCGSummaryCLI()
+    {
+        WriteCGSummary(null);
+    }
+
+    static void WriteCGSummary(BuildReport report)
+    {
+        string summaryPath = Path.Combine("Library", CrazyGames.Builder.SUMMARY_FILE_NAME);
+        CrazyGames.BuildReportSummary summary = new CrazyGames.BuildReportSummary();
+
+        bool usable = report != null
+            && report.summary.result == BuildResult.Succeeded
+            && report.summary.platform == BuildTarget.WebGL
+            && !report.summary.options.HasFlag(BuildOptions.Development);
+
+        if (usable)
+        {
+            List<UnityEditor.Build.Reporting.PackedAssetInfo> assets = report.packedAssets
+                .SelectMany(p => p.contents)
+                .OrderByDescending(f => f.packedSize)
+                .GroupBy(p => p.sourceAssetPath)
+                .Select(g => g.First())
+                .Where(f => !string.IsNullOrEmpty(f.sourceAssetPath))
+                .ToList();
+
+            ulong initial = 0;
+            foreach (CrazyGames.GeneratedFile f in CrazyGames.BuildReportGenerator.GetMainFiles(report)) initial += f.size;
+
+            summary.packagedFiles = assets
+                .Select(a => new CrazyGames.PackagedFileSummary { path = a.sourceAssetPath, size = a.packedSize })
+                .ToList();
+            summary.buildDateISO = System.DateTime.Now.ToString("o");
+            summary.durationSeconds = report.summary.totalTime.TotalSeconds;
+            summary.totalSize = report.summary.totalSize;
+            summary.initialLoadSize = initial;
+        }
+        else
+        {
+            string cgReport = "Builds/CrazyGamesRelease/crazygames_build_report.json";
+            if (!File.Exists(cgReport))
+            {
+                Debug.LogError("[CGSummary] no hay build de CG: " + cgReport);
+                return;
+            }
+
+            CrazyGames.BuildData data = JsonUtility.FromJson<CrazyGames.BuildData>(File.ReadAllText(cgReport));
+
+            ulong total = 0;
+            foreach (string f in Directory.GetFiles("Builds/CrazyGamesRelease", "*", SearchOption.AllDirectories))
+                total += (ulong)new FileInfo(f).Length;
+
+            ulong initial = 0;
+            foreach (CrazyGames.GeneratedFile f in data.generatedFiles)
+                if (f.type == "data" || f.type == "wasm" || f.type == "framework" || f.type == "loader")
+                    initial += f.size;
+
+            System.DateTime when = System.DateTime.Now;
+            System.DateTime.TryParse(data.buildDateTime, out when);
+
+            summary.buildDateISO = when.ToString("o");
+            summary.durationSeconds = data.totalTime;
+            summary.totalSize = total;
+            summary.initialLoadSize = initial;
+        }
+
+        File.WriteAllText(summaryPath, JsonUtility.ToJson(summary, true));
+        Debug.Log($"[CGSummary] initialLoad {summary.initialLoadSize / 1048576.0:F2} MiB | total {summary.totalSize / 1048576.0:F2} MiB | {summary.packagedFiles.Count} archivos -> {summaryPath}");
     }
 }
