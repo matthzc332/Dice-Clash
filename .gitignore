@@ -82,3 +82,6 @@ Thumbs.db
 .vscode/
 *.swp
 opencode.json
+
+# ================= Local =================
+Assets.zip

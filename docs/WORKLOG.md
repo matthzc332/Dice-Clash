@@ -1,4 +1,40 @@
-﻿## SDK Gamanbit métricas (098)
+﻿## Builds CG / peso WebGL (100-103)
+
+> 2026-09-29 - Cierre de la línea de builds de CrazyGames. 100/101/102 quedaron documentados solo en `AGENTS.md` (ahí se recuperan); 103 es el fix de hoy. Resultado actual: build WebGL CG Release en `Builds/CrazyGamesRelease`, `initialLoadSize` **45,93 MiB** (meta 50), sin variante ASTC, y el "build report" del Analyzer (`Library/CGReleaseBuildReportSummary-v1.json`) generándose en los builds por CLI.
+
+| #    | ID                              | Tarea                                                                              | Estado      |
+| ---- | ------------------------------- | ---------------------------------------------------------------------------------- | ----------- |
+| 100 | 100-texturas-webgl              | Fix plataforma `Web` → `WebGL` en `TextureOptimizer` (el override nunca llegaba al build) | done        |
+| 101 | 101-peso-webgl                   | Crunch + audio mono/Vorbis 0,22 + fondos a 512 → 42,8 MiB                            | done        |
+| 102 | 102-skip-astc-variant           | `DoASTCBuild`/`DoLimitedMemoryBuilds` solo si `supportsMobile` (rama `spec/102-…`)    | done        |
+| 103 | 103-cg-build-report-batch        | Summary del Analyzer en batch + arte fullscreen a 1024 → 45,93 MiB                    | done        |
+
+### Detalle 100
+
+- **Causa raíz** - `TextureOptimizer` declaraba la plataforma como `"Web"` en vez de `"WebGL"`, así que el override de `maxTextureSize` + crunch nunca se aplicaba al build WebGL y todo caía a `DefaultTexturePlatform` 2048 sin crunch: 73,4 MiB de `initialLoadSize`, 342 PNG = 281,5 MB packed.
+- **Fix** - `platforms = { "Standalone", "WebGL", "Android", "iPhone" }`. Re-importar con Unity cerrado (`TextureOptimizer.ApplyCLI` en batch aborta si hay otro Unity con el proyecto abierto).
+
+### Detalle 101
+
+- Crunch a 279/291 texturas + `OptimizeAudioCLI` (34 clips Vorbis, `Sounds/Fondo` a mono 0,22) → `data.br` de 70 a 43,4 MB, pero `initialLoadSize` quedó 1 KB arriba de la meta de 50. Segundo ciclo: efectos a 1024+crunch (se quitó la exclusión `keepHighRes` y se arregló el orden del chequeo `/Efect/` antes de `/PowerUps/`), audio mono/Vorbis 0,22 incluyendo `heavyMusic` (`forceToMono` vive en el `AudioImporter`, no en `AudioImporterSampleSettings`), y `Background/Win/Tutorial/Menu` de 1024 a 512.
+- Resultado: **42,81 MiB**. Metas corruptos reparados en el camino (`punio.png.meta`, `NinjaMoveBack.PNG.meta`: "no valid GUID" → borrados y regenerados por Unity, GUIDs sin referencias).
+
+### Detalle 102
+
+- El ZIP pesaba 80 MiB por una copia `astc_<hash>.data.br` (36,2 MiB) que el SDK genera siempre: `Builder.cs:78` fuerza el build principal a DXT y l.88 llama `DoASTCBuild()` incondicionalmente, sin consultar el Player Setting. Además el `initialLoadSize` del checker CG nunca cuenta el `astc` (solo data+wasm+framework+loader, `BuildCompleteHandler.cs:71`).
+- **Fix** (rama `spec/102-skip-astc-variant`, commit `fd3a276`): `DoASTCBuild`/`DoLimitedMemoryBuilds` solo si `additionalOptions.supportsMobile`.
+- El SDK desactiva el splash de Unity a propósito en todos sus builds (`Builder.cs:274-278`) y lo restaura al final → en web sale directo el video Gamanbit. **Pendiente de decisión con Hernán** si se quiere el logo (flag `KeepUnitySplash` + rebuild ~1 h, no cambia `initialLoadSize`).
+
+### Detalle 103
+
+- **"No existe el build report"** - el Analyzer lee `Library/CGReleaseBuildReportSummary-v1.json` y el archivo estaba congelado con el build del 23/9: el SDK lo escribe desde un `EditorApplication.delayCall` (`BuildCompleteHandler.cs:23`) que en batch con `-quit` nunca corre. Fix en `BuildScript.cs`: `BuildReportCapture : IPostprocessBuildWithReport` (callbackOrder 1) captura el `BuildReport` sincrónicamente y `WriteCGSummary(BuildReport)` replica `GenerateReportSummary` (mismo `OrderByDescending`/`GroupBy`, `initialLoad` vía `GetMainFiles`); la llama `BuildReleaseCGCLI` al terminar y `WriteCGSummaryCLI()` la regenera sin recompilar (fallback: lee `crazygames_build_report.json` + walk de la carpeta). Verificado con **2618 assets** en el summary (antes 0).
+- **Pixelado fullscreen** - fondos de hasta 2816×1536 que `PickMaxSize` bajaba a 512 y Unity estiraba a 1920×1080. `Background/Win/Tutorial/Menu.png/Score` a **1024** + `compressionQuality 100`; `/Insignias/`, `/Relleno_Insignias/` y `copaTuto` a 256; `nube*`/`trumpet*`/`punio*`/`mago*`/`ritual` a 512 vía `IsSmallSprite`; resto de `/Menu/` 512. Coste +3,1 MiB → **45,93 MiB**.
+- **Build** - CG Release `Succeeded` (43,6 min): `data.br` 39,33 + `wasm.br` 6,51 + `framework` 0,07 + `loader` 0,03 MiB; `buildVariant: Release`, `supportsMobile: false`, sin ASTC. Summary: `initialLoadSize` 48.161.551 B (45,93 MiB), `totalSize` 46 MiB.
+- **Commits** - `c17b676` (fix build report + texturas 1024), `4b12e82` (docs 100-103). Spec en `docs/specs/103-cg-build-report-batch.md`.
+- **Para Hernán** - el build sí es WebGL (solo existen `data.br`/`wasm.br`/`framework.js.br`/`loader.js`); el summary solo se genera en builds **WebGL no-Development** (`BuildCompleteHandler.cs:36-44`); al reabrir Unity hay que apretar **Analyze** de nuevo (`AnalyzeTab.InitOnLoad()` pone `_report = null`). El ZIP `Builds/CrazyGamesRelease (4).zip` que tiene lleva el `data.br` del build de 16:41 (`66eaa76f`) y el de 18:38 es `7f8fd12f` (mismo tamaño, el build no es reproducible byte a byte).
+- **Gotchas de batch** - `Assets/Resources/ExpoBuild.txt` debe estar ausente al buildear (se mueve a `.bak` y se restaura); wrapper con `WaitForExit(ms)` + `Stop-Process` porque con errores de compilación `Start-Process -Wait` deja un zombie con el lock; en `Start-Process -ArgumentList` el path del proyecto va con comillas embebidas o falla con `Couldn't set project path`; un Unity abierto en otro proyecto no bloquea el lock.
+
+## SDK Gamanbit métricas (098)
 
 > 2026-09-21 - Integrado el SDK de telemetría de Gamanbit (paquete `GamanbitSDK.unitypackage` de Hernán). Sesión + heartbeat + flush + cache de eventos en PlayerPrefs. Game id provisional `dice-clash-tactics` (una línea para cambiarlo).
 

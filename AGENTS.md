@@ -277,7 +277,7 @@ Implement single-player mode with AI-controlled red team, combat system overhaul
     - ~~RankedManager~~ (done — power-ups por raza, obstáculo random) ~~ModeSelectionUI~~ (done — 4 opciones con costos)
     - ~~GoblinDialogue~~ (done — onboarding post-tutorial)
     - ~~Desbloqueo de personaje por copa~~ (done — CheckCupCompletion)
-15. ~~**Peso WebGL**~~ (done en 101 — `initialLoadSize` 42,8 MiB < 50 MiB; **4ª build 22:00 en `Builds/CrazyGamesRelease` sin copia ASTC, carpeta 42,8 MiB, en rama `spec/102-skip-astc-variant`**). Pendiente de usuario: subir ese build a CrazyGames y verificar el checker web. Además decidir con Hernán si se restaura el splash/logo de Unity en el build CG (ver 102 — requiere flag `KeepUnitySplash` + rebuild ~1 h).
+15. ~~**Peso WebGL**~~ (done en 101/103 — `initialLoadSize` **45,93 MiB** < 50 MiB; **5ª build CG 18:38 en `Builds/CrazyGamesRelease`, sin copia ASTC, en rama `spec/102-skip-astc-variant`**, summary del Analyzer regenerado con 2618 assets). Pendiente de usuario: subir ese build a CrazyGames y verificar el checker web + confirmar que el arte fullscreen a 1024 se ve nítido. Además decidir con Hernán si se restaura el splash/logo de Unity en el build CG (ver 102 — requiere flag `KeepUnitySplash` + rebuild ~1 h).
 
 ### Relevant Files
 - `Assets/Scripts/Game/CharacterCardUI.cs` — card UI (hover/selection)
