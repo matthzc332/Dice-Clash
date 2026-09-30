@@ -146,6 +146,7 @@ public class TextureOptimizer
             if (importer == null) continue;
 
             int maxSize = PickMaxSize(path);
+            bool highRes = maxSize >= 1024;
             bool needsFix = false;
 
             importer.crunchedCompression = true;
@@ -155,7 +156,7 @@ public class TextureOptimizer
                 importer.maxTextureSize = maxSize;
                 needsFix = true;
             }
-            if (maxSize >= 1024 && importer.compressionQuality != 100)
+            if (highRes && importer.compressionQuality != 100)
             {
                 importer.compressionQuality = 100;
                 needsFix = true;
@@ -167,12 +168,14 @@ public class TextureOptimizer
                 if (ps == null) continue;
                 if (ps.maxTextureSize != maxSize
                     || ps.textureCompression != TextureImporterCompression.Compressed
-                    || ps.crunchedCompression != true)
+                    || ps.crunchedCompression != true
+                    || (highRes && ps.compressionQuality != 100))
                 {
                     ps.overridden = true;
                     ps.maxTextureSize = maxSize;
                     ps.textureCompression = TextureImporterCompression.Compressed;
                     ps.crunchedCompression = true;
+                    if (highRes) ps.compressionQuality = 100;
                     importer.SetPlatformTextureSettings(ps);
                     needsFix = true;
                 }
