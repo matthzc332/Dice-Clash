@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d8a8e14ef11f5a40b4e2b7844698851, type: 3}
+  m_Name: Orc
+  m_EditorClassIdentifier: 
+  themeName: Orc
+  backgroundMain: {fileID: -7857421009219485965, guid: cd23aba1698358f4c869bf2a617f4956, type: 3}
+  backgroundMid: {fileID: 0}
+  backgroundFondo3: {fileID: 0}
+  backgroundFondoTuto: {fileID: 0}
+  skipTurn: {fileID: 0}
+  quitButton: {fileID: 0}
+  peonIdleFront:
+  - {fileID: -8229332906408463333, guid: 4398a22f24cadb54b998da3b05e295ba, type: 3}
+  - {fileID: -2896020254443667468, guid: 4398a22f24cadb54b998da3b05e295ba, type: 3}
+  - {fileID: -454023084847776516, guid: 4398a22f24cadb54b998da3b05e295ba, type: 3}
+  - {fileID: 4174884289401647466, guid: 4398a22f24cadb54b998da3b05e295ba, type: 3}
+  - {fileID: 7125993107690453671, guid: 4398a22f24cadb54b998da3b05e295ba, type: 3}
+  knightIdleFront:
+  - {fileID: 7771682253077064971, guid: def17e1bf035e6c4b9436e54ebeb4d47, type: 3}
+  - {fileID: -6017243251163987015, guid: def17e1bf035e6c4b9436e54ebeb4d47, type: 3}
+  - {fileID: -5081695869077933817, guid: def17e1bf035e6c4b9436e54ebeb4d47, type: 3}
+  - {fileID: -1201434291501149736, guid: def17e1bf035e6c4b9436e54ebeb4d47, type: 3}
+  ninjaIdleFront:
+  - {fileID: -599876684343099694, guid: 25999f47855b2fa4da228b796d4029b4, type: 3}
+  - {fileID: 8846723057089614997, guid: 25999f47855b2fa4da228b796d4029b4, type: 3}
+  - {fileID: -5950295512992386815, guid: 25999f47855b2fa4da228b796d4029b4, type: 3}
+  - {fileID: 4310970478258916913, guid: 25999f47855b2fa4da228b796d4029b4, type: 3}
+  paladinIdleFront:
+  - {fileID: 846196826671405326, guid: f0afc11c112f09040b094102fe191447, type: 3}
+  - {fileID: -5846634471848559034, guid: f0afc11c112f09040b094102fe191447, type: 3}
+  - {fileID: -3668922804697262278, guid: f0afc11c112f09040b094102fe191447, type: 3}
+  - {fileID: 5120306498290028044, guid: f0afc11c112f09040b094102fe191447, type: 3}
+  - {fileID: 4271083199619794082, guid: f0afc11c112f09040b094102fe191447, type: 3}
+  - {fileID: -3130323357660376654, guid: f0afc11c112f09040b094102fe191447, type: 3}
+  - {fileID: -4883594759671700682, guid: f0afc11c112f09040b094102fe191447, type: 3}
+  peonIdleBack: []
+  knightIdleBack: []
+  ninjaIdleBack: []
+  paladinIdleBack: []
+  peonMoveFront:
+  - {fileID: 5728297864933303398, guid: f9795e812a2ffe24abb1826e0d3e2f2b, type: 3}
+  - {fileID: -8760129948335036768, guid: f9795e812a2ffe24abb1826e0d3e2f2b, type: 3}
+  - {fileID: 26611614883790963, guid: f9795e812a2ffe24abb1826e0d3e2f2b, type: 3}
+  - {fileID: -3613521045200315853, guid: f9795e812a2ffe24abb1826e0d3e2f2b, type: 3}
+  - {fileID: 2381211035168401270, guid: f9795e812a2ffe24abb1826e0d3e2f2b, type: 3}
+  knightMoveFront:
+  - {fileID: 1575807786781290063, guid: 3c3af876b92491642a37477fd791f68a, type: 3}
+  - {fileID: -2692245270592001578, guid: 3c3af876b92491642a37477fd791f68a, type: 3}
+  - {fileID: 6341807271194939875, guid: 3c3af876b92491642a37477fd791f68a, type: 3}
+  - {fileID: 2177705878987029769, guid: 3c3af876b92491642a37477fd791f68a, type: 3}
+  - {fileID: -9063469430257148809, guid: 3c3af876b92491642a37477fd791f68a, type: 3}
+  ninjaMoveFront:
+  - {fileID: -7898655995209279732, guid: 532eda9deb442b946abe20e289819f50, type: 3}
+  paladinMoveFront:
+  - {fileID: 9008087311450843108, guid: ddda593164468fb47a326b2fb96578de, type: 3}
+  - {fileID: -5462415260239511132, guid: ddda593164468fb47a326b2fb96578de, type: 3}
+  - {fileID: 7514535380893956570, guid: ddda593164468fb47a326b2fb96578de, type: 3}
+  - {fileID: 6501714560737410347, guid: ddda593164468fb47a326b2fb96578de, type: 3}
+  - {fileID: -4004454693522553372, guid: ddda593164468fb47a326b2fb96578de, type: 3}
+  - {fileID: -5247771467268802985, guid: ddda593164468fb47a326b2fb96578de, type: 3}
+  - {fileID: 5655647320739654271, guid: ddda593164468fb47a326b2fb96578de, type: 3}
+  peonMoveBack: []
+  knightMoveBack: []
+  ninjaMoveBack: []
+  paladinMoveBack: []
+  peonAttackFront: []
+  knightAttackFront: []
+  paladinAttackFront: []
+  peonAttackBack: []
+  knightAttackBack: []
+  paladinAttackBack: []
+  peonNecroMoveFront: {fileID: 0}
+  knightNecroMoveFront: {fileID: 0}
+  paladinNecroMoveFront2: {fileID: 0}

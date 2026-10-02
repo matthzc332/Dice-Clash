@@ -263,11 +263,11 @@ public class TextureOptimizer
         if (assetPath.Contains("/Tutorial/")) return 1024;
         if (assetPath.Contains("/Score/")) return 1024;
         if (assetPath.Contains("/Menu/")) return 512;
-        if (assetPath.Contains("/Dice/")) return 512;
-        if (assetPath.Contains("/Emoji/")) return 512;
-        if (assetPath.Contains("/Efect/")) return 1024;
-        if (assetPath.Contains("/PowerUps/")) return 512;
-        if (assetPath.Contains("/Pieces/")) return 512;
+        if (assetPath.Contains("/Dice/")) return 256;
+        if (assetPath.Contains("/Emoji/")) return 128;
+        if (assetPath.Contains("/Efect/")) return 512;
+        if (assetPath.Contains("/PowerUps/")) return 256;
+        if (assetPath.Contains("/Pieces/")) return 256;
         if (assetPath.Contains("/Decor/")) return 512;
         if (assetPath.Contains("/Estantes/")) return 512;
         if (assetPath.Contains("/Card/")) return 512;

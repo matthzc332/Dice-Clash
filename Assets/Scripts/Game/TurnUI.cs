@@ -226,7 +226,9 @@ public class TurnUI : MonoBehaviour
         btnRt.anchorMin = new Vector2(1f, 0.5f);
         btnRt.anchorMax = new Vector2(1f, 0.5f);
         btnRt.pivot = new Vector2(1f, 0.5f);
-        btnRt.sizeDelta = new Vector2(600, 235);
+        float btnH = 235f;
+        float btnAspect = skipSprite != null && skipSprite.rect.height > 0 ? skipSprite.rect.width / skipSprite.rect.height : 1.5f;
+        btnRt.sizeDelta = new Vector2(btnH * btnAspect, btnH);
         btnRt.anchoredPosition = new Vector2(-10, -217);
         btnRt.localScale = Vector3.one;
 

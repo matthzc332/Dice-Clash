@@ -1456,6 +1456,13 @@ public class BoardManager : MonoBehaviour
         return sprites.Length > 0 ? sprites[0] : null;
     }
 
+    static float NigroForwardVisibleFit(PieceType type)
+    {
+        if (type == PieceType.Knight) return 0.934f;
+        if (type == PieceType.Paladin) return 1.00f; // override temporal: quitamos el ajuste por padding
+        return 1f;
+    }
+
     IEnumerator AnimatedMove(int fromRow, int fromCol, int toRow, int toCol)
     {
         Cell from = GetCell(fromRow, fromCol);
@@ -1507,13 +1514,19 @@ public class BoardManager : MonoBehaviour
                     {
                         movingVisual.transform.localScale = new Vector3(1f, 1f, 1f);
                     }
+                    else if (movingData.type == PieceType.Paladin && movingForward)
+                    {
+                        // AJUSTE PEDIDO: Paladin Nigromantes move front scale 1, 1
+                        movingVisual.transform.localScale = new Vector3(1f, 1f, 1f);
+                    }
                     else
                     {
+                        float visibleFit = movingForward ? NigroForwardVisibleFit(movingData.type) : 1f;
                         float idleArea = idleSprite.rect.width * idleSprite.rect.height;
                         float moveArea = moveSprite.rect.width * moveSprite.rect.height;
                         if (moveArea > 0 && Mathf.Abs(idleArea / moveArea - 1f) > 0.1f)
                         {
-                            float sizeRatio = Mathf.Sqrt(idleArea / moveArea);
+                            float sizeRatio = Mathf.Sqrt(idleArea / moveArea) * visibleFit;
                             if (!movingForward)
                             {
                                 if (movingData.type != PieceType.Pawn)
@@ -1523,6 +1536,11 @@ public class BoardManager : MonoBehaviour
                             }
                             Vector3 s = movingVisual.transform.localScale;
                             movingVisual.transform.localScale = new Vector3(s.x * sizeRatio, s.y * sizeRatio, s.z);
+                        }
+                        else if (!Mathf.Approximately(visibleFit, 1f))
+                        {
+                            Vector3 sv = movingVisual.transform.localScale;
+                            movingVisual.transform.localScale = new Vector3(sv.x * visibleFit, sv.y * visibleFit, sv.z);
                         }
                         if (!movingForward)
                         {
@@ -2717,15 +2735,16 @@ public class BoardManager : MonoBehaviour
     {
         Camera cam = Camera.main;
         if (cam == null) return;
+        if (GameObject.Find("SceneDarken") != null) return;
 
         GameObject darkObj = new GameObject("SceneDarken");
-        darkObj.transform.SetParent(scenarioContainer.transform);
-        darkObj.transform.position = cam.transform.position + new Vector3(0, 0, 3);
+        darkObj.transform.SetParent(cam.transform);
+        darkObj.transform.localPosition = new Vector3(0, 0, 1);
 
         SpriteRenderer sr = darkObj.AddComponent<SpriteRenderer>();
         sr.sprite = CreateFullScreenSprite();
         sr.color = new Color(0f, 0f, 0.05f, 0.35f);
-        sr.sortingOrder = 0;
+        sr.sortingOrder = 10;
 
         float worldH = cam.orthographicSize * 2f;
         float worldW = worldH * cam.aspect;

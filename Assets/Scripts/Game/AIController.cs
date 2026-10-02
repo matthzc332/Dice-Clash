@@ -32,14 +32,14 @@ public class AIController : MonoBehaviour
 
     IEnumerator PlayTurn(Team team)
     {
+        board.aiInProgress = true;
+        if (input != null) input.aiPlaying = true;
+
         if (PowerUpManager.Instance != null)
             yield return new WaitUntil(() => !PowerUpManager.Instance.IsExecuting);
 
         float delay = GameConfig.isAutoPlay ? 0.15f : 2.5f;
         yield return new WaitForSeconds(delay);
-
-        board.aiInProgress = true;
-        if (input != null) input.aiPlaying = true;
 
         Team enemy = team == Team.Red ? Team.Blue : Team.Red;
 

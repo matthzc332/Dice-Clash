@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d8a8e14ef11f5a40b4e2b7844698851, type: 3}
+  m_Name: Nigromantes
+  m_EditorClassIdentifier: 
+  themeName: Nigromantes
+  backgroundMain: {fileID: 4376726715957587107, guid: 50e392315beba3444a35a1364d531c84, type: 3}
+  backgroundMid: {fileID: 0}
+  backgroundFondo3: {fileID: 0}
+  backgroundFondoTuto: {fileID: 0}
+  skipTurn: {fileID: 0}
+  quitButton: {fileID: 0}
+  peonIdleFront: []
+  knightIdleFront: []
+  ninjaIdleFront: []
+  paladinIdleFront: []
+  peonIdleBack: []
+  knightIdleBack: []
+  ninjaIdleBack: []
+  paladinIdleBack: []
+  peonMoveFront: []
+  knightMoveFront: []
+  ninjaMoveFront:
+  - {fileID: -7898655995209279732, guid: c8c046716a8354c44822c14dea9cc3d6, type: 3}
+  paladinMoveFront: []
+  peonMoveBack: []
+  knightMoveBack: []
+  ninjaMoveBack: []
+  paladinMoveBack: []
+  peonAttackFront: []
+  knightAttackFront: []
+  paladinAttackFront: []
+  peonAttackBack: []
+  knightAttackBack: []
+  paladinAttackBack: []
+  peonNecroMoveFront: {fileID: 5705624734985604922, guid: 1f2c25268da46e041965ae3ea3efe6e3, type: 3}
+  knightNecroMoveFront: {fileID: 783490462058790877, guid: d71e86f6ebf26d94c8eccb854ac6eea4, type: 3}
+  paladinNecroMoveFront2: {fileID: -4961413583382699057, guid: a5a2f63437ec3ee48ac2312ae69c48fb, type: 3}

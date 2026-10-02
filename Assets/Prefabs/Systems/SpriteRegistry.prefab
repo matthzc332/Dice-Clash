@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1121155919875802179
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4094641057764986886}
+  - component: {fileID: 8402767840163038744}
+  m_Layer: 0
+  m_Name: SpriteRegistry
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4094641057764986886
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1121155919875802179}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8402767840163038744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1121155919875802179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f263effe4bd1124b8e4956d35061f3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  human: {fileID: 0}
+  orc: {fileID: 0}
+  beastfolk: {fileID: 0}
+  nigromantes: {fileID: 0}
+  tutorial: {fileID: 0}
+  winSprites: []
+  nextSprite: {fileID: 0}
+  retrySprite: {fileID: 0}
+  quitSprite: {fileID: 0}
+  blueWinSprite: {fileID: 0}
+  redWinSprite: {fileID: 0}
+  panelCartaBlue: {fileID: 0}
+  panelVictoria: {fileID: 0}
+  botonPlay2: {fileID: 0}
+  botonOK: {fileID: 0}
+  rankedSprite: {fileID: 0}
+  shakeIcon: {fileID: 0}
+  explosionIcon: {fileID: 0}
+  fireballIcon: {fileID: 0}
+  lightningIcon: {fileID: 0}
+  magicIcon: {fileID: 0}
+  glowCircle: {fileID: 0}
+  ritualCircle: {fileID: 0}
+  fistPunch: {fileID: 0}
+  fireHit1: {fileID: 0}
+  fireHit2: {fileID: 0}
+  lightningHit1: {fileID: 0}
+  lightningHit2: {fileID: 0}
+  mageIdle: {fileID: 0}
+  mageAttack: {fileID: 0}
+  mageBack: {fileID: 0}
+  trumpetSprite: {fileID: 0}
+  fightCloud_HH: []
+  fightCloud_HO: []
+  fightCloud_HB: []
+  fightCloud_OO: []
+  fightCloud_OB: []
+  fightCloud_BB: []
+  humanEmojisHappy: []
+  humanEmojisSad: []
+  humanEmojisAngry: []
+  orcEmojisHappy: []
+  orcEmojisSad: []
+  orcEmojisAngry: []
+  beastEmojisHappy: []
+  beastEmojisSad: []
+  beastEmojisAngry: []
+  enemyBannerSprite: {fileID: 0}
+  cupSpriteIron: {fileID: 0}
+  cupSpriteBlood: {fileID: 0}
+  cupSpriteWild: {fileID: 0}
+  cupSpriteVoid: {fileID: 0}
+  ribbonHuman: {fileID: 0}
+  ribbonOrc: {fileID: 0}
+  ribbonBeast: {fileID: 0}
+  ribbonNigro: {fileID: 0}
+  insigniaMadera: {fileID: 0}
+  insigniaTutorial: {fileID: 0}
+  copaTuto: {fileID: 0}
+  listonTutorial: {fileID: 0}

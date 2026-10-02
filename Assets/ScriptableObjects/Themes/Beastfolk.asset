@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d8a8e14ef11f5a40b4e2b7844698851, type: 3}
+  m_Name: Beastfolk
+  m_EditorClassIdentifier: 
+  themeName: Beastfolk
+  backgroundMain: {fileID: 6351850069378431899, guid: 100c90260b1d47b468d2207d1be34d45, type: 3}
+  backgroundMid: {fileID: 0}
+  backgroundFondo3: {fileID: 0}
+  backgroundFondoTuto: {fileID: 0}
+  skipTurn: {fileID: 0}
+  quitButton: {fileID: 0}
+  peonIdleFront:
+  - {fileID: -2992661163024639068, guid: 5a93eff02ce542349bc2e40f170352ad, type: 3}
+  knightIdleFront:
+  - {fileID: -3899643934325689144, guid: 4d7c8fd8a315ad5458ada4035f269acc, type: 3}
+  ninjaIdleFront:
+  - {fileID: -6341748070813620848, guid: ef0a50a02cc271040a7da0746b5bf174, type: 3}
+  paladinIdleFront:
+  - {fileID: 1592581490460853258, guid: afd1d4c4012cf2043b903bf18d5144db, type: 3}
+  peonIdleBack: []
+  knightIdleBack: []
+  ninjaIdleBack: []
+  paladinIdleBack: []
+  peonMoveFront:
+  - {fileID: -5322752866220509630, guid: d88497646aca7c34fb7fc970bb912c3e, type: 3}
+  - {fileID: 5004029114003005538, guid: d88497646aca7c34fb7fc970bb912c3e, type: 3}
+  - {fileID: 6224106829861807486, guid: d88497646aca7c34fb7fc970bb912c3e, type: 3}
+  - {fileID: -5389218943340932983, guid: d88497646aca7c34fb7fc970bb912c3e, type: 3}
+  - {fileID: -8899304772601560502, guid: d88497646aca7c34fb7fc970bb912c3e, type: 3}
+  - {fileID: -6434752511296249438, guid: d88497646aca7c34fb7fc970bb912c3e, type: 3}
+  knightMoveFront:
+  - {fileID: 2808365999621029851, guid: def38002ab33d2d48b56fd3bedc5dbfd, type: 3}
+  - {fileID: 779943236887937479, guid: def38002ab33d2d48b56fd3bedc5dbfd, type: 3}
+  - {fileID: 2356755755957795105, guid: def38002ab33d2d48b56fd3bedc5dbfd, type: 3}
+  - {fileID: -5607303396673308422, guid: def38002ab33d2d48b56fd3bedc5dbfd, type: 3}
+  - {fileID: 5438588393689939950, guid: def38002ab33d2d48b56fd3bedc5dbfd, type: 3}
+  - {fileID: 987583108682737621, guid: def38002ab33d2d48b56fd3bedc5dbfd, type: 3}
+  ninjaMoveFront:
+  - {fileID: 6145388199134429483, guid: f505baa152f1d424a96b4b2ec259c82f, type: 3}
+  paladinMoveFront:
+  - {fileID: 1042320884819190118, guid: 451c95cfb1860a54c91dab3bfc247106, type: 3}
+  - {fileID: 3258624951610243400, guid: 451c95cfb1860a54c91dab3bfc247106, type: 3}
+  - {fileID: -1787225662862204476, guid: 451c95cfb1860a54c91dab3bfc247106, type: 3}
+  - {fileID: 7589763339584945066, guid: 451c95cfb1860a54c91dab3bfc247106, type: 3}
+  - {fileID: -9222970257734104385, guid: 451c95cfb1860a54c91dab3bfc247106, type: 3}
+  - {fileID: -8022308771446737959, guid: 451c95cfb1860a54c91dab3bfc247106, type: 3}
+  peonMoveBack: []
+  knightMoveBack: []
+  ninjaMoveBack: []
+  paladinMoveBack: []
+  peonAttackFront:
+  - {fileID: -3285548019776236611, guid: 1a7a2f2cd29ea9540a9b7f2ab1dae0f4, type: 3}
+  - {fileID: -2809084744311670141, guid: 1a7a2f2cd29ea9540a9b7f2ab1dae0f4, type: 3}
+  - {fileID: -5265988401508579644, guid: 1a7a2f2cd29ea9540a9b7f2ab1dae0f4, type: 3}
+  - {fileID: 6465726168279518477, guid: 1a7a2f2cd29ea9540a9b7f2ab1dae0f4, type: 3}
+  knightAttackFront:
+  - {fileID: 3019710784775202209, guid: 3e8839603871fdf4eb012ebd2343d660, type: 3}
+  - {fileID: -1855772840072260456, guid: 3e8839603871fdf4eb012ebd2343d660, type: 3}
+  - {fileID: -4630475820597647116, guid: 3e8839603871fdf4eb012ebd2343d660, type: 3}
+  - {fileID: 8924601166368271425, guid: 3e8839603871fdf4eb012ebd2343d660, type: 3}
+  - {fileID: -1962447467925706170, guid: 3e8839603871fdf4eb012ebd2343d660, type: 3}
+  - {fileID: 112470649704962474, guid: 3e8839603871fdf4eb012ebd2343d660, type: 3}
+  paladinAttackFront:
+  - {fileID: -4251970543727402455, guid: 7509a7b013ed9e44cae855278dabc874, type: 3}
+  - {fileID: -7928397185527851381, guid: 7509a7b013ed9e44cae855278dabc874, type: 3}
+  - {fileID: -4080968353919433249, guid: 7509a7b013ed9e44cae855278dabc874, type: 3}
+  - {fileID: -212171216580988776, guid: 7509a7b013ed9e44cae855278dabc874, type: 3}
+  - {fileID: 8075906957804000879, guid: 7509a7b013ed9e44cae855278dabc874, type: 3}
+  - {fileID: 2227804264110186834, guid: 7509a7b013ed9e44cae855278dabc874, type: 3}
+  peonAttackBack: []
+  knightAttackBack: []
+  paladinAttackBack: []
+  peonNecroMoveFront: {fileID: 0}
+  knightNecroMoveFront: {fileID: 0}
+  paladinNecroMoveFront2: {fileID: 0}

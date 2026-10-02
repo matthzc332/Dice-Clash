@@ -50,6 +50,7 @@ public class InputManager : MonoBehaviour
     void Update()
     {
         if (aiPlaying) return;
+        if (turnManager == null || turnManager.GetCurrentTeam() != Team.Blue) return;
         if (PowerUpManager.Instance != null && PowerUpManager.Instance.IsExecuting) return;
 
         Camera cam = FindFirstObjectByType<Camera>();
