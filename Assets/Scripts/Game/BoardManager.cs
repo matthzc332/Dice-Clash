@@ -1211,6 +1211,23 @@ public class BoardManager : MonoBehaviour
         if (fightCloudCache.TryGetValue(key, out Sprite[] cached))
             return cached;
 
+        SpriteRegistry reg = SpriteRegistry.Instance;
+        if (reg != null)
+        {
+            Sprite[] arr = null;
+            if (key == "FightCloud_HumanHuman") arr = reg.fightCloud_HH;
+            else if (key == "FightCloud_HumanOrc") arr = reg.fightCloud_HO;
+            else if (key == "FightCloud_HumanBeast") arr = reg.fightCloud_HB;
+            else if (key == "FightCloud_OrcOrc") arr = reg.fightCloud_OO;
+            else if (key == "FightCloud_OrcBeast") arr = reg.fightCloud_OB;
+            else if (key == "FightCloud_BeastBeast") arr = reg.fightCloud_BB;
+            if (arr != null && arr.Length >= 3 && arr[0] != null && arr[1] != null && arr[2] != null)
+            {
+                fightCloudCache[key] = arr;
+                return arr;
+            }
+        }
+
         Sprite[] frames = new Sprite[3];
         bool found = false;
         for (int i = 0; i < 3; i++)
